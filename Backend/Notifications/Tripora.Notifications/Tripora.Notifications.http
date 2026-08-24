@@ -1,0 +1,6 @@
+@Tripora.Notifications_HostAddress = http://localhost:5004
+
+GET {{Tripora.Notifications_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###
