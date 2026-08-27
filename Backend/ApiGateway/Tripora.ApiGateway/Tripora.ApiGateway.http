@@ -1,0 +1,6 @@
+@Tripora.ApiGateway_HostAddress = http://localhost:5120
+
+GET {{Tripora.ApiGateway_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###

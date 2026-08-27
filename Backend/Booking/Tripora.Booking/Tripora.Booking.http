@@ -1,6 +1,0 @@
-@Tripora.Booking_HostAddress = http://localhost:5100
-
-GET {{Tripora.Booking_HostAddress}}/weatherforecast/
-Accept: application/json
-
-###
