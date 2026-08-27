@@ -1,0 +1,6 @@
+@Tripora.PaymentService_HostAddress = http://localhost:5046
+
+GET {{Tripora.PaymentService_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###
