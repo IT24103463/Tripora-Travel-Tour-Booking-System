@@ -79,4 +79,25 @@ public class ValidationService : IValidationService
 
         return new ValidationResult(errors.Count == 0, errors);
     }
+
+    public ValidationResult ValidateLogin(LoginRequestDto request)
+    {
+        var errors = new List<string>();
+
+        if (string.IsNullOrWhiteSpace(request.Email))
+        {
+            errors.Add("Email Address is required.");
+        }
+        else if (!EmailRegex.IsMatch(request.Email.Trim()))
+        {
+            errors.Add("Invalid email format. Please provide a valid email address.");
+        }
+
+        if (string.IsNullOrEmpty(request.Password))
+        {
+            errors.Add("Password is required.");
+        }
+
+        return new ValidationResult(errors.Count == 0, errors);
+    }
 }
