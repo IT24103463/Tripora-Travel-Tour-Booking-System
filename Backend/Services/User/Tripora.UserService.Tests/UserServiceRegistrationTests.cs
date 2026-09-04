@@ -31,10 +31,20 @@ public class UserServiceRegistrationTests : IDisposable
         _userRepository = new UserRepository(_dbContext);
         _passwordHasher = new BcryptPasswordHasher();
         _validationService = new ValidationService();
+        var jwtOptions = Microsoft.Extensions.Options.Options.Create(new Configuration.JwtOptions
+        {
+            SecretKey = "Tripora_Test_Super_Secret_Jwt_Security_Key_2026_Secure_!",
+            Issuer = "Tripora.UserService",
+            Audience = "Tripora.Client",
+            ExpiryMinutes = 60
+        });
+        var jwtTokenGenerator = new JwtTokenGenerator(jwtOptions);
         _userService = new UserService.Services.UserService(
             _userRepository,
             _passwordHasher,
             _validationService,
+            jwtTokenGenerator,
+            jwtOptions,
             NullLogger<UserService.Services.UserService>.Instance);
 
         _controller = new UsersController(

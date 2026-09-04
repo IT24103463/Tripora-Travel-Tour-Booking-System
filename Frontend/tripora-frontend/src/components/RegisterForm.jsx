@@ -3,7 +3,7 @@ import './RegisterForm.css';
 
 const API_ENDPOINT = import.meta.env.VITE_API_URL || 'http://localhost:5001/api/users/register';
 
-export default function RegisterForm() {
+export default function RegisterForm({ onSwitchToLogin }) {
   const [formData, setFormData] = useState({
     fullName: '',
     email: '',
@@ -418,7 +418,14 @@ export default function RegisterForm() {
         </button>
 
         <div className="form-footer">
-          Already registered? <a href="#signin" className="link-signin">Sign in to Tripora</a>
+          Already registered?{' '}
+          <button
+            type="button"
+            className="link-switch-btn"
+            onClick={onSwitchToLogin}
+          >
+            Sign in to Tripora
+          </button>
         </div>
       </form>
     </div>

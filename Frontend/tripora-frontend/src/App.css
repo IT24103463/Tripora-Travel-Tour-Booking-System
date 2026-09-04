@@ -102,6 +102,125 @@
   color: #0284c7;
 }
 
+.tab-pill-group {
+  display: flex;
+  background: rgba(2, 132, 199, 0.08);
+  padding: 0.25rem;
+  border-radius: 10px;
+  border: 1px solid rgba(2, 132, 199, 0.2);
+}
+
+.tab-btn {
+  padding: 0.45rem 1rem;
+  font-size: 0.85rem;
+  font-weight: 600;
+  border: none;
+  background: transparent;
+  color: #64748b;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.tab-btn.active {
+  background: #ffffff;
+  color: #0284c7;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+@media (prefers-color-scheme: dark) {
+  .tab-btn.active {
+    background: #0f172a;
+    color: #38bdf8;
+  }
+}
+
+.auth-nav-pill {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.nav-user-name {
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: #0f172a;
+}
+
+@media (prefers-color-scheme: dark) {
+  .nav-user-name {
+    color: #f8fafc;
+  }
+}
+
+.btn-nav-logout {
+  padding: 0.4rem 0.85rem;
+  background: rgba(239, 68, 68, 0.1);
+  border: 1px solid rgba(239, 68, 68, 0.3);
+  color: #ef4444;
+  font-size: 0.8rem;
+  font-weight: 600;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.btn-nav-logout:hover {
+  background: #ef4444;
+  color: white;
+}
+
+.auth-container {
+  width: 100%;
+  max-width: 540px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.auth-mode-switch {
+  display: flex;
+  background: rgba(226, 232, 240, 0.7);
+  padding: 0.3rem;
+  border-radius: 12px;
+  margin-bottom: -1rem;
+  position: relative;
+  z-index: 10;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+}
+
+@media (prefers-color-scheme: dark) {
+  .auth-mode-switch {
+    background: rgba(30, 41, 59, 0.8);
+    border: 1px solid rgba(51, 65, 85, 0.6);
+  }
+}
+
+.switch-tab {
+  padding: 0.55rem 1.6rem;
+  border: none;
+  background: transparent;
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: #64748b;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.switch-tab.selected {
+  background: #ffffff;
+  color: #0284c7;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.08), 0 2px 4px -1px rgba(0, 0, 0, 0.04);
+}
+
+@media (prefers-color-scheme: dark) {
+  .switch-tab.selected {
+    background: #0f172a;
+    color: #38bdf8;
+  }
+}
+
 .btn-nav-signin {
   padding: 0.5rem 1.15rem;
   font-size: 0.875rem;

@@ -1,7 +1,40 @@
+import { useState } from 'react';
 import RegisterForm from './components/RegisterForm';
+import LoginForm from './components/LoginForm';
+import CustomerDashboard from './components/CustomerDashboard';
 import './App.css';
 
 function App() {
+  const [authToken, setAuthToken] = useState(() => {
+    return localStorage.getItem('tripora_token');
+  });
+
+  const [authUser, setAuthUser] = useState(() => {
+    const saved = localStorage.getItem('tripora_user');
+    try {
+      return saved ? JSON.parse(saved) : null;
+    } catch {
+      return null;
+    }
+  });
+
+  const [activeTab, setActiveTab] = useState('login'); // 'login' | 'register'
+
+  const handleLoginSuccess = (token, user) => {
+    setAuthToken(token);
+    setAuthUser(user);
+    localStorage.setItem('tripora_token', token);
+    localStorage.setItem('tripora_user', JSON.stringify(user));
+  };
+
+  const handleLogout = () => {
+    setAuthToken(null);
+    setAuthUser(null);
+    localStorage.removeItem('tripora_token');
+    localStorage.removeItem('tripora_user');
+    setActiveTab('login');
+  };
+
   return (
     <div className="app-layout">
       {/* Navigation Header */}
@@ -18,7 +51,33 @@ function App() {
             <a href="#support">Support</a>
           </nav>
           <div className="nav-actions">
-            <a href="#signin" className="btn-nav-signin">Sign In</a>
+            {authUser ? (
+              <div className="auth-nav-pill">
+                <span className="nav-user-name">👤 {authUser.fullName}</span>
+                <button type="button" className="btn-nav-logout" onClick={handleLogout}>
+                  Sign Out
+                </button>
+              </div>
+            ) : (
+              <div className="tab-pill-group">
+                <button 
+                  type="button" 
+                  className={`tab-btn ${activeTab === 'login' ? 'active' : ''}`}
+                  id="tab-btn-signin"
+                  onClick={() => setActiveTab('login')}
+                >
+                  Sign In
+                </button>
+                <button 
+                  type="button" 
+                  className={`tab-btn ${activeTab === 'register' ? 'active' : ''}`}
+                  id="tab-btn-register"
+                  onClick={() => setActiveTab('register')}
+                >
+                  Register
+                </button>
+              </div>
+            )}
           </div>
         </div>
       </header>
@@ -27,23 +86,62 @@ function App() {
       <main className="main-content">
         <div className="hero-banner">
           <span className="hero-pill">✨ Travel Beyond Boundaries</span>
-          <h1 className="hero-headline">Discover Extraordinary Journeys with Tripora</h1>
+          <h1 className="hero-headline">
+            {authUser ? 'Your Tripora Travel Portal' : 'Discover Extraordinary Journeys with Tripora'}
+          </h1>
           <p className="hero-subhead">
-            Create your customer account to access handcrafted tours, curated luxury stays, 
-            and seamless holiday booking across 120+ worldwide destinations.
+            {authUser 
+              ? 'Access your authenticated customer perks, manage bookings, and explore protected member-only itineraries.' 
+              : 'Sign in to your account or register today to unlock exclusive travel packages, luxury hotels, and bespoke voyages.'}
           </p>
         </div>
 
-        {/* The 5-Part Registration Card */}
-        <RegisterForm />
+        {/* Dynamic Authenticated / Tab View */}
+        {authUser && authToken ? (
+          <CustomerDashboard 
+            user={authUser} 
+            token={authToken} 
+            onLogout={handleLogout} 
+          />
+        ) : (
+          <div className="auth-container">
+            <div className="auth-mode-switch">
+              <button
+                type="button"
+                className={`switch-tab ${activeTab === 'login' ? 'selected' : ''}`}
+                onClick={() => setActiveTab('login')}
+              >
+                Sign In
+              </button>
+              <button
+                type="button"
+                className={`switch-tab ${activeTab === 'register' ? 'selected' : ''}`}
+                onClick={() => setActiveTab('register')}
+              >
+                Create Account
+              </button>
+            </div>
+
+            {activeTab === 'login' ? (
+              <LoginForm 
+                onLoginSuccess={handleLoginSuccess}
+                onSwitchToRegister={() => setActiveTab('register')}
+              />
+            ) : (
+              <RegisterForm 
+                onSwitchToLogin={() => setActiveTab('login')}
+              />
+            )}
+          </div>
+        )}
 
         {/* Trust Badges */}
         <section className="trust-features">
           <div className="feature-item">
             <span className="feature-icon">🔒</span>
             <div className="feature-text">
-              <h4>Bank-Grade Encryption</h4>
-              <p>Your password and credentials are encrypted using cryptographic salting.</p>
+              <h4>Bank-Grade JWT Security</h4>
+              <p>Signed HMAC-SHA256 tokens and BCrypt hashed credentials protect your account.</p>
             </div>
           </div>
           <div className="feature-item">

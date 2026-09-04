@@ -1,6 +1,10 @@
 @Tripora.UserService_HostAddress = http://localhost:5001
 
-### Scenario 1 & 5: Valid Customer Registration
+### ======================================================
+### REGISTRATION SCENARIOS
+### ======================================================
+
+### Registration Scenario 1 & 5: Valid Customer Registration
 POST {{Tripora.UserService_HostAddress}}/api/users/register
 Content-Type: application/json
 
@@ -13,7 +17,7 @@ Content-Type: application/json
 
 ###
 
-### Scenario 2: Duplicate Email (Submit same email again)
+### Registration Scenario 2: Duplicate Email
 POST {{Tripora.UserService_HostAddress}}/api/users/register
 Content-Type: application/json
 
@@ -26,41 +30,56 @@ Content-Type: application/json
 
 ###
 
-### Scenario 3A: Invalid Email Format
-POST {{Tripora.UserService_HostAddress}}/api/users/register
+### ======================================================
+### LOGIN & JWT AUTHENTICATION SCENARIOS
+### ======================================================
+
+### Login Scenario 1 & 3: Successful Login (Generates JWT Token)
+# @name login
+POST {{Tripora.UserService_HostAddress}}/api/users/login
 Content-Type: application/json
 
 {
-  "fullName": "John Doe",
-  "email": "not-an-email",
-  "password": "ValidPassword123!",
-  "confirmPassword": "ValidPassword123!"
+  "email": "eleanor.vance@tripora.com",
+  "password": "SecurePassword123!"
 }
 
 ###
 
-### Scenario 3B: Weak Password (missing uppercase, number, special char)
-POST {{Tripora.UserService_HostAddress}}/api/users/register
+### Extract Auth Token from response
+@authToken = {{login.response.body.data.token}}
+
+### Login Scenario 2A: Invalid Password
+POST {{Tripora.UserService_HostAddress}}/api/users/login
 Content-Type: application/json
 
 {
-  "fullName": "John Doe",
-  "email": "johndoe@example.com",
-  "password": "weakpassword",
-  "confirmPassword": "weakpassword"
+  "email": "eleanor.vance@tripora.com",
+  "password": "WrongPassword999!"
 }
 
 ###
 
-### Scenario 3C: Mismatched Passwords
-POST {{Tripora.UserService_HostAddress}}/api/users/register
+### Login Scenario 2B: Account Does Not Exist
+POST {{Tripora.UserService_HostAddress}}/api/users/login
 Content-Type: application/json
 
 {
-  "fullName": "John Doe",
-  "email": "johndoe@example.com",
-  "password": "SecurePassword123!",
-  "confirmPassword": "DifferentPassword123!"
+  "email": "unregistered.user@tripora.com",
+  "password": "SecurePassword123!"
 }
+
+###
+
+### Login Scenario 4: Access Protected Resource With Valid JWT Token
+GET {{Tripora.UserService_HostAddress}}/api/users/me
+Authorization: Bearer {{authToken}}
+Accept: application/json
+
+###
+
+### Login Scenario 5: Unauthorized Access Denied (Without Token)
+GET {{Tripora.UserService_HostAddress}}/api/users/me
+Accept: application/json
 
 ###
