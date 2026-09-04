@@ -1,6 +1,66 @@
-@Tripora.UserService_HostAddress = http://localhost:5292
+@Tripora.UserService_HostAddress = http://localhost:5001
 
-GET {{Tripora.UserService_HostAddress}}/weatherforecast/
-Accept: application/json
+### Scenario 1 & 5: Valid Customer Registration
+POST {{Tripora.UserService_HostAddress}}/api/users/register
+Content-Type: application/json
+
+{
+  "fullName": "Eleanor Vance",
+  "email": "eleanor.vance@tripora.com",
+  "password": "SecurePassword123!",
+  "confirmPassword": "SecurePassword123!"
+}
+
+###
+
+### Scenario 2: Duplicate Email (Submit same email again)
+POST {{Tripora.UserService_HostAddress}}/api/users/register
+Content-Type: application/json
+
+{
+  "fullName": "Eleanor Vance",
+  "email": "eleanor.vance@tripora.com",
+  "password": "AnotherPassword123!",
+  "confirmPassword": "AnotherPassword123!"
+}
+
+###
+
+### Scenario 3A: Invalid Email Format
+POST {{Tripora.UserService_HostAddress}}/api/users/register
+Content-Type: application/json
+
+{
+  "fullName": "John Doe",
+  "email": "not-an-email",
+  "password": "ValidPassword123!",
+  "confirmPassword": "ValidPassword123!"
+}
+
+###
+
+### Scenario 3B: Weak Password (missing uppercase, number, special char)
+POST {{Tripora.UserService_HostAddress}}/api/users/register
+Content-Type: application/json
+
+{
+  "fullName": "John Doe",
+  "email": "johndoe@example.com",
+  "password": "weakpassword",
+  "confirmPassword": "weakpassword"
+}
+
+###
+
+### Scenario 3C: Mismatched Passwords
+POST {{Tripora.UserService_HostAddress}}/api/users/register
+Content-Type: application/json
+
+{
+  "fullName": "John Doe",
+  "email": "johndoe@example.com",
+  "password": "SecurePassword123!",
+  "confirmPassword": "DifferentPassword123!"
+}
 
 ###

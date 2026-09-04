@@ -20,6 +20,7 @@
   </Folder>
   <Folder Name="/Services/User/">
     <Project Path="Services/User/Tripora.UserService/Tripora.UserService.csproj" />
+    <Project Path="Services/User/Tripora.UserService.Tests/Tripora.UserService.Tests.csproj" />
   </Folder>
   <Folder Name="/Shared/">
     <Project Path="Shared/Tripora.Shared/Tripora.Shared.csproj" />
