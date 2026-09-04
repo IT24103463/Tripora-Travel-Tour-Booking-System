@@ -1,4 +1,8 @@
+using System.Text;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.IdentityModel.Tokens;
+using Tripora.UserService.Configuration;
 using Tripora.UserService.Data;
 using Tripora.UserService.Repositories;
 using Tripora.UserService.Services;
@@ -11,16 +15,51 @@ var connectionString = builder.Configuration.GetConnectionString("DefaultConnect
 builder.Services.AddDbContext<UserDbContext>(options =>
     options.UseSqlite(connectionString));
 
-// 2. Register application services and repositories
+// 2. Configure JWT options and services
+builder.Services.Configure<JwtOptions>(builder.Configuration.GetSection(JwtOptions.SectionName));
+builder.Services.AddSingleton<IJwtTokenGenerator, JwtTokenGenerator>();
+
+// 3. Register application services and repositories
 builder.Services.AddScoped<IUserRepository, UserRepository>();
 builder.Services.AddSingleton<IPasswordHasher, BcryptPasswordHasher>();
 builder.Services.AddSingleton<IValidationService, ValidationService>();
 builder.Services.AddScoped<IUserService, UserService>();
 
-// 3. Register controllers
+// 4. Configure Authentication & JWT Bearer
+var jwtSection = builder.Configuration.GetSection(JwtOptions.SectionName);
+var secretKey = jwtSection.GetValue<string>("SecretKey") 
+    ?? "Tripora_Super_Secret_Jwt_Security_Key_2026_Secure_Travel_System_!";
+var issuer = jwtSection.GetValue<string>("Issuer") ?? "Tripora.UserService";
+var audience = jwtSection.GetValue<string>("Audience") ?? "Tripora.Client";
+
+builder.Services.AddAuthentication(options =>
+{
+    options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
+    options.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
+})
+.AddJwtBearer(options =>
+{
+    options.RequireHttpsMetadata = false;
+    options.SaveToken = true;
+    options.TokenValidationParameters = new TokenValidationParameters
+    {
+        ValidateIssuerSigningKey = true,
+        IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(secretKey)),
+        ValidateIssuer = true,
+        ValidIssuer = issuer,
+        ValidateAudience = true,
+        ValidAudience = audience,
+        ValidateLifetime = true,
+        ClockSkew = TimeSpan.Zero
+    };
+});
+
+builder.Services.AddAuthorization();
+
+// 5. Register controllers
 builder.Services.AddControllers();
 
-// 4. Configure CORS for frontend access
+// 6. Configure CORS for frontend access
 builder.Services.AddCors(options =>
 {
     options.AddPolicy("AllowFrontend", policy =>
@@ -35,7 +74,7 @@ builder.Services.AddCors(options =>
     });
 });
 
-// 5. Configure OpenAPI
+// 7. Configure OpenAPI
 builder.Services.AddOpenApi();
 
 var app = builder.Build();
@@ -54,6 +93,8 @@ if (app.Environment.IsDevelopment())
 }
 
 app.UseCors("AllowFrontend");
+app.UseAuthentication();
+app.UseAuthorization();
 app.MapControllers();
 
 app.Run();

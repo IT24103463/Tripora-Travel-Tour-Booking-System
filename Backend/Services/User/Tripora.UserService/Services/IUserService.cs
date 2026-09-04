@@ -52,7 +52,68 @@ public class RegistrationResult
         };
 }
 
+public enum LoginStatus
+{
+    Success,
+    ValidationError,
+    AccountNotFound,
+    InvalidPassword,
+    ServerError
+}
+
+public class LoginResult
+{
+    public LoginStatus Status { get; init; }
+    public bool IsSuccess => Status == LoginStatus.Success;
+    public string Message { get; init; } = string.Empty;
+    public LoginResponseDto? Data { get; init; }
+    public List<string> Errors { get; init; } = new();
+
+    public static LoginResult Succeeded(LoginResponseDto data, string message = "Authentication successful.") =>
+        new()
+        {
+            Status = LoginStatus.Success,
+            Message = message,
+            Data = data,
+            Errors = new List<string>()
+        };
+
+    public static LoginResult ValidationFailed(IEnumerable<string> errors) =>
+        new()
+        {
+            Status = LoginStatus.ValidationError,
+            Message = "Invalid login credentials provided.",
+            Errors = new List<string>(errors)
+        };
+
+    public static LoginResult AccountNotFound(string message = "No account found with this email address. Please check your email or create an account.") =>
+        new()
+        {
+            Status = LoginStatus.AccountNotFound,
+            Message = message,
+            Errors = new List<string> { message }
+        };
+
+    public static LoginResult InvalidPassword(string message = "Incorrect password. Please verify your password and try again.") =>
+        new()
+        {
+            Status = LoginStatus.InvalidPassword,
+            Message = message,
+            Errors = new List<string> { message }
+        };
+
+    public static LoginResult Failed(string message = "Authentication service temporarily unavailable. Please try again.", IEnumerable<string>? errors = null) =>
+        new()
+        {
+            Status = LoginStatus.ServerError,
+            Message = message,
+            Errors = errors != null ? new List<string>(errors) : new List<string> { message }
+        };
+}
+
 public interface IUserService
 {
     Task<RegistrationResult> RegisterAsync(RegisterUserRequestDto request, CancellationToken cancellationToken = default);
+    Task<LoginResult> LoginAsync(LoginRequestDto request, CancellationToken cancellationToken = default);
+    Task<UserResponseDto?> GetUserProfileAsync(Guid userId, CancellationToken cancellationToken = default);
 }
