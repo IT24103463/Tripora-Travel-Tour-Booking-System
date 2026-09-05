@@ -234,6 +234,68 @@
   word-break: break-all;
 }
 
+/* Token Status Indicator */
+.token-status-indicator {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.5rem 0.75rem;
+  border-radius: 8px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  margin-bottom: 0.75rem;
+}
+
+.token-status-indicator.status-valid {
+  background: #f0fdf4;
+  color: #166534;
+  border: 1px solid #bbf7d0;
+}
+
+@media (prefers-color-scheme: dark) {
+  .token-status-indicator.status-valid {
+    background: rgba(22, 101, 52, 0.2);
+    color: #86efac;
+    border-color: #15803d;
+  }
+}
+
+.token-status-indicator.status-warning {
+  background: #fffbeb;
+  color: #92400e;
+  border: 1px solid #fde68a;
+}
+
+@media (prefers-color-scheme: dark) {
+  .token-status-indicator.status-warning {
+    background: rgba(146, 64, 14, 0.2);
+    color: #fcd34d;
+    border-color: #b45309;
+  }
+}
+
+.token-status-indicator.status-expired {
+  background: #fef2f2;
+  color: #991b1b;
+  border: 1px solid #fecaca;
+}
+
+@media (prefers-color-scheme: dark) {
+  .token-status-indicator.status-expired {
+    background: rgba(127, 29, 29, 0.2);
+    color: #fca5a5;
+    border-color: #991b1b;
+  }
+}
+
+.status-icon {
+  font-size: 1rem;
+}
+
+.status-text {
+  font-weight: 600;
+}
+
 .decoded-claims-box {
   margin-top: 1rem;
   background: #f8fafc;

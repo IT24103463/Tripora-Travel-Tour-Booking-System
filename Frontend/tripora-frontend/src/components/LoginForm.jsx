@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { isTokenExpired } from '../App.jsx';
 import './LoginForm.css';
 
 const API_LOGIN_ENDPOINT = import.meta.env.VITE_API_URL 
@@ -66,6 +67,12 @@ export default function LoginForm({ onLoginSuccess, onSwitchToRegister }) {
       const data = await response.json();
 
       if (response.ok && data.success) {
+        // Validate that the received token is not already expired
+        if (isTokenExpired(data.data.token)) {
+          setLoginError('Received an expired authentication token. Please try logging in again.');
+          return;
+        }
+        
         if (onLoginSuccess) {
           onLoginSuccess(data.data.token, data.data.user);
         }

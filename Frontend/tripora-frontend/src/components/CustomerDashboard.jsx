@@ -1,9 +1,10 @@
 import { useState } from 'react';
+import { isTokenExpired } from '../App.jsx';
 import './CustomerDashboard.css';
 
 const API_ME_ENDPOINT = 'http://localhost:5001/api/users/me';
 
-export default function CustomerDashboard({ user, token, onLogout }) {
+export default function CustomerDashboard({ user, token, onLogout, onSessionExpired }) {
   const [protectedResult, setProtectedResult] = useState(null);
   const [testingProtected, setTestingProtected] = useState(false);
   const [unauthResult, setUnauthResult] = useState(null);
@@ -23,12 +24,30 @@ export default function CustomerDashboard({ user, token, onLogout }) {
     return null;
   })();
 
+  // Check token expiration status
+  const tokenExpired = isTokenExpired(token);
+  const tokenExpiryTime = decodedPayload?.exp ? new Date(decodedPayload.exp * 1000) : null;
+  const minutesRemaining = tokenExpiryTime ? Math.max(0, Math.round((tokenExpiryTime.getTime() - Date.now()) / 60000)) : 0;
+
   // Scenario 4: Test Protected Resource WITH valid token
   const handleTestProtectedWithToken = async () => {
     setTestingProtected(true);
     setProtectedResult(null);
 
     try {
+      // Check if token is expired before making request
+      if (isTokenExpired(token)) {
+        if (onSessionExpired) {
+          onSessionExpired();
+        }
+        setProtectedResult({
+          status: 401,
+          ok: false,
+          data: { message: 'Token expired. Please log in again.' }
+        });
+        return;
+      }
+
       const res = await fetch(API_ME_ENDPOINT, {
         method: 'GET',
         headers: {
@@ -38,6 +57,14 @@ export default function CustomerDashboard({ user, token, onLogout }) {
       });
 
       const data = await res.json();
+      
+      // Handle 401 Unauthorized responses (expired/invalid token)
+      if (res.status === 401) {
+        if (onSessionExpired) {
+          onSessionExpired();
+        }
+      }
+
       setProtectedResult({
         status: res.status,
         ok: res.ok,
@@ -130,6 +157,14 @@ export default function CustomerDashboard({ user, token, onLogout }) {
           >
             {showTokenDetails ? 'Hide Token Payload' : 'Inspect Token Claims'}
           </button>
+        </div>
+
+        {/* Token Status Indicator */}
+        <div className={`token-status-indicator ${tokenExpired ? 'status-expired' : minutesRemaining < 5 ? 'status-warning' : 'status-valid'}`}>
+          <span className="status-icon">{tokenExpired ? '⚠️' : minutesRemaining < 5 ? '⏰' : '✅'}</span>
+          <span className="status-text">
+            {tokenExpired ? 'Token Expired' : minutesRemaining < 5 ? `Expires in ${minutesRemaining} minute(s)` : 'Valid Token'}
+          </span>
         </div>
 
         <div className="token-preview-box">
