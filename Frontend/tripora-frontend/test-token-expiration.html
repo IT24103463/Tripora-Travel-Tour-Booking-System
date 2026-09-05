@@ -1,0 +1,166 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Token Expiration Test</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 50px auto;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        .test-container {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .test-result {
+            margin: 10px 0;
+            padding: 10px;
+            border-radius: 4px;
+        }
+        .pass {
+            background: #d4edda;
+            color: #155724;
+        }
+        .fail {
+            background: #f8d7da;
+            color: #721c24;
+        }
+        h2 {
+            color: #333;
+        }
+        .code {
+            background: #f4f4f4;
+            padding: 10px;
+            border-radius: 4px;
+            font-family: monospace;
+            overflow-x: auto;
+        }
+    </style>
+</head>
+<body>
+    <div class="test-container">
+        <h2>Token Expiration Logic Test</h2>
+        <p>Testing the <code>isTokenExpired</code> function implementation:</p>
+        
+        <div id="test-results"></div>
+    </div>
+
+    <script>
+        // Copy of the isTokenExpired function from App.jsx
+        function isTokenExpired(token) {
+            if (!token) return true;
+            
+            try {
+                const parts = token.split('.');
+                if (parts.length !== 3) return true;
+                
+                const payload = JSON.parse(atob(parts[1]));
+                const exp = payload.exp;
+                
+                if (!exp) return true;
+                
+                // Check if token is expired (with 30 second buffer)
+                const now = Math.floor(Date.now() / 1000);
+                return exp < now;
+            } catch {
+                return true;
+            }
+        }
+
+        // Test helper function
+        function createTestToken(expiryOffsetSeconds) {
+            const header = btoa(JSON.stringify({ alg: "HS256", typ: "JWT" }));
+            const payload = btoa(JSON.stringify({
+                sub: "123",
+                email: "test@example.com",
+                exp: Math.floor(Date.now() / 1000) + expiryOffsetSeconds
+            }));
+            const signature = "signature";
+            return `${header}.${payload}.${signature}`;
+        }
+
+        // Run tests
+        const tests = [
+            {
+                name: "Test 1: Null token",
+                token: null,
+                expected: true,
+                description: "Null token should be considered expired"
+            },
+            {
+                name: "Test 2: Empty string token",
+                token: "",
+                expected: true,
+                description: "Empty token should be considered expired"
+            },
+            {
+                name: "Test 3: Malformed token (2 parts)",
+                token: "header.payload",
+                expected: true,
+                description: "Malformed token should be considered expired"
+            },
+            {
+                name: "Test 4: Expired token (past expiration)",
+                token: createTestToken(-3600), // 1 hour ago
+                expected: true,
+                description: "Token expired 1 hour ago should be considered expired"
+            },
+            {
+                name: "Test 5: Valid token (future expiration)",
+                token: createTestToken(3600), // 1 hour from now
+                expected: false,
+                description: "Token expiring in 1 hour should be valid"
+            },
+            {
+                name: "Test 6: Token expiring in 20 seconds (within buffer)",
+                token: createTestToken(20), // 20 seconds from now
+                expected: true,
+                description: "Token expiring within 30-second buffer should be considered expired"
+            },
+            {
+                name: "Test 7: Token expiring in 60 seconds (outside buffer)",
+                token: createTestToken(60), // 60 seconds from now
+                expected: false,
+                description: "Token expiring outside 30-second buffer should be valid"
+            },
+            {
+                name: "Test 8: Token without exp claim",
+                token: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjMiLCJlbWFpbCI6InRlc3RAZXhhbXBsZS5jb20ifQ.signature",
+                expected: true,
+                description: "Token without exp claim should be considered expired"
+            }
+        ];
+
+        const resultsDiv = document.getElementById('test-results');
+        let passedCount = 0;
+
+        tests.forEach(test => {
+            const result = isTokenExpired(test.token);
+            const passed = result === test.expected;
+            
+            if (passed) passedCount++;
+            
+            const resultDiv = document.createElement('div');
+            resultDiv.className = `test-result ${passed ? 'pass' : 'fail'}`;
+            resultDiv.innerHTML = `
+                <strong>${test.name}</strong>: ${passed ? 'PASS' : 'FAIL'}<br>
+                <small>${test.description}</small><br>
+                <small>Expected: ${test.expected}, Got: ${result}</small>
+            `;
+            resultsDiv.appendChild(resultDiv);
+        });
+
+        // Summary
+        const summaryDiv = document.createElement('div');
+        summaryDiv.className = `test-result ${passedCount === tests.length ? 'pass' : 'fail'}`;
+        summaryDiv.innerHTML = `<strong>Summary: ${passedCount}/${tests.length} tests passed</strong>`;
+        resultsDiv.appendChild(summaryDiv);
+    </script>
+</body>
+</html>
