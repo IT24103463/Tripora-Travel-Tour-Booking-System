@@ -2,6 +2,7 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Tripora.TourService.DTOs;
 using Tripora.TourService.Services;
+using static Tripora.TourService.Services.TourOperationStatus;
 
 namespace Tripora.TourService.Controllers;
 
