@@ -70,12 +70,10 @@ export default function ProfileView({ token, onSessionExpired }) {
 
   if (loading) {
     return (
-      <div className="profile-container">
-        <div className="tripora-card profile-card">
-          <div className="loading-state">
-            <div className="spinner"></div>
-            <p>Loading your profile information...</p>
-          </div>
+      <div className="tripora-card profile-card">
+        <div className="loading-state">
+          <div className="spinner"></div>
+          <p>Loading your profile information...</p>
         </div>
       </div>
     );
@@ -83,20 +81,18 @@ export default function ProfileView({ token, onSessionExpired }) {
 
   if (error) {
     return (
-      <div className="profile-container">
-        <div className="tripora-card profile-card">
-          <div className="error-state">
-            <div className="error-icon">⚠️</div>
-            <h3>Profile Error</h3>
-            <p>{error}</p>
-            <button 
-              type="button" 
-              className="btn-retry" 
-              onClick={handleRetry}
-            >
-              ↻ Try Again
-            </button>
-          </div>
+      <div className="tripora-card profile-card">
+        <div className="error-state">
+          <div className="error-icon">⚠️</div>
+          <h3>Profile Error</h3>
+          <p>{error}</p>
+          <button 
+            type="button" 
+            className="btn-retry" 
+            onClick={handleRetry}
+          >
+            ↻ Try Again
+          </button>
         </div>
       </div>
     );
@@ -104,28 +100,25 @@ export default function ProfileView({ token, onSessionExpired }) {
 
   if (!profile) {
     return (
-      <div className="profile-container">
-        <div className="tripora-card profile-card">
-          <div className="error-state">
-            <div className="error-icon">👤</div>
-            <h3>No Profile Data</h3>
-            <p>Unable to load profile information.</p>
-            <button 
-              type="button" 
-              className="btn-retry" 
-              onClick={handleRetry}
-            >
-              ↻ Reload
-            </button>
-          </div>
+      <div className="tripora-card profile-card">
+        <div className="error-state">
+          <div className="error-icon">👤</div>
+          <h3>No Profile Data</h3>
+          <p>Unable to load profile information.</p>
+          <button 
+            type="button" 
+            className="btn-retry" 
+            onClick={handleRetry}
+          >
+            ↻ Reload
+          </button>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="profile-container">
-      <div className="tripora-card profile-card">
+    <div className="tripora-card profile-card">
         <div className="profile-header">
           <div className="profile-avatar">
             <span className="avatar-emoji">✈️</span>

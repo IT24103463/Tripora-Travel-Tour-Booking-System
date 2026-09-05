@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import RegisterForm from './components/RegisterForm';
 import LoginForm from './components/LoginForm';
 import CustomerDashboard from './components/CustomerDashboard';
+import ProfileView from './components/ProfileView';
 import './App.css';
 
 // Helper function to decode JWT and check expiration
@@ -47,6 +48,7 @@ function App() {
   });
 
   const [activeTab, setActiveTab] = useState('login'); // 'login' | 'register'
+  const [currentView, setCurrentView] = useState('dashboard'); // 'dashboard' | 'profile'
   const [sessionExpired, setSessionExpired] = useState(false);
 
   const handleLoginSuccess = (token, user) => {
@@ -113,6 +115,22 @@ function App() {
             {authUser ? (
               <div className="auth-nav-pill">
                 <span className="nav-user-name">👤 {authUser.fullName}</span>
+                <div className="nav-view-buttons">
+                  <button 
+                    type="button" 
+                    className={`nav-view-btn ${currentView === 'dashboard' ? 'active' : ''}`}
+                    onClick={() => setCurrentView('dashboard')}
+                  >
+                    Dashboard
+                  </button>
+                  <button 
+                    type="button" 
+                    className={`nav-view-btn ${currentView === 'profile' ? 'active' : ''}`}
+                    onClick={() => setCurrentView('profile')}
+                  >
+                    Profile
+                  </button>
+                </div>
                 <button type="button" className="btn-nav-logout" onClick={handleLogout}>
                   Sign Out
                 </button>
@@ -168,12 +186,21 @@ function App() {
 
         {/* Dynamic Authenticated / Tab View */}
         {authUser && authToken ? (
-          <CustomerDashboard 
-            user={authUser} 
-            token={authToken} 
-            onLogout={handleLogout}
-            onSessionExpired={handleSessionExpired}
-          />
+          <>
+            {currentView === 'dashboard' ? (
+              <CustomerDashboard 
+                user={authUser} 
+                token={authToken} 
+                onLogout={handleLogout}
+                onSessionExpired={handleSessionExpired}
+              />
+            ) : (
+              <ProfileView 
+                token={authToken}
+                onSessionExpired={handleSessionExpired}
+              />
+            )}
+          </>
         ) : (
           <div className="auth-container">
             <div className="auth-mode-switch">
