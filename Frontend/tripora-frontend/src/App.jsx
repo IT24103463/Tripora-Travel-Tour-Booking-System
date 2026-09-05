@@ -1,12 +1,40 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import RegisterForm from './components/RegisterForm';
 import LoginForm from './components/LoginForm';
 import CustomerDashboard from './components/CustomerDashboard';
 import './App.css';
 
+// Helper function to decode JWT and check expiration
+export const isTokenExpired = (token) => {
+  if (!token) return true;
+  
+  try {
+    const parts = token.split('.');
+    if (parts.length !== 3) return true;
+    
+    const payload = JSON.parse(atob(parts[1]));
+    const exp = payload.exp;
+    
+    if (!exp) return true;
+    
+    // Check if token is expired (with 30 second buffer)
+    const now = Math.floor(Date.now() / 1000);
+    return exp < now;
+  } catch {
+    return true;
+  }
+};
+
 function App() {
   const [authToken, setAuthToken] = useState(() => {
-    return localStorage.getItem('tripora_token');
+    const token = localStorage.getItem('tripora_token');
+    // Check if token is expired on initial load
+    if (token && isTokenExpired(token)) {
+      localStorage.removeItem('tripora_token');
+      localStorage.removeItem('tripora_user');
+      return null;
+    }
+    return token;
   });
 
   const [authUser, setAuthUser] = useState(() => {
@@ -19,12 +47,14 @@ function App() {
   });
 
   const [activeTab, setActiveTab] = useState('login'); // 'login' | 'register'
+  const [sessionExpired, setSessionExpired] = useState(false);
 
   const handleLoginSuccess = (token, user) => {
     setAuthToken(token);
     setAuthUser(user);
     localStorage.setItem('tripora_token', token);
     localStorage.setItem('tripora_user', JSON.stringify(user));
+    setSessionExpired(false);
   };
 
   const handleLogout = () => {
@@ -33,7 +63,36 @@ function App() {
     localStorage.removeItem('tripora_token');
     localStorage.removeItem('tripora_user');
     setActiveTab('login');
+    setSessionExpired(false);
   };
+
+  const handleSessionExpired = () => {
+    setAuthToken(null);
+    setAuthUser(null);
+    localStorage.removeItem('tripora_token');
+    localStorage.removeItem('tripora_user');
+    setSessionExpired(true);
+    setActiveTab('login');
+  };
+
+  // Check token expiration periodically
+  useEffect(() => {
+    if (!authToken) return;
+
+    const checkExpiration = () => {
+      if (isTokenExpired(authToken)) {
+        handleSessionExpired();
+      }
+    };
+
+    // Check every 30 seconds
+    const interval = setInterval(checkExpiration, 30000);
+    
+    // Also check immediately
+    checkExpiration();
+
+    return () => clearInterval(interval);
+  }, [authToken]);
 
   return (
     <div className="app-layout">
@@ -84,6 +143,17 @@ function App() {
 
       {/* Main Content */}
       <main className="main-content">
+        {/* Session Expired Alert */}
+        {sessionExpired && (
+          <div className="alert-banner alert-danger" style={{ maxWidth: '600px', margin: '0 auto 20px auto' }} role="alert">
+            <div className="alert-icon">⏰</div>
+            <div className="alert-content">
+              <strong>Session Expired</strong>
+              <p>Your authentication session has expired. Please sign in again to continue accessing your account.</p>
+            </div>
+          </div>
+        )}
+
         <div className="hero-banner">
           <span className="hero-pill">✨ Travel Beyond Boundaries</span>
           <h1 className="hero-headline">
@@ -101,7 +171,8 @@ function App() {
           <CustomerDashboard 
             user={authUser} 
             token={authToken} 
-            onLogout={handleLogout} 
+            onLogout={handleLogout}
+            onSessionExpired={handleSessionExpired}
           />
         ) : (
           <div className="auth-container">
