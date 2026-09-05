@@ -147,6 +147,8 @@
   padding: 0.25rem;
   border-radius: 8px;
   border: 1px solid rgba(2, 132, 199, 0.2);
+  flex-wrap: wrap;
+  gap: 0.25rem;
 }
 
 .nav-view-btn {
@@ -159,6 +161,7 @@
   border-radius: 6px;
   cursor: pointer;
   transition: all 0.2s;
+  white-space: nowrap;
 }
 
 .nav-view-btn.active {

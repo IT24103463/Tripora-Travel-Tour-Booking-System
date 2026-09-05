@@ -3,6 +3,8 @@ import RegisterForm from './components/RegisterForm';
 import LoginForm from './components/LoginForm';
 import CustomerDashboard from './components/CustomerDashboard';
 import ProfileView from './components/ProfileView';
+import TourDisplay from './components/TourDisplay';
+import TourManagement from './components/TourManagement';
 import './App.css';
 
 // Helper function to decode JWT and check expiration
@@ -48,7 +50,7 @@ function App() {
   });
 
   const [activeTab, setActiveTab] = useState('login'); // 'login' | 'register'
-  const [currentView, setCurrentView] = useState('dashboard'); // 'dashboard' | 'profile'
+  const [currentView, setCurrentView] = useState('dashboard'); // 'dashboard' | 'profile' | 'tours' | 'tour-management'
   const [sessionExpired, setSessionExpired] = useState(false);
 
   const handleLoginSuccess = (token, user) => {
@@ -106,8 +108,8 @@ function App() {
             <span className="brand-tag">Travel & Tours</span>
           </div>
           <nav className="nav-links">
-            <a href="#destinations">Destinations</a>
-            <a href="#tours">Tour Packages</a>
+            <a href="#destinations" onClick={(e) => { if (authUser) { e.preventDefault(); setCurrentView('tours'); } }}>Destinations</a>
+            <a href="#tours" onClick={(e) => { if (authUser) { e.preventDefault(); setCurrentView('tours'); } }}>Tour Packages</a>
             <a href="#hotels">Hotels</a>
             <a href="#support">Support</a>
           </nav>
@@ -130,6 +132,22 @@ function App() {
                   >
                     Profile
                   </button>
+                  <button 
+                    type="button" 
+                    className={`nav-view-btn ${currentView === 'tours' ? 'active' : ''}`}
+                    onClick={() => setCurrentView('tours')}
+                  >
+                    Tours
+                  </button>
+                  {authUser?.role === 'Admin' && (
+                    <button 
+                      type="button" 
+                      className={`nav-view-btn ${currentView === 'tour-management' ? 'active' : ''}`}
+                      onClick={() => setCurrentView('tour-management')}
+                    >
+                      Manage Tours
+                    </button>
+                  )}
                 </div>
                 <button type="button" className="btn-nav-logout" onClick={handleLogout}>
                   Sign Out
@@ -187,16 +205,27 @@ function App() {
         {/* Dynamic Authenticated / Tab View */}
         {authUser && authToken ? (
           <>
-            {currentView === 'dashboard' ? (
+            {currentView === 'dashboard' && (
               <CustomerDashboard 
                 user={authUser} 
                 token={authToken} 
                 onLogout={handleLogout}
                 onSessionExpired={handleSessionExpired}
               />
-            ) : (
+            )}
+            {currentView === 'profile' && (
               <ProfileView 
                 token={authToken}
+                onSessionExpired={handleSessionExpired}
+              />
+            )}
+            {currentView === 'tours' && (
+              <TourDisplay />
+            )}
+            {currentView === 'tour-management' && (
+              <TourManagement 
+                token={authToken}
+                user={authUser}
                 onSessionExpired={handleSessionExpired}
               />
             )}
