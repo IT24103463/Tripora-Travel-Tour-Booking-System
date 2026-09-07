@@ -119,63 +119,62 @@ export default function ProfileView({ token, onSessionExpired }) {
 
   return (
     <div className="tripora-card profile-card">
-        <div className="profile-header">
-          <div className="profile-avatar">
-            <span className="avatar-emoji">✈️</span>
+      <div className="profile-header">
+        <div className="profile-avatar">
+          <span className="avatar-emoji">✈️</span>
+        </div>
+        <div className="profile-title-section">
+          <h2 className="profile-title">My Profile</h2>
+          <p className="profile-subtitle">View and manage your Tripora account information</p>
+        </div>
+      </div>
+
+      <div className="profile-content">
+        <div className="profile-section">
+          <h3 className="section-heading">Personal Information</h3>
+          
+          <div className="profile-field">
+            <label className="field-label">Full Name</label>
+            <div className="field-value">{profile.fullName}</div>
           </div>
-          <div className="profile-title-section">
-            <h2 className="profile-title">My Profile</h2>
-            <p className="profile-subtitle">View and manage your Tripora account information</p>
+
+          <div className="profile-field">
+            <label className="field-label">Email Address</label>
+            <div className="field-value">{profile.email}</div>
+          </div>
+
+          <div className="profile-field">
+            <label className="field-label">Account ID</label>
+            <div className="field-value mono-value">{profile.id}</div>
+          </div>
+
+          <div className="profile-field">
+            <label className="field-label">Account Type</label>
+            <div className="field-value">
+              <span className="role-badge">{profile.role || 'Customer'}</span>
+            </div>
+          </div>
+
+          <div className="profile-field">
+            <label className="field-label">Member Since</label>
+            <div className="field-value">
+              {new Date(profile.createdAt).toLocaleDateString('en-US', {
+                year: 'numeric',
+                month: 'long',
+                day: 'numeric'
+              })}
+            </div>
           </div>
         </div>
 
-        <div className="profile-content">
-          <div className="profile-section">
-            <h3 className="section-heading">Personal Information</h3>
-            
-            <div className="profile-field">
-              <label className="field-label">Full Name</label>
-              <div className="field-value">{profile.fullName}</div>
-            </div>
-
-            <div className="profile-field">
-              <label className="field-label">Email Address</label>
-              <div className="field-value">{profile.email}</div>
-            </div>
-
-            <div className="profile-field">
-              <label className="field-label">Account ID</label>
-              <div className="field-value mono-value">{profile.id}</div>
-            </div>
-
-            <div className="profile-field">
-              <label className="field-label">Account Type</label>
-              <div className="field-value">
-                <span className="role-badge">{profile.role || 'Customer'}</span>
-              </div>
-            </div>
-
-            <div className="profile-field">
-              <label className="field-label">Member Since</label>
-              <div className="field-value">
-                {new Date(profile.createdAt).toLocaleDateString('en-US', {
-                  year: 'numeric',
-                  month: 'long',
-                  day: 'numeric'
-                })}
-              </div>
-            </div>
-          </div>
-
-          <div className="profile-actions">
-            <button 
-              type="button" 
-              className="btn-refresh" 
-              onClick={handleRetry}
-            >
-              ↻ Refresh Profile
-            </button>
-          </div>
+        <div className="profile-actions">
+          <button 
+            type="button" 
+            className="btn-refresh" 
+            onClick={handleRetry}
+          >
+            ↻ Refresh Profile
+          </button>
         </div>
       </div>
     </div>
