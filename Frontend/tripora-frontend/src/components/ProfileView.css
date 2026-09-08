@@ -40,8 +40,11 @@
   box-shadow: 0 4px 6px -1px rgba(14, 165, 233, 0.3);
 }
 
-.avatar-emoji {
-  filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.1));
+.profile-plane {
+  width: 3.2rem;
+  height: 3.2rem;
+  background: rgba(255, 255, 255, 0.2);
+  font-size: 1.5rem;
 }
 
 .profile-title-section {
@@ -156,6 +159,8 @@
 /* Profile Actions */
 .profile-actions {
   display: flex;
+  align-items: center;
+  gap: 0.75rem;
   justify-content: flex-end;
   padding-top: 1rem;
   border-top: 1px solid #e2e8f0;
@@ -257,6 +262,43 @@
   margin: 0;
   max-width: 400px;
 }
+
+.authenticated-mode .profile-card {
+  max-width: 760px;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 16px;
+  background: linear-gradient(145deg, rgba(8, 45, 61, 0.92), rgba(4, 31, 45, 0.84));
+  box-shadow: 0 24px 70px rgba(0, 11, 22, 0.42), inset 0 1px 0 rgba(255, 255, 255, 0.1);
+  backdrop-filter: blur(18px);
+  -webkit-backdrop-filter: blur(18px);
+}
+
+.authenticated-mode .profile-header,
+.authenticated-mode .profile-actions {
+  border-color: rgba(255, 255, 255, 0.16);
+}
+
+.authenticated-mode .profile-avatar {
+  background: linear-gradient(135deg, #78d2c5 0%, #0b7773 100%);
+  box-shadow: 0 8px 20px rgba(120, 210, 197, 0.22);
+}
+
+.authenticated-mode .profile-title { color: #fff; }
+.authenticated-mode .profile-subtitle,
+.authenticated-mode .field-label { color: rgba(230, 243, 244, 0.68); }
+.authenticated-mode .section-heading { color: #9be4d8; }
+.authenticated-mode .field-value { border-color: rgba(220, 243, 241, 0.16); background: rgba(255, 255, 255, 0.08); color: #fff; }
+.authenticated-mode .role-badge { background: rgba(120, 210, 197, 0.16); color: #9be4d8; }
+.authenticated-mode .btn-refresh { border: 0; border-radius: 7px; background: #f7fbfa; color: #0b3e4c; box-shadow: 0 10px 22px rgba(0, 12, 25, 0.22); }
+.authenticated-mode .btn-refresh:hover { background: #ccefe9; }
+.authenticated-mode .profile-actions .btn-signout { padding: 0.65rem 1.25rem; border: 1.5px solid #d9aa9c; border-radius: 7px; background: transparent; color: #ffb0a0; font-size: 0.875rem; font-weight: 600; cursor: pointer; }
+.authenticated-mode .profile-actions .btn-signout:hover { background: #d46b4d; color: #fff; }
+.authenticated-mode .loading-state p,
+.authenticated-mode .error-state p { color: rgba(230, 243, 244, 0.72); }
+.authenticated-mode .spinner { border-color: rgba(255, 255, 255, 0.18); border-top-color: #78d2c5; }
+.authenticated-mode .error-state h3 { color: #fff; }
+.authenticated-mode .btn-retry { background: #f7fbfa; color: #0b3e4c; }
+.authenticated-mode .btn-retry:hover { background: #ccefe9; }
 
 @media (prefers-color-scheme: dark) {
   .error-state p {
