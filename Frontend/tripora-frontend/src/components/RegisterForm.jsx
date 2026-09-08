@@ -192,7 +192,7 @@ export default function RegisterForm({ onSwitchToLogin }) {
       {/* Duplicate Email Alert */}
       {isDuplicateEmail && (
         <div className="alert-banner alert-warning" id="duplicate-email-alert" role="alert">
-          <div className="alert-icon">⚠️</div>
+          <div className="alert-icon"></div>
           <div className="alert-content">
             <strong>Email Already Registered</strong>
             <p>An account with <em>{formData.email}</em> already exists. Please sign in or use a different email.</p>
@@ -203,7 +203,7 @@ export default function RegisterForm({ onSwitchToLogin }) {
       {/* General / Server Error Alert with Retry */}
       {serverError && !isDuplicateEmail && (
         <div className="alert-banner alert-danger" id="server-error-alert" role="alert">
-          <div className="alert-icon">❌</div>
+          <div className="alert-icon"></div>
           <div className="alert-content">
             <strong>Something Went Wrong</strong>
             <p>{serverError}</p>
@@ -240,7 +240,7 @@ export default function RegisterForm({ onSwitchToLogin }) {
         <div className="form-group">
           <label htmlFor="fullName">Full Name <span className="req">*</span></label>
           <div className="input-wrapper">
-            <span className="input-icon">👤</span>
+            <span className="input-icon"></span>
             <input
               type="text"
               id="fullName"
@@ -266,7 +266,7 @@ export default function RegisterForm({ onSwitchToLogin }) {
         <div className="form-group">
           <label htmlFor="email">Email Address <span className="req">*</span></label>
           <div className="input-wrapper">
-            <span className="input-icon">✉️</span>
+            <span className="input-icon"></span>
             <input
               type="email"
               id="email"
@@ -292,7 +292,7 @@ export default function RegisterForm({ onSwitchToLogin }) {
         <div className="form-group">
           <label htmlFor="password">Password <span className="req">*</span></label>
           <div className="input-wrapper">
-            <span className="input-icon">🔒</span>
+            <span className="input-icon"></span>
             <input
               type={showPassword ? 'text' : 'password'}
               id="password"
@@ -313,7 +313,7 @@ export default function RegisterForm({ onSwitchToLogin }) {
               tabIndex={-1}
               aria-label={showPassword ? 'Hide password' : 'Show password'}
             >
-              {showPassword ? '👁️' : '🙈'}
+              {showPassword ? '' : ''}
             </button>
           </div>
 
@@ -365,7 +365,7 @@ export default function RegisterForm({ onSwitchToLogin }) {
         <div className="form-group">
           <label htmlFor="confirmPassword">Confirm Password <span className="req">*</span></label>
           <div className="input-wrapper">
-            <span className="input-icon">🛡️</span>
+            <span className="input-icon"></span>
             <input
               type={showConfirmPassword ? 'text' : 'password'}
               id="confirmPassword"
@@ -386,7 +386,7 @@ export default function RegisterForm({ onSwitchToLogin }) {
               tabIndex={-1}
               aria-label={showConfirmPassword ? 'Hide confirm password' : 'Show confirm password'}
             >
-              {showConfirmPassword ? '👁️' : '🙈'}
+              {showConfirmPassword ? '' : ''}
             </button>
           </div>
           {touched.confirmPassword && formData.confirmPassword && !isConfirmPasswordValid && (

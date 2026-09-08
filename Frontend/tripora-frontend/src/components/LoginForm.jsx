@@ -104,7 +104,7 @@ export default function LoginForm({ onLoginSuccess, onSwitchToRegister }) {
       {/* Authentication Error Banner */}
       {loginError && (
         <div className="alert-banner alert-danger" id="login-error-alert" role="alert">
-          <div className="alert-icon">🔒</div>
+          <div className="alert-icon"></div>
           <div className="alert-content">
             <strong>Authentication Failed</strong>
             <p>{loginError}</p>
@@ -124,7 +124,7 @@ export default function LoginForm({ onLoginSuccess, onSwitchToRegister }) {
       {/* Validation Errors Alert */}
       {validationErrors.length > 0 && (
         <div className="alert-banner alert-danger" id="login-validation-alert" role="alert">
-          <div className="alert-icon">⚠️</div>
+          <div className="alert-icon"></div>
           <div className="alert-content">
             <strong>Please check your input:</strong>
             <ul className="error-list">
@@ -141,7 +141,7 @@ export default function LoginForm({ onLoginSuccess, onSwitchToRegister }) {
         <div className="form-group">
           <label htmlFor="login-email">Email Address <span className="req">*</span></label>
           <div className="input-wrapper">
-            <span className="input-icon">✉️</span>
+            <span className="input-icon"></span>
             <input
               type="email"
               id="login-email"
@@ -170,7 +170,7 @@ export default function LoginForm({ onLoginSuccess, onSwitchToRegister }) {
             <span className="helper-hint">Case-sensitive</span>
           </div>
           <div className="input-wrapper">
-            <span className="input-icon">🔒</span>
+            <span className="input-icon"></span>
             <input
               type={showPassword ? 'text' : 'password'}
               id="login-password"
@@ -191,7 +191,7 @@ export default function LoginForm({ onLoginSuccess, onSwitchToRegister }) {
               tabIndex={-1}
               aria-label={showPassword ? 'Hide password' : 'Show password'}
             >
-              {showPassword ? '👁️' : '🙈'}
+              {showPassword ? '' : ''}
             </button>
           </div>
           {touched.password && !isPasswordValid && (
