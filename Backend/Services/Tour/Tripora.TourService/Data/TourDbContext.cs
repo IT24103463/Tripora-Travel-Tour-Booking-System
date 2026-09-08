@@ -53,7 +53,7 @@ public class TourDbContext : DbContext
 
             entity.Property(t => t.CreatedAt)
                 .IsRequired()
-                .HasDefaultValueSql("datetime('now')");
+                .HasDefaultValueSql("CURRENT_TIMESTAMP");
 
             entity.HasIndex(t => t.Destination);
             entity.HasIndex(t => t.IsActive);

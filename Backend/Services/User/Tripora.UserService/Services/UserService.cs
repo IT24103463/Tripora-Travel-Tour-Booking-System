@@ -60,7 +60,7 @@ public class UserService : IUserService
             // 4. Create customer user entity
             var user = new User
             {
-                Id = Guid.NewGuid(),
+                Id = Guid.NewGuid().ToString(),
                 FullName = request.FullName.Trim(),
                 Email = normalizedEmail,
                 PasswordHash = passwordHash,
@@ -150,7 +150,7 @@ public class UserService : IUserService
         }
     }
 
-    public async Task<UserResponseDto?> GetUserProfileAsync(Guid userId, CancellationToken cancellationToken = default)
+    public async Task<UserResponseDto?> GetUserProfileAsync(string userId, CancellationToken cancellationToken = default)
     {
         var user = await _userRepository.GetByIdAsync(userId, cancellationToken);
         if (user == null)

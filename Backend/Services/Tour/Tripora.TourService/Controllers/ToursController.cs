@@ -110,7 +110,7 @@ public class ToursController : ControllerBase
     [ProducesResponseType(typeof(ApiResponse<TourResponseDto>), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ApiResponse<TourResponseDto>), StatusCodes.Status404NotFound)]
     [ProducesResponseType(typeof(ApiResponse<TourResponseDto>), StatusCodes.Status500InternalServerError)]
-    public async Task<IActionResult> GetTourById(Guid id, CancellationToken cancellationToken)
+    public async Task<IActionResult> GetTourById(string id, CancellationToken cancellationToken)
     {
         _logger.LogInformation("Received request to retrieve tour: {TourId}", id);
 
@@ -144,7 +144,7 @@ public class ToursController : ControllerBase
     [ProducesResponseType(typeof(ApiResponse<TourResponseDto>), StatusCodes.Status403Forbidden)]
     [ProducesResponseType(typeof(ApiResponse<TourResponseDto>), StatusCodes.Status404NotFound)]
     [ProducesResponseType(typeof(ApiResponse<TourResponseDto>), StatusCodes.Status500InternalServerError)]
-    public async Task<IActionResult> UpdateTour(Guid id, [FromBody] CreateTourRequestDto request, CancellationToken cancellationToken)
+    public async Task<IActionResult> UpdateTour(string id, [FromBody] CreateTourRequestDto request, CancellationToken cancellationToken)
     {
         _logger.LogInformation("Received tour update request for: {TourId}", id);
 
@@ -181,7 +181,7 @@ public class ToursController : ControllerBase
     [ProducesResponseType(typeof(ApiResponse<TourResponseDto>), StatusCodes.Status403Forbidden)]
     [ProducesResponseType(typeof(ApiResponse<TourResponseDto>), StatusCodes.Status404NotFound)]
     [ProducesResponseType(typeof(ApiResponse<TourResponseDto>), StatusCodes.Status500InternalServerError)]
-    public async Task<IActionResult> DeleteTour(Guid id, CancellationToken cancellationToken)
+    public async Task<IActionResult> DeleteTour(string id, CancellationToken cancellationToken)
     {
         _logger.LogInformation("Received tour deletion request for: {TourId}", id);
 

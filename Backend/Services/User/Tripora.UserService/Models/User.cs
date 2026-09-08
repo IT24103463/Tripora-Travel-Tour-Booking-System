@@ -2,7 +2,7 @@ namespace Tripora.UserService.Models;
 
 public class User
 {
-    public Guid Id { get; set; } = Guid.NewGuid();
+    public string Id { get; set; } = Guid.NewGuid().ToString();
     
     public string FullName { get; set; } = string.Empty;
     

@@ -13,7 +13,7 @@ public class UserRepository : IUserRepository
         _dbContext = dbContext;
     }
 
-    public async Task<User?> GetByIdAsync(Guid id, CancellationToken cancellationToken = default)
+    public async Task<User?> GetByIdAsync(string id, CancellationToken cancellationToken = default)
     {
         return await _dbContext.Users
             .AsNoTracking()
