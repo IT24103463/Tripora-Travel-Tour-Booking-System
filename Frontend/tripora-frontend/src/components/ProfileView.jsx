@@ -4,7 +4,7 @@ import './ProfileView.css';
 
 const API_PROFILE_ENDPOINT = 'http://localhost:5001/api/users/me';
 
-export default function ProfileView({ token, onSessionExpired }) {
+export default function ProfileView({ token, onSessionExpired, onLogout }) {
   const [profile, setProfile] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -121,7 +121,7 @@ export default function ProfileView({ token, onSessionExpired }) {
     <div className="tripora-card profile-card">
       <div className="profile-header">
         <div className="profile-avatar">
-          <span className="avatar-emoji">✈️</span>
+          <span className="brand-mark profile-plane">✈</span>
         </div>
         <div className="profile-title-section">
           <h2 className="profile-title">My Profile</h2>
@@ -168,6 +168,14 @@ export default function ProfileView({ token, onSessionExpired }) {
         </div>
 
         <div className="profile-actions">
+          <button
+            type="button"
+            className="btn-signout"
+            onClick={onLogout}
+            id="btn-profile-signout"
+          >
+            Sign Out
+          </button>
           <button 
             type="button" 
             className="btn-refresh" 
