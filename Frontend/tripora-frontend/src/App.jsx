@@ -50,6 +50,7 @@ function App() {
   });
 
   const [activeTab, setActiveTab] = useState('login'); // 'login' | 'register'
+  const [showAuth, setShowAuth] = useState(false);
   const [currentView, setCurrentView] = useState('dashboard'); // 'dashboard' | 'profile' | 'tours' | 'tour-management'
   const [sessionExpired, setSessionExpired] = useState(false);
 
@@ -99,24 +100,32 @@ function App() {
   }, [authToken]);
 
   return (
-    <div className="app-layout">
+    <div className={`app-layout ${!authUser && !showAuth ? 'landing-mode' : ''}`}>
       {/* Navigation Header */}
       <header className="navbar">
         <div className="nav-container">
           <div className="logo-group">
-            <span className="brand-logo">✈️ Tripora</span>
+            <button
+              type="button"
+              className="brand-logo brand-home-button"
+              onClick={() => setShowAuth(false)}
+              aria-label="Return to Tripora home"
+            >
+              <span className="brand-mark">✈</span> Tripora
+            </button>
             <span className="brand-tag">Travel & Tours</span>
           </div>
           <nav className="nav-links">
+            <a href="#about">About Us</a>
             <a href="#destinations" onClick={(e) => { if (authUser) { e.preventDefault(); setCurrentView('tours'); } }}>Destinations</a>
-            <a href="#tours" onClick={(e) => { if (authUser) { e.preventDefault(); setCurrentView('tours'); } }}>Tour Packages</a>
-            <a href="#hotels">Hotels</a>
-            <a href="#support">Support</a>
+            <a href="#tours" onClick={(e) => { if (authUser) { e.preventDefault(); setCurrentView('tours'); } }}>Travel Packages</a>
+            <a href="#offers">Offers</a>
+            <a href="#support">Contact</a>
           </nav>
           <div className="nav-actions">
             {authUser ? (
               <div className="auth-nav-pill">
-                <span className="nav-user-name">👤 {authUser.fullName}</span>
+                <span className="nav-user-name">{authUser.fullName}</span>
                 <div className="nav-view-buttons">
                   <button 
                     type="button" 
@@ -154,24 +163,9 @@ function App() {
                 </button>
               </div>
             ) : (
-              <div className="tab-pill-group">
-                <button 
-                  type="button" 
-                  className={`tab-btn ${activeTab === 'login' ? 'active' : ''}`}
-                  id="tab-btn-signin"
-                  onClick={() => setActiveTab('login')}
-                >
-                  Sign In
-                </button>
-                <button 
-                  type="button" 
-                  className={`tab-btn ${activeTab === 'register' ? 'active' : ''}`}
-                  id="tab-btn-register"
-                  onClick={() => setActiveTab('register')}
-                >
-                  Register
-                </button>
-              </div>
+              <button type="button" className="btn-book" onClick={() => setShowAuth(true)}>
+                Book Now
+              </button>
             )}
           </div>
         </div>
@@ -182,7 +176,7 @@ function App() {
         {/* Session Expired Alert */}
         {sessionExpired && (
           <div className="alert-banner alert-danger" style={{ maxWidth: '600px', margin: '0 auto 20px auto' }} role="alert">
-            <div className="alert-icon">⏰</div>
+            <div className="alert-icon">!</div>
             <div className="alert-content">
               <strong>Session Expired</strong>
               <p>Your authentication session has expired. Please sign in again to continue accessing your account.</p>
@@ -190,17 +184,22 @@ function App() {
           </div>
         )}
 
-        <div className="hero-banner">
-          <span className="hero-pill">✨ Travel Beyond Boundaries</span>
-          <h1 className="hero-headline">
-            {authUser ? 'Your Tripora Travel Portal' : 'Discover Extraordinary Journeys with Tripora'}
-          </h1>
-          <p className="hero-subhead">
-            {authUser 
-              ? 'Access your authenticated customer perks, manage bookings, and explore protected member-only itineraries.' 
-              : 'Sign in to your account or register today to unlock exclusive travel packages, luxury hotels, and bespoke voyages.'}
-          </p>
-        </div>
+        {!authUser && !showAuth ? (
+          <section className="landing-hero" id="about">
+            <div className="landing-copy">
+              <span className="hero-pill">TRIPORA / CURATED TRAVEL</span>
+              <h1 className="hero-headline">Unforgettable<br />Travel Moments<br /><em>with Tripora</em></h1>
+            </div>
+            <p className="hero-subhead">We take you beyond the ordinary, to places where cultures come alive, landscapes leave you breathless, and every moment becomes a story to tell.</p>
+            <button type="button" className="scroll-cue" onClick={() => setShowAuth(true)} aria-label="Start planning your trip">↓</button>
+          </section>
+        ) : (
+          <div className="hero-banner">
+            <span className="hero-pill">TRIPORA / TRAVEL MANAGEMENT</span>
+            <h1 className="hero-headline">{authUser ? 'Your Tripora Travel Portal' : 'Plan your next journey'}</h1>
+            <p className="hero-subhead">{authUser ? 'Access your authenticated customer perks, manage bookings, and explore protected member-only itineraries.' : 'Sign in to your account or register to unlock exclusive travel packages and manage your journeys.'}</p>
+          </div>
+        )}
 
         {/* Dynamic Authenticated / Tab View */}
         {authUser && authToken ? (
@@ -230,7 +229,7 @@ function App() {
               />
             )}
           </>
-        ) : (
+        ) : showAuth ? (
           <div className="auth-container">
             <div className="auth-mode-switch">
               <button
@@ -260,32 +259,32 @@ function App() {
               />
             )}
           </div>
-        )}
+        ) : null}
 
         {/* Trust Badges */}
-        <section className="trust-features">
+        {(!authUser && showAuth || authUser) && <section className="trust-features">
           <div className="feature-item">
-            <span className="feature-icon">🔒</span>
+            <span className="feature-icon">01</span>
             <div className="feature-text">
               <h4>Bank-Grade JWT Security</h4>
               <p>Signed HMAC-SHA256 tokens and BCrypt hashed credentials protect your account.</p>
             </div>
           </div>
           <div className="feature-item">
-            <span className="feature-icon">🌍</span>
+            <span className="feature-icon">02</span>
             <div className="feature-text">
               <h4>500+ Verified Stays</h4>
               <p>Instant booking confirmation for premier boutique hotels & resorts.</p>
             </div>
           </div>
           <div className="feature-item">
-            <span className="feature-icon">🛎️</span>
+            <span className="feature-icon">03</span>
             <div className="feature-text">
               <h4>24/7 Travel Concierge</h4>
               <p>Dedicated holiday planners assist you before and during your travel.</p>
             </div>
           </div>
-        </section>
+        </section>}
       </main>
 
       {/* Footer */}
