@@ -1,33 +1,56 @@
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using System.Text;
-using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.Tokens;
-using Tripora.UserService.Configuration;
 using Tripora.UserService.Models;
 
 namespace Tripora.UserService.Services;
 
 public class JwtTokenGenerator : IJwtTokenGenerator
 {
-    private readonly JwtOptions _jwtOptions;
-
-    public JwtTokenGenerator(IOptions<JwtOptions> jwtOptions)
-    {
-        _jwtOptions = jwtOptions.Value;
-    }
-
     public string GenerateToken(User user)
     {
         var tokenHandler = new JwtSecurityTokenHandler();
-        var key = Encoding.UTF8.GetBytes(_jwtOptions.SecretKey);
+
+        // Read JWT settings from environment variables
+        var secretKey = Environment.GetEnvironmentVariable("TRIPORA_JWT_SECRET")
+            ?? throw new InvalidOperationException(
+                "TRIPORA_JWT_SECRET environment variable is not configured.");
+
+        var issuer = Environment.GetEnvironmentVariable("TRIPORA_JWT_ISSUER")
+            ?? "Tripora.UserService";
+
+        var audience = Environment.GetEnvironmentVariable("TRIPORA_JWT_AUDIENCE")
+            ?? "Tripora.Client";
+
+        var expiryMinutesString =
+            Environment.GetEnvironmentVariable("TRIPORA_JWT_EXPIRY_MINUTES");
+
+        var expiryMinutes = 120;
+
+        if (int.TryParse(expiryMinutesString, out var configuredExpiry))
+        {
+            expiryMinutes = configuredExpiry;
+        }
+
+        if (string.IsNullOrWhiteSpace(secretKey))
+        {
+            throw new InvalidOperationException(
+                "TRIPORA_JWT_SECRET is empty.");
+        }
+
+        var key = Encoding.UTF8.GetBytes(secretKey);
 
         var claims = new List<Claim>
         {
             new(JwtRegisteredClaimNames.Sub, user.Id.ToString()),
             new(JwtRegisteredClaimNames.Email, user.Email),
             new(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString()),
-            new(JwtRegisteredClaimNames.Iat, DateTimeOffset.UtcNow.ToUnixTimeSeconds().ToString(), ClaimValueTypes.Integer64),
+            new(
+                JwtRegisteredClaimNames.Iat,
+                DateTimeOffset.UtcNow.ToUnixTimeSeconds().ToString(),
+                ClaimValueTypes.Integer64
+            ),
             new(ClaimTypes.NameIdentifier, user.Id.ToString()),
             new(ClaimTypes.Email, user.Email),
             new(ClaimTypes.Name, user.FullName),
@@ -39,15 +62,20 @@ public class JwtTokenGenerator : IJwtTokenGenerator
         var tokenDescriptor = new SecurityTokenDescriptor
         {
             Subject = new ClaimsIdentity(claims),
-            Expires = DateTime.UtcNow.AddMinutes(_jwtOptions.ExpiryMinutes),
-            Issuer = _jwtOptions.Issuer,
-            Audience = _jwtOptions.Audience,
+
+            Expires = DateTime.UtcNow.AddMinutes(expiryMinutes),
+
+            Issuer = issuer,
+            Audience = audience,
+
             SigningCredentials = new SigningCredentials(
                 new SymmetricSecurityKey(key),
-                SecurityAlgorithms.HmacSha256Signature)
+                SecurityAlgorithms.HmacSha256Signature
+            )
         };
 
         var token = tokenHandler.CreateToken(tokenDescriptor);
+
         return tokenHandler.WriteToken(token);
     }
 }
