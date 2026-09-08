@@ -100,7 +100,7 @@ function App() {
   }, [authToken]);
 
   return (
-    <div className={`app-layout ${!authUser && !showAuth ? 'landing-mode' : ''}`}>
+    <div className={`app-layout ${!authUser && !showAuth ? 'landing-mode' : ''} ${!authUser && showAuth ? 'auth-mode' : ''}`}>
       {/* Navigation Header */}
       <header className="navbar">
         <div className="nav-container">
@@ -163,7 +163,7 @@ function App() {
                 </button>
               </div>
             ) : (
-              <button type="button" className="btn-book" onClick={() => setShowAuth(true)}>
+              <button type="button" className="btn-book" onClick={() => { setActiveTab('login'); setShowAuth(true); }}>
                 Book Now
               </button>
             )}
