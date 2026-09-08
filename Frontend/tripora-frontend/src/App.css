@@ -88,7 +88,7 @@
 .trust-features { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1.25rem; width: 100%; max-width: 1020px; margin: 4.5rem auto 1rem; }
 .feature-item { display: flex; align-items: flex-start; gap: 0.8rem; padding: 1.2rem 0; border-top: 1px solid var(--line); }
 .feature-icon { color: var(--coral); font: 700 0.7rem Arial, sans-serif; letter-spacing: 0.1em; }
-.feature-text h4 { margin: 0 0 0.35rem; color: var(--ink); font-size: 0.78rem; letter-spacing: 0.02em; text-transform: uppercase; }
+.feature-text h4 { margin: 0 0 0.5rem; color: #fff; font-family: Georgia, 'Times New Roman', serif; font-size: 1.05rem; font-style: italic; font-weight: 700; letter-spacing: 0.01em; text-transform: none; text-shadow: 0 1px 8px rgba(0, 14, 24, 0.35); }
 .feature-text p { margin: 0; color: #fff; font-size: 0.8rem; line-height: 1.55; }
 .alert-banner { border-radius: 3px !important; }
 .footer { width: 100%; padding: 1.7rem 1rem; border-top: 1px solid var(--line); color: var(--muted); font-size: 0.72rem; text-align: center; }
