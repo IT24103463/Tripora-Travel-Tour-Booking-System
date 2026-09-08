@@ -61,7 +61,7 @@
   color: #fff;
   font: 700 1rem Arial, sans-serif;
 }
-.brand-tag { color: var(--muted); font-size: 0.65rem; font-weight: 700; letter-spacing: 0.14em; text-transform: uppercase; }
+.brand-tag { color: var(--muted); font-family: Georgia, 'Times New Roman', serif; font-size: 0.88rem; font-style: italic; font-weight: 800; letter-spacing: 0.01em; }
 .nav-links { display: flex; flex-wrap: nowrap; gap: clamp(0.7rem, 1.8vw, 1.35rem); margin-left: auto; }
 .nav-links a { color: var(--muted); font-size: 0.72rem; font-weight: 700; letter-spacing: 0.06em; text-decoration: none; text-transform: uppercase; transition: color 0.2s ease; }
 .nav-links a:hover { color: var(--teal); }
@@ -89,7 +89,7 @@
 .feature-item { display: flex; align-items: flex-start; gap: 0.8rem; padding: 1.2rem 0; border-top: 1px solid var(--line); }
 .feature-icon { color: var(--coral); font: 700 0.7rem Arial, sans-serif; letter-spacing: 0.1em; }
 .feature-text h4 { margin: 0 0 0.35rem; color: var(--ink); font-size: 0.78rem; letter-spacing: 0.02em; text-transform: uppercase; }
-.feature-text p { margin: 0; color: var(--muted); font-size: 0.8rem; line-height: 1.55; }
+.feature-text p { margin: 0; color: #fff; font-size: 0.8rem; line-height: 1.55; }
 .alert-banner { border-radius: 3px !important; }
 .footer { width: 100%; padding: 1.7rem 1rem; border-top: 1px solid var(--line); color: var(--muted); font-size: 0.72rem; text-align: center; }
 
@@ -110,6 +110,260 @@
 .scroll-cue:hover { background: rgba(255,255,255,0.25); transform: translateY(3px); }
 .landing-mode .footer { display: none; }
 
+.auth-mode {
+  min-height: 100vh;
+  padding: 1.3rem;
+  background: #092f42;
+}
+.auth-mode .navbar {
+  width: min(100%, 1180px);
+  margin: 0 auto;
+  border: 0;
+  border-radius: 12px;
+  background: rgba(8, 47, 58, 0.72);
+  box-shadow: 0 20px 60px rgba(0, 20, 34, 0.18);
+  backdrop-filter: blur(12px);
+}
+.auth-mode .nav-container { max-width: none; padding: 0.85rem 1.45rem; }
+.auth-mode .brand-logo, .auth-mode .brand-tag { color: #fff; }
+.auth-mode .brand-mark { background: rgba(255, 255, 255, 0.18); }
+.auth-mode .nav-links { margin: 0 auto; }
+.auth-mode .nav-links a { color: rgba(255, 255, 255, 0.85); font-size: 0.67rem; }
+.auth-mode .nav-links a:hover { color: #fff; }
+.auth-mode .main-content {
+  position: relative;
+  min-height: calc(100vh - 2.6rem);
+  max-width: 1180px;
+  padding: 4.5rem 1rem 3rem;
+  overflow: hidden;
+  border-radius: 0 0 12px 12px;
+  align-items: center;
+  background: linear-gradient(90deg, rgba(4, 25, 40, 0.82), rgba(4, 25, 40, 0.42)), url('https://images.unsplash.com/photo-1540202404-a2f29016b523?auto=format&fit=crop&w=2000&q=88') center / cover;
+  box-shadow: 0 28px 70px rgba(0, 10, 20, 0.35);
+}
+.auth-mode .hero-banner { max-width: 650px; margin-bottom: 1.75rem; }
+.auth-mode .hero-pill { color: rgba(255, 255, 255, 0.72); }
+.auth-mode .hero-headline { color: #fff; font-family: Arial, Helvetica, sans-serif; font-size: clamp(2.4rem, 5vw, 4rem); font-weight: 700; letter-spacing: -0.06em; }
+.auth-mode .hero-subhead { color: rgba(255, 255, 255, 0.82); }
+.auth-mode .auth-mode-switch { border-color: rgba(255, 255, 255, 0.18); background: rgba(7, 35, 48, 0.7); }
+.auth-mode .switch-tab { color: rgba(255, 255, 255, 0.7); }
+.auth-mode .switch-tab.selected { background: rgba(255, 255, 255, 0.95); color: #10233b; }
+.auth-mode .tripora-card {
+  max-width: 560px;
+  margin: 2rem auto;
+  padding: 2.5rem;
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  border-radius: 14px;
+  background: rgba(6, 38, 52, 0.78);
+  box-shadow: 0 24px 55px rgba(0, 12, 25, 0.32);
+  color: #fff;
+}
+.auth-mode .card-header { margin-bottom: 2rem; }
+.auth-mode .brand-badge { padding: 0; margin-bottom: 0.8rem; border: 0; background: none; color: #78d2c5; font-size: 0.68rem; letter-spacing: 0.16em; }
+.auth-mode .card-title { color: #fff; font-family: Georgia, 'Times New Roman', serif; font-size: 2rem; letter-spacing: -0.04em; }
+.auth-mode .card-subtitle { color: rgba(255, 255, 255, 0.68); }
+.auth-mode .form-group label { color: rgba(255, 255, 255, 0.88); }
+.auth-mode .helper-hint { color: rgba(255, 255, 255, 0.52); }
+.auth-mode .input-wrapper input { color: #fff; background: rgba(255, 255, 255, 0.08); border-color: rgba(255, 255, 255, 0.22); border-radius: 5px; }
+.auth-mode .input-wrapper input::placeholder { color: rgba(255, 255, 255, 0.48); }
+.auth-mode .input-wrapper input:focus { border-color: #78d2c5; background: rgba(255, 255, 255, 0.13); box-shadow: 0 0 0 3px rgba(120, 210, 197, 0.18); }
+.auth-mode .toggle-password-btn { color: #fff; }
+.auth-mode .btn-submit, .auth-mode .btn-primary { border-radius: 999px; background: #fff; color: #10233b; box-shadow: 0 8px 18px rgba(0, 12, 25, 0.2); }
+.auth-mode .btn-submit:hover:not(:disabled), .auth-mode .btn-primary:hover { background: #e8f4f1; }
+.auth-mode .form-footer { color: rgba(255, 255, 255, 0.66); }
+.auth-mode .link-switch-btn { color: #78d2c5; }
+.auth-mode .password-strength-container, .auth-mode .user-details-box { background: rgba(255, 255, 255, 0.08); border-color: rgba(255, 255, 255, 0.14); }
+.auth-mode .strength-header, .auth-mode .password-requirements, .auth-mode .user-detail-row .label { color: rgba(255, 255, 255, 0.68); }
+.auth-mode .user-detail-row .value, .auth-mode .success-title { color: #fff; }
+.auth-mode .success-subtitle, .auth-mode .success-description { color: rgba(255, 255, 255, 0.72); }
+.auth-mode .alert-danger, .auth-mode .alert-warning { background: rgba(130, 35, 39, 0.45); border-color: rgba(255, 170, 170, 0.35); color: #fff; }
+.auth-mode .footer { display: none; }
+
+/* Auth pages use the same destination atmosphere as the landing experience. */
+.auth-mode {
+  position: relative;
+  isolation: isolate;
+  background: #082b3a;
+}
+
+.auth-mode::before {
+  position: fixed;
+  inset: 0;
+  z-index: -2;
+  background: url('https://images.unsplash.com/photo-1540202404-a2f29016b523?auto=format&fit=crop&w=2200&q=90') center / cover;
+  content: '';
+}
+
+.auth-mode::after {
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  background: linear-gradient(120deg, rgba(3, 25, 39, 0.86), rgba(4, 66, 76, 0.58) 52%, rgba(3, 25, 39, 0.78));
+  content: '';
+}
+
+.auth-mode .main-content {
+  min-height: calc(100vh - 2.6rem);
+  justify-content: center;
+  padding: 3.5rem 1rem 4rem;
+  background: transparent;
+}
+
+.auth-mode .hero-banner {
+  width: 100%;
+  max-width: 680px;
+  margin-bottom: 1.75rem;
+}
+
+.auth-mode .hero-headline {
+  font-size: clamp(2.5rem, 5vw, 4rem);
+  line-height: 1;
+}
+
+.auth-mode .auth-container {
+  max-width: 590px;
+}
+
+.auth-mode .auth-mode-switch {
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  background: rgba(4, 31, 45, 0.8);
+  box-shadow: 0 12px 30px rgba(0, 16, 28, 0.2);
+}
+
+.auth-mode .switch-tab {
+  min-width: 138px;
+  color: rgba(255, 255, 255, 0.68);
+}
+
+.auth-mode .switch-tab.selected {
+  background: #f7fbfa;
+  color: #0b3e4c;
+}
+
+.auth-mode .tripora-card {
+  width: 100%;
+  max-width: 590px;
+  margin: 1.25rem auto;
+  padding: clamp(2rem, 4vw, 3rem);
+  border: 1px solid rgba(255, 255, 255, 0.23);
+  border-radius: 18px;
+  background: linear-gradient(145deg, rgba(8, 45, 61, 0.9), rgba(4, 31, 45, 0.78));
+  box-shadow: 0 24px 70px rgba(0, 11, 22, 0.42), inset 0 1px 0 rgba(255, 255, 255, 0.1);
+  backdrop-filter: blur(18px);
+  -webkit-backdrop-filter: blur(18px);
+}
+
+.auth-mode .card-header {
+  margin-bottom: 2.25rem;
+}
+
+.auth-mode .brand-badge {
+  padding: 0.55rem 0.95rem;
+  border: 1px solid rgba(120, 210, 197, 0.45);
+  border-radius: 999px;
+  background: rgba(120, 210, 197, 0.1);
+  color: #9be4d8;
+  font-size: 0.68rem;
+  letter-spacing: 0.17em;
+}
+
+.auth-mode .card-title {
+  margin-bottom: 0.75rem;
+  color: #fff;
+  font-family: Arial, Helvetica, sans-serif;
+  font-size: clamp(2rem, 4vw, 2.65rem);
+  font-weight: 700;
+  letter-spacing: -0.045em;
+}
+
+.auth-mode .card-subtitle {
+  max-width: 440px;
+  margin: 0 auto;
+  color: rgba(231, 244, 244, 0.7);
+  line-height: 1.65;
+}
+
+.auth-mode .registration-form {
+  gap: 1.25rem;
+}
+
+.auth-mode .form-group {
+  gap: 0.5rem;
+}
+
+.auth-mode .form-group label {
+  color: rgba(255, 255, 255, 0.9);
+  font-size: 0.78rem;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.auth-mode .input-wrapper input {
+  min-height: 3.2rem;
+  padding: 0.85rem 2.8rem 0.85rem 1rem;
+  border: 1px solid rgba(220, 243, 241, 0.2);
+  border-radius: 7px;
+  background: rgba(255, 255, 255, 0.08);
+  color: #fff;
+  font-size: 0.94rem;
+}
+
+.auth-mode .input-wrapper input:focus {
+  border-color: #8de0d2;
+  background: rgba(255, 255, 255, 0.13);
+  box-shadow: 0 0 0 3px rgba(141, 224, 210, 0.16);
+}
+
+.auth-mode .input-wrapper input::placeholder {
+  color: rgba(230, 243, 244, 0.42);
+}
+
+.auth-mode .btn-submit,
+.auth-mode .btn-primary {
+  min-height: 3.2rem;
+  margin-top: 0.5rem;
+  border-radius: 7px;
+  background: #f7fbfa;
+  color: #0b3e4c;
+  font-size: 0.88rem;
+  font-weight: 800;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  box-shadow: 0 12px 24px rgba(0, 12, 25, 0.22);
+}
+
+.auth-mode .btn-submit:hover:not(:disabled),
+.auth-mode .btn-primary:hover {
+  background: #ccefe9;
+  transform: translateY(-1px);
+}
+
+.auth-mode .form-footer {
+  color: rgba(230, 243, 244, 0.65);
+}
+
+.auth-mode .link-switch-btn,
+.auth-mode .link-signin {
+  color: #9be4d8;
+}
+
+.auth-mode .password-strength-container,
+.auth-mode .requirements-checklist,
+.auth-mode .user-details-box {
+  border-color: rgba(255, 255, 255, 0.15);
+  background: rgba(255, 255, 255, 0.07);
+}
+
+.auth-mode .requirements-title,
+.auth-mode .strength-header,
+.auth-mode .requirements-checklist,
+.auth-mode .user-detail-row .label {
+  color: rgba(230, 243, 244, 0.68);
+}
+
+.auth-mode .field-error { color: #ffb0a0; }
+.auth-mode .field-success { color: #9be4d8; }
+
 @media (max-width: 900px) {
   .nav-container { padding: 1rem 1.25rem; gap: 0.7rem; overflow-x: auto; }
   .nav-links { gap: 0.85rem; margin-left: 0.5rem; }
@@ -120,7 +374,7 @@
 }
 @media (max-width: 640px) {
   .main-content { padding: 3.2rem 1rem 2rem; }
-  .brand-tag { display: none; }
+  .brand-tag { font-size: 0.74rem; }
   .nav-container { padding: 0.85rem 1rem; }
   .brand-logo { font-size: 1.25rem; }
   .brand-mark { width: 1.7rem; height: 1.7rem; }
@@ -139,4 +393,8 @@
   .landing-hero .hero-headline { font-size: clamp(3rem, 14vw, 4.3rem); }
   .landing-hero .hero-subhead { position: static; max-width: 290px; margin-top: 8rem; font-size: 0.9rem; }
   .scroll-cue { right: 1.5rem; bottom: 2rem; }
+  .auth-mode { padding: 0; }
+  .auth-mode .navbar { width: 100%; border-radius: 0; }
+  .auth-mode .main-content { min-height: calc(100vh - 4.1rem); border-radius: 0; padding: 3rem 0.75rem 2rem; }
+  .auth-mode .tripora-card { padding: 1.75rem 1.25rem; }
 }
