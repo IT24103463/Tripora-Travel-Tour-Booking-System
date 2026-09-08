@@ -13,7 +13,7 @@ public class TourRepository : ITourRepository
         _dbContext = dbContext;
     }
 
-    public async Task<Tour?> GetByIdAsync(string id, CancellationToken cancellationToken = default)
+    public async Task<Tour?> GetByIdAsync(Guid id, CancellationToken cancellationToken = default)
     {
         return await _dbContext.Tours
             .FirstOrDefaultAsync(t => t.Id == id && t.DeletedAt == null, cancellationToken);
@@ -67,7 +67,7 @@ public class TourRepository : ITourRepository
         return existingTour;
     }
 
-    public async Task<bool> DeleteAsync(string id, CancellationToken cancellationToken = default)
+    public async Task<bool> DeleteAsync(Guid id, CancellationToken cancellationToken = default)
     {
         var tour = await GetByIdAsync(id, cancellationToken);
         if (tour == null)
@@ -80,7 +80,7 @@ public class TourRepository : ITourRepository
         return true;
     }
 
-    public async Task<bool> ExistsAsync(string id, CancellationToken cancellationToken = default)
+    public async Task<bool> ExistsAsync(Guid id, CancellationToken cancellationToken = default)
     {
         return await _dbContext.Tours
             .AnyAsync(t => t.Id == id && t.DeletedAt == null, cancellationToken);

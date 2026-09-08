@@ -115,5 +115,5 @@ public interface IUserService
 {
     Task<RegistrationResult> RegisterAsync(RegisterUserRequestDto request, CancellationToken cancellationToken = default);
     Task<LoginResult> LoginAsync(LoginRequestDto request, CancellationToken cancellationToken = default);
-    Task<UserResponseDto?> GetUserProfileAsync(string userId, CancellationToken cancellationToken = default);
+    Task<UserResponseDto?> GetUserProfileAsync(Guid userId, CancellationToken cancellationToken = default);
 }

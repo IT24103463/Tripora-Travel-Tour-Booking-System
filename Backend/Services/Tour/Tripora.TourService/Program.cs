@@ -2,28 +2,17 @@ using System.Text;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
-using MySql.EntityFrameworkCore;
 using Tripora.TourService.Data;
 using Tripora.TourService.Repositories;
 using Tripora.TourService.Services;
 
 var builder = WebApplication.CreateBuilder(args);
 
-// 1. Add database context (MySQL)
+// 1. Add database context (SQLite)
 var connectionString = builder.Configuration.GetConnectionString("DefaultConnection") 
-    ?? "Server=localhost;Database=tripora_tours;User=root;Password=Nesanda123;";
-
-try 
-{
-    var serverVersion = new MySqlServerVersion(new Version(8, 0, 0));
-    builder.Services.AddDbContext<TourDbContext>(options =>
-        options.UseMySql(connectionString, serverVersion));
-}
-catch 
-{
-    builder.Services.AddDbContext<TourDbContext>(options =>
-        options.UseMySql(connectionString, ServerVersion.AutoDetect(connectionString)));
-}
+    ?? "Data Source=tripora_tours.db";
+builder.Services.AddDbContext<TourDbContext>(options =>
+    options.UseSqlite(connectionString));
 
 // 2. Configure JWT options (same as User Service for token validation)
 var jwtSection = builder.Configuration.GetSection("JwtSettings");
@@ -72,7 +61,6 @@ builder.Services.AddCors(options =>
     {
         policy.WithOrigins(
                 "http://localhost:5173", 
-                "http://localhost:5174",
                 "http://localhost:3000", 
                 "http://localhost:5000",
                 "http://localhost:5292")

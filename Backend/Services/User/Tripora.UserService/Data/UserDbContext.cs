@@ -31,16 +31,14 @@ public class UserDbContext : DbContext
                 .IsUnique();
 
             entity.Property(u => u.PasswordHash)
-                .IsRequired()
-                .HasMaxLength(255);
+                .IsRequired();
 
             entity.Property(u => u.Role)
                 .IsRequired()
                 .HasMaxLength(50);
 
             entity.Property(u => u.CreatedAt)
-                .IsRequired()
-                .HasDefaultValueSql("CURRENT_TIMESTAMP");
+                .IsRequired();
         });
     }
 }

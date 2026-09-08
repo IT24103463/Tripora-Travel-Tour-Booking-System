@@ -83,7 +83,7 @@ public class TourService : ITourService
         return tour != null ? MapToResponseDto(tour) : null;
     }
 
-    public async Task<TourOperationResult> UpdateTourAsync(string id, CreateTourRequestDto request, CancellationToken cancellationToken = default)
+    public async Task<TourOperationResult> UpdateTourAsync(Guid id, CreateTourRequestDto request, CancellationToken cancellationToken = default)
     {
         _logger.LogInformation("Updating tour: {TourId}", id);
 
@@ -136,7 +136,7 @@ public class TourService : ITourService
         }
     }
 
-    public async Task<TourOperationResult> DeleteTourAsync(string id, CancellationToken cancellationToken = default)
+    public async Task<TourOperationResult> DeleteTourAsync(Guid id, CancellationToken cancellationToken = default)
     {
         _logger.LogInformation("Deleting tour: {TourId}", id);
 

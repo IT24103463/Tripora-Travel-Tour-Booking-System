@@ -2,7 +2,7 @@ namespace Tripora.TourService.Models;
 
 public class Tour
 {
-    public string Id { get; set; } = Guid.NewGuid().ToString();
+    public Guid Id { get; set; } = Guid.NewGuid();
     
     public string Name { get; set; } = string.Empty;
     

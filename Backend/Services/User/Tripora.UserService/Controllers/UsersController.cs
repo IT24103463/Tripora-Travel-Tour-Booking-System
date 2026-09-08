@@ -99,12 +99,12 @@ public class UsersController : ControllerBase
         var userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier)?.Value 
                           ?? User.FindFirst("sub")?.Value;
 
-        if (string.IsNullOrEmpty(userIdClaim))
+        if (string.IsNullOrEmpty(userIdClaim) || !Guid.TryParse(userIdClaim, out var userId))
         {
             return Unauthorized(ApiResponse<UserResponseDto>.FailureResponse("Invalid token claims. Access denied."));
         }
 
-        var profile = await _userService.GetUserProfileAsync(userIdClaim, cancellationToken);
+        var profile = await _userService.GetUserProfileAsync(userId, cancellationToken);
         if (profile == null)
         {
             return NotFound(ApiResponse<UserResponseDto>.FailureResponse("User account not found."));
