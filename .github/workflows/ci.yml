@@ -38,7 +38,7 @@ jobs:
 
   frontend-ci:
     name: Frontend (React 19 / Vite / Oxlint)
-    runs-on: ubuntu-latest
+    runs-on: windows-latest
 
     defaults:
       run:
@@ -56,7 +56,7 @@ jobs:
           cache-dependency-path: Frontend/tripora-frontend/package-lock.json
 
       - name: Install Frontend Dependencies
-        run: npm install --include=optional
+        run: npm install
 
       - name: Run Code Quality Checks (Oxlint)
         run: npm run lint
