@@ -56,7 +56,7 @@ jobs:
           cache-dependency-path: Frontend/tripora-frontend/package-lock.json
 
       - name: Install Frontend Dependencies
-        run: npm install
+        run: npm ci
 
       - name: Run Code Quality Checks (Oxlint)
         run: npm run lint
