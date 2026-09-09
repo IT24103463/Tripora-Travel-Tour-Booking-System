@@ -53,8 +53,10 @@ function App() {
   const [showAuth, setShowAuth] = useState(false);
   const [currentView, setCurrentView] = useState('dashboard'); // 'dashboard' | 'profile' | 'tours' | 'tour-management'
   const [sessionExpired, setSessionExpired] = useState(false);
+  const [profileMenuOpen, setProfileMenuOpen] = useState(false);
 
   const handleLoginSuccess = (token, user) => {
+    window.scrollTo({ top: 0, left: 0, behavior: 'instant' });
     setAuthToken(token);
     setAuthUser(user);
     localStorage.setItem('tripora_token', token);
@@ -69,6 +71,7 @@ function App() {
     localStorage.removeItem('tripora_user');
     setActiveTab('login');
     setSessionExpired(false);
+    setProfileMenuOpen(false);
   };
 
   const handleSessionExpired = () => {
@@ -78,6 +81,7 @@ function App() {
     localStorage.removeItem('tripora_user');
     setSessionExpired(true);
     setActiveTab('login');
+    setProfileMenuOpen(false);
   };
 
   // Check token expiration periodically
@@ -100,7 +104,7 @@ function App() {
   }, [authToken]);
 
   return (
-    <div className={`app-layout ${!authUser && !showAuth ? 'landing-mode' : ''} ${!authUser && showAuth ? 'auth-mode' : ''}`}>
+    <div className={`app-layout ${!authUser && !showAuth ? 'landing-mode' : ''} ${!authUser && showAuth ? 'auth-mode' : ''} ${authUser ? 'authenticated-mode' : ''}`}>
       {/* Navigation Header */}
       <header className="navbar">
         <div className="nav-container">
@@ -124,43 +128,42 @@ function App() {
           </nav>
           <div className="nav-actions">
             {authUser ? (
-              <div className="auth-nav-pill">
-                <span className="nav-user-name">{authUser.fullName}</span>
-                <div className="nav-view-buttons">
-                  <button 
-                    type="button" 
-                    className={`nav-view-btn ${currentView === 'dashboard' ? 'active' : ''}`}
-                    onClick={() => setCurrentView('dashboard')}
-                  >
-                    Dashboard
-                  </button>
-                  <button 
-                    type="button" 
-                    className={`nav-view-btn ${currentView === 'profile' ? 'active' : ''}`}
-                    onClick={() => setCurrentView('profile')}
-                  >
-                    Profile
-                  </button>
-                  <button 
-                    type="button" 
-                    className={`nav-view-btn ${currentView === 'tours' ? 'active' : ''}`}
-                    onClick={() => setCurrentView('tours')}
-                  >
-                    Tours
-                  </button>
-                  {authUser?.role === 'Admin' && (
-                    <button 
-                      type="button" 
-                      className={`nav-view-btn ${currentView === 'tour-management' ? 'active' : ''}`}
-                      onClick={() => setCurrentView('tour-management')}
-                    >
-                      Manage Tours
-                    </button>
-                  )}
-                </div>
-                <button type="button" className="btn-nav-logout" onClick={handleLogout}>
-                  Sign Out
+              <div className="profile-menu">
+                <button
+                  type="button"
+                  className="profile-menu-trigger"
+                  onClick={() => setProfileMenuOpen((isOpen) => !isOpen)}
+                  aria-label={`Open profile menu for ${authUser.fullName}`}
+                  aria-expanded={profileMenuOpen}
+                  aria-haspopup="menu"
+                >
+                  <span className="profile-icon" aria-hidden="true" />
                 </button>
+                {profileMenuOpen && (
+                  <div className="profile-dropdown" role="menu">
+                    <div className="profile-dropdown-heading">
+                      <strong>{authUser.fullName}</strong>
+                      <span>{authUser.role}</span>
+                    </div>
+                    <button type="button" className={`profile-menu-item ${currentView === 'dashboard' ? 'active' : ''}`} onClick={() => { setCurrentView('dashboard'); setProfileMenuOpen(false); }} role="menuitem">
+                      Dashboard
+                    </button>
+                    <button type="button" className={`profile-menu-item ${currentView === 'profile' ? 'active' : ''}`} onClick={() => { setCurrentView('profile'); setProfileMenuOpen(false); }} role="menuitem">
+                      Profile
+                    </button>
+                    <button type="button" className={`profile-menu-item ${currentView === 'tours' ? 'active' : ''}`} onClick={() => { setCurrentView('tours'); setProfileMenuOpen(false); }} role="menuitem">
+                      Tours
+                    </button>
+                    {authUser?.role === 'Admin' && (
+                      <button type="button" className={`profile-menu-item ${currentView === 'tour-management' ? 'active' : ''}`} onClick={() => { setCurrentView('tour-management'); setProfileMenuOpen(false); }} role="menuitem">
+                        Manage Tours
+                      </button>
+                    )}
+                    <button type="button" className="profile-menu-item sign-out" onClick={handleLogout} role="menuitem">
+                      Sign Out
+                    </button>
+                  </div>
+                )}
               </div>
             ) : (
               <button type="button" className="btn-book" onClick={() => { setActiveTab('login'); setShowAuth(true); }}>
@@ -207,15 +210,14 @@ function App() {
             {currentView === 'dashboard' && (
               <CustomerDashboard 
                 user={authUser} 
-                token={authToken} 
-                onLogout={handleLogout}
-                onSessionExpired={handleSessionExpired}
+                onNavigate={setCurrentView}
               />
             )}
             {currentView === 'profile' && (
               <ProfileView 
                 token={authToken}
                 onSessionExpired={handleSessionExpired}
+                onLogout={handleLogout}
               />
             )}
             {currentView === 'tours' && (
