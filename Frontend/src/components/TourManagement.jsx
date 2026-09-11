@@ -501,7 +501,7 @@ export default function TourManagement({ token, user, onSessionExpired }) {
                         onClick={() => handleEdit(tour)}
                         title="Edit tour"
                       >
-                        ✏️
+                        ✎
                       </button>
                       <button
                         type="button"

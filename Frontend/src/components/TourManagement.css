@@ -1,5 +1,7 @@
 /* Tour Management Styling */
 
+/* The authenticated shell uses the same destination atmosphere as landing and auth. */
+
 .tour-management-container {
   width: 100%;
   max-width: 1200px;
@@ -337,6 +339,210 @@
 @media (max-width: 640px) {
   .form-row {
     grid-template-columns: 1fr;
+  }
+}
+
+/* Tripora visual system */
+.authenticated-mode .tour-management-container {
+  max-width: 1120px;
+  margin: 0 auto;
+  color: #fff;
+}
+
+.authenticated-mode .management-header {
+  align-items: flex-end;
+  margin-bottom: 2.25rem;
+}
+
+.authenticated-mode .management-title {
+  color: #fff;
+  font-family: Arial, Helvetica, sans-serif;
+  font-size: clamp(2.2rem, 5vw, 3.5rem);
+  letter-spacing: -0.055em;
+}
+
+.authenticated-mode .management-subtitle {
+  color: rgba(231, 244, 244, 0.72);
+}
+
+.authenticated-mode .management-actions {
+  flex-shrink: 0;
+}
+
+.authenticated-mode .btn-create,
+.authenticated-mode .btn-refresh,
+.authenticated-mode .btn-retry,
+.authenticated-mode .btn-submit {
+  border-radius: 6px;
+  box-shadow: 0 8px 18px rgba(0, 12, 25, 0.18);
+}
+
+.authenticated-mode .btn-create,
+.authenticated-mode .btn-submit {
+  background: #f7fbfa;
+  color: #0b3e4c;
+}
+
+.authenticated-mode .btn-create:hover,
+.authenticated-mode .btn-submit:hover:not(:disabled) {
+  background: #ccefe9;
+}
+
+.authenticated-mode .btn-refresh,
+.authenticated-mode .btn-retry {
+  background: #d46b4d;
+  color: #fff;
+}
+
+.authenticated-mode .btn-refresh:hover,
+.authenticated-mode .btn-retry:hover {
+  background: #e08363;
+}
+
+.authenticated-mode .tour-form-container,
+.authenticated-mode .tours-table-container {
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  border-radius: 12px;
+  background: linear-gradient(145deg, rgba(8, 45, 61, 0.92), rgba(4, 31, 45, 0.82));
+  box-shadow: 0 20px 45px rgba(0, 11, 22, 0.28), inset 0 1px 0 rgba(255, 255, 255, 0.08);
+}
+
+.authenticated-mode .form-header {
+  border-bottom-color: rgba(255, 255, 255, 0.14);
+}
+
+.authenticated-mode .form-header h3,
+.authenticated-mode .empty-state h3,
+.authenticated-mode .error-state h3 {
+  color: #fff;
+}
+
+.authenticated-mode .btn-close {
+  background: rgba(255, 255, 255, 0.12);
+  color: #fff;
+}
+
+.authenticated-mode .btn-close:hover {
+  background: rgba(255, 255, 255, 0.24);
+}
+
+.authenticated-mode .form-group label,
+.authenticated-mode .tours-table th {
+  color: rgba(255, 255, 255, 0.88);
+}
+
+.authenticated-mode .form-group input,
+.authenticated-mode .form-group textarea {
+  border-color: rgba(220, 243, 241, 0.2);
+  border-radius: 7px;
+  background: rgba(255, 255, 255, 0.08);
+  color: #fff;
+}
+
+.authenticated-mode .form-group input::placeholder,
+.authenticated-mode .form-group textarea::placeholder {
+  color: rgba(230, 243, 244, 0.42);
+}
+
+.authenticated-mode .form-group input:focus,
+.authenticated-mode .form-group textarea:focus {
+  border-color: #8de0d2;
+  box-shadow: 0 0 0 3px rgba(141, 224, 210, 0.16);
+}
+
+.authenticated-mode .form-actions {
+  border-top-color: rgba(255, 255, 255, 0.14);
+}
+
+.authenticated-mode .btn-cancel {
+  border-color: rgba(255, 255, 255, 0.2);
+  color: rgba(255, 255, 255, 0.76);
+}
+
+.authenticated-mode .btn-cancel:hover:not(:disabled) {
+  background: rgba(255, 255, 255, 0.1);
+  color: #fff;
+}
+
+.authenticated-mode .tours-table thead {
+  background: rgba(255, 255, 255, 0.07);
+  border-bottom-color: rgba(255, 255, 255, 0.14);
+}
+
+.authenticated-mode .tours-table tbody tr {
+  border-bottom-color: rgba(255, 255, 255, 0.1);
+}
+
+.authenticated-mode .tours-table tbody tr:hover {
+  background: rgba(255, 255, 255, 0.07);
+}
+
+.authenticated-mode .tours-table td,
+.authenticated-mode .tour-name-cell,
+.authenticated-mode .empty-state p,
+.authenticated-mode .error-state p {
+  color: rgba(231, 244, 244, 0.82);
+}
+
+.authenticated-mode .tour-name-cell {
+  color: #fff;
+}
+
+.authenticated-mode .status-badge.active {
+  background: rgba(155, 228, 216, 0.16);
+  color: #9be4d8;
+}
+
+.authenticated-mode .status-badge.inactive {
+  background: rgba(255, 255, 255, 0.1);
+  color: rgba(255, 255, 255, 0.58);
+}
+
+.authenticated-mode .btn-edit {
+  background: rgba(155, 228, 216, 0.14);
+  color: #9be4d8;
+}
+
+.authenticated-mode .btn-edit:hover {
+  background: #0b7773;
+  color: #fff;
+}
+
+.authenticated-mode .btn-delete {
+  background: rgba(212, 107, 77, 0.16);
+  color: #ffb0a0;
+}
+
+.authenticated-mode .btn-delete:hover {
+  background: #b2533e;
+  color: #fff;
+}
+
+.authenticated-mode .spinner {
+  border-color: rgba(255, 255, 255, 0.2);
+  border-top-color: #9be4d8;
+}
+
+@media (max-width: 760px) {
+  .authenticated-mode .management-header {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .authenticated-mode .management-actions {
+    width: 100%;
+  }
+
+  .authenticated-mode .management-actions button {
+    flex: 1;
+  }
+
+  .authenticated-mode .tours-table-container {
+    overflow-x: auto;
+  }
+
+  .authenticated-mode .tours-table {
+    min-width: 760px;
   }
 }
 

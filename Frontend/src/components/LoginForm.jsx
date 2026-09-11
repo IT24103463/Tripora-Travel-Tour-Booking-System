@@ -190,8 +190,18 @@ export default function LoginForm({ onLoginSuccess, onSwitchToRegister }) {
               onClick={() => setShowPassword(!showPassword)}
               tabIndex={-1}
               aria-label={showPassword ? 'Hide password' : 'Show password'}
+              aria-pressed={showPassword}
             >
-              {showPassword ? '' : ''}
+              {showPassword ? (
+                <svg viewBox="0 0 24 24" aria-hidden="true">
+                  <path d="M3 3l18 18M10.6 10.6a2 2 0 0 0 2.8 2.8M9.9 5.2A10.8 10.8 0 0 1 12 5c5.2 0 8.7 4.2 9.8 6.1a1.7 1.7 0 0 1 0 .8 15.3 15.3 0 0 1-3.1 3.8M6.2 6.2C4.1 7.6 2.7 9.5 2.2 11.1a1.7 1.7 0 0 0 0 .8C3.3 13.8 6.8 18 12 18c1 0 2-.2 2.8-.5" />
+                </svg>
+              ) : (
+                <svg viewBox="0 0 24 24" aria-hidden="true">
+                  <path d="M2.2 12.1C3.3 10.2 6.8 6 12 6s8.7 4.2 9.8 6.1a1.7 1.7 0 0 1 0 .8C20.7 14.8 17.2 19 12 19s-8.7-4.2-9.8-6.1a1.7 1.7 0 0 1 0-.8Z" />
+                  <circle cx="12" cy="12.5" r="2.7" />
+                </svg>
+              )}
             </button>
           </div>
           {touched.password && !isPasswordValid && (

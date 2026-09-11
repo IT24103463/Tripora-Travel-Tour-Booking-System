@@ -11,7 +11,7 @@ var builder = WebApplication.CreateBuilder(args);
 
 // 1. Add database context (MySQL)
 var connectionString = builder.Configuration.GetConnectionString("MySqlConnection") 
-    ?? "Server=localhost;Port=3306;Database=tripora_tour_db;User=root;Password=;";
+    ?? "Server=localhost;Port=3306;Database=tripora_db;User=root;Password=;";
 var databasePassword = Environment.GetEnvironmentVariable("TRIPORA_DB_PASSWORD");
 if (databasePassword is not null)
 {
@@ -22,7 +22,7 @@ if (databasePassword is not null)
     connectionString = connectionStringBuilder.ConnectionString;
 }
 builder.Services.AddDbContext<TourDbContext>(options =>
-    options.UseMySQL(connectionString));
+    options.UseMySQL(connectionString, x => x.MigrationsHistoryTable("__EFMigrationsHistory_Tours")));
 
 // 2. Configure JWT options (same as User Service for token validation)
 var jwtSection = builder.Configuration.GetSection("JwtSettings");
@@ -88,7 +88,7 @@ var app = builder.Build();
 using (var scope = app.Services.CreateScope())
 {
     var dbContext = scope.ServiceProvider.GetRequiredService<TourDbContext>();
-    dbContext.Database.EnsureCreated();
+    dbContext.Database.Migrate();
 }
 
 // Configure HTTP request pipeline

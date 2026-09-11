@@ -11,35 +11,15 @@ using Tripora.UserService.Services;
 var builder = WebApplication.CreateBuilder(args);
 
 // ============================================================
-<<<<<<< Updated upstream
 // 1. DATABASE - MySQL or SQLite Fallback
 // ============================================================
 
 var dbHost = Environment.GetEnvironmentVariable("TRIPORA_DB_HOST");
-=======
-// 1. DATABASE - MySQL
-// ============================================================
-
-var dbHost = Environment.GetEnvironmentVariable("TRIPORA_DB_HOST") ?? "localhost";
->>>>>>> Stashed changes
 var dbPort = Environment.GetEnvironmentVariable("TRIPORA_DB_PORT") ?? "3306";
-var dbName = Environment.GetEnvironmentVariable("TRIPORA_DB_NAME") ?? "tripora_user_db";
+var dbName = Environment.GetEnvironmentVariable("TRIPORA_DB_NAME") ?? "tripora_db";
 var dbUser = Environment.GetEnvironmentVariable("TRIPORA_DB_USER") ?? "root";
 var dbPassword = Environment.GetEnvironmentVariable("TRIPORA_DB_PASSWORD") ?? "";
 
-<<<<<<< Updated upstream
-if (!string.IsNullOrWhiteSpace(dbHost))
-{
-    var mysqlConnStr = $"Server={dbHost};Port={dbPort};Database={dbName};User={dbUser};Password={dbPassword};";
-    builder.Services.AddDbContext<UserDbContext>(options => options.UseMySQL(mysqlConnStr));
-}
-else
-{
-    var sqliteConnStr = builder.Configuration.GetConnectionString("DefaultConnection") 
-        ?? "Data Source=tripora_users.db";
-    builder.Services.AddDbContext<UserDbContext>(options => options.UseSqlite(sqliteConnStr));
-}
-=======
 var configuredConnectionString = builder.Configuration.GetConnectionString("MySqlConnection");
 var hasDatabaseEnvironmentOverrides = new[]
 {
@@ -49,13 +29,14 @@ var hasDatabaseEnvironmentOverrides = new[]
     "TRIPORA_DB_USER",
     "TRIPORA_DB_PASSWORD"
 }.Any(variable => Environment.GetEnvironmentVariable(variable) is not null);
-var mysqlConnStr = hasDatabaseEnvironmentOverrides
-    ? $"Server={dbHost};Port={dbPort};Database={dbName};User={dbUser};Password={dbPassword};"
-    : configuredConnectionString
-        ?? $"Server={dbHost};Port={dbPort};Database={dbName};User={dbUser};Password={dbPassword};";
 
-builder.Services.AddDbContext<UserDbContext>(options => options.UseMySQL(mysqlConnStr));
->>>>>>> Stashed changes
+var effectiveDbHost = dbHost ?? "localhost";
+var mysqlConnStr = hasDatabaseEnvironmentOverrides || string.IsNullOrWhiteSpace(configuredConnectionString)
+    ? $"Server={effectiveDbHost};Port={dbPort};Database={dbName};User={dbUser};Password={dbPassword};"
+    : configuredConnectionString;
+
+builder.Services.AddDbContext<UserDbContext>(options => 
+    options.UseMySQL(mysqlConnStr, x => x.MigrationsHistoryTable("__EFMigrationsHistory_Users")));
 
 // ============================================================
 // 2. JWT CONFIGURATION
@@ -154,13 +135,10 @@ var app = builder.Build();
 using (var scope = app.Services.CreateScope())
 {
     var dbContext = scope.ServiceProvider.GetRequiredService<UserDbContext>();
-    dbContext.Database.EnsureCreated();
+    dbContext.Database.Migrate();
 
     var passwordHasher = scope.ServiceProvider.GetRequiredService<IPasswordHasher>();
-<<<<<<< Updated upstream
-=======
 
->>>>>>> Stashed changes
     if (!dbContext.Users.Any(u => u.Email == "user1@gmail.com"))
     {
         dbContext.Users.Add(new User
@@ -172,10 +150,6 @@ using (var scope = app.Services.CreateScope())
             Role = "Customer",
             CreatedAt = DateTime.UtcNow
         });
-<<<<<<< Updated upstream
-        dbContext.SaveChanges();
-    }
-=======
     }
 
     if (!dbContext.Users.Any(u => u.Email == "admin@tripora.com"))
@@ -189,10 +163,17 @@ using (var scope = app.Services.CreateScope())
             Role = "Admin",
             CreatedAt = DateTime.UtcNow
         });
+        
+        dbContext.SaveChanges();
+        Console.WriteLine("Default admin account was successfully seeded.");
     }
-
+    else
+    {
+        Console.WriteLine("Default admin account was successfully verified.");
+    }
+    
+    // Save changes for user1@gmail.com if it was added
     dbContext.SaveChanges();
->>>>>>> Stashed changes
 }
 
 // ============================================================
