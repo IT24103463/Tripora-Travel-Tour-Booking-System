@@ -4,8 +4,6 @@
   </Folder>
   <Folder Name="/Services/">
     <Project Path="Services/Tripora.BookingService/Tripora.BookingService.csproj" />
-    <Project Path="Services/Tripora.HotelService/Tripora.HotelService.csproj" />
-    <Project Path="Services/Tripora.NotificationService/Tripora.NotificationService.csproj" />
     <Project Path="Services/Tripora.PaymentService/Tripora.PaymentService.csproj" />
     <Project Path="Services/Tripora.TourService/Tripora.TourService.csproj" />
     <Project Path="Services/Tripora.TourService.Tests/Tripora.TourService.Tests.csproj" />
@@ -16,4 +14,3 @@
     <Project Path="Shared/Tripora.Shared.csproj" />
   </Folder>
 </Solution>
-
