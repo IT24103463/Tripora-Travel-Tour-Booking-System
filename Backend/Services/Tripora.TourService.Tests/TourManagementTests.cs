@@ -121,6 +121,9 @@ public class TourManagementTests : IDisposable
         Assert.Contains("Tour Name is required", result.Errors);
         Assert.Contains("Description is required", result.Errors);
         Assert.Contains("Destination is required", result.Errors);
+        Assert.Contains("Tour Name is required.", result.Errors);
+        Assert.Contains("Description is required.", result.Errors);
+        Assert.Contains("Destination is required.", result.Errors);
     }
 
     [Fact]
@@ -149,6 +152,38 @@ public class TourManagementTests : IDisposable
         Assert.Contains("Description must be at least 10 characters", result.Errors);
         Assert.Contains("Destination must be at least 2 characters", result.Errors);
         Assert.Contains("Price must be greater than zero", result.Errors);
+        Assert.Contains("Tour Name must be at least 3 characters.", result.Errors);
+        Assert.Contains("Description must be at least 10 characters.", result.Errors);
+        Assert.Contains("Destination must be at least 2 characters.", result.Errors);
+        Assert.Contains("Price must be greater than zero.", result.Errors);
+    }
+
+    [Fact]
+    public async Task Scenario2_GivenRequiredTourInfoMissing_WhenAdminUpdatesTour_ThenRequestRejectedWithError()
+    {
+        // Arrange
+        var tour = await CreateTestTourAsync("Valid Tour For Update");
+        var invalidRequest = new CreateTourRequestDto
+        {
+            Name = "", // Missing name
+            Description = "", // Missing description
+            Destination = "", // Missing destination
+            Price = 0, // Invalid price
+            DurationDays = 0, // Invalid duration
+            Capacity = 0 // Invalid capacity
+        };
+
+        // Act
+        var result = await _tourService.UpdateTourAsync(tour.Id, invalidRequest);
+
+        // Assert
+        Assert.False(result.IsSuccess);
+        Assert.Equal(TourOperationStatus.ValidationError, result.Status);
+        Assert.Null(result.Data);
+        Assert.True(result.Errors.Count > 0);
+        Assert.Contains("Tour Name is required.", result.Errors);
+        Assert.Contains("Description is required.", result.Errors);
+        Assert.Contains("Destination is required.", result.Errors);
     }
 
     #endregion
@@ -170,6 +205,7 @@ public class TourManagementTests : IDisposable
         Assert.NotNull(tours);
         Assert.Equal(3, tours.Count);
         Assert.All(tours, tour => Assert.NotNull(tour.Id));
+        Assert.All(tours, tour => Assert.NotEqual(Guid.Empty, tour.Id));
         Assert.All(tours, tour => Assert.NotEmpty(tour.Name));
     }
 
@@ -214,11 +250,17 @@ public class TourManagementTests : IDisposable
 
     [Fact]
     public async Task Scenario4_GivenUserNotAuthorizedAsAdmin_WhenUserAttemptsCreateTour_ThenOperationDenied()
+    public void Scenario4_GivenCreateTourEndpoint_WhenCheckedForAuthorization_ThenRequiresAdminRole()
     {
         // Arrange - Simulate non-admin user context
         var claims = new[] { new Claim(ClaimTypes.Role, "Customer") };
         var identity = new ClaimsIdentity(claims, "TestAuth");
         var principal = new ClaimsPrincipal(identity);
+        // Arrange & Act
+        var methodInfo = typeof(ToursController).GetMethod(nameof(ToursController.CreateTour));
+        var authorizeAttribute = methodInfo.GetCustomAttributes(typeof(Microsoft.AspNetCore.Authorization.AuthorizeAttribute), false)
+            .OfType<Microsoft.AspNetCore.Authorization.AuthorizeAttribute>()
+            .FirstOrDefault();
 
         _controller.ControllerContext = new ControllerContext
         {
@@ -240,16 +282,25 @@ public class TourManagementTests : IDisposable
 
         // Assert - Should return 403 Forbidden due to [Authorize(Roles = "Admin")]
         var forbiddenResult = Assert.IsType<ForbidResult>(result);
+        // Assert
+        Assert.NotNull(authorizeAttribute);
+        Assert.Equal("Admin", authorizeAttribute.Roles);
     }
 
     [Fact]
     public async Task Scenario4_GivenUserNotAuthorizedAsAdmin_WhenUserAttemptsUpdateTour_ThenOperationDenied()
+    public void Scenario4_GivenUpdateTourEndpoint_WhenCheckedForAuthorization_ThenRequiresAdminRole()
     {
         // Arrange - Create a tour and simulate non-admin user
         var tour = await CreateTestTourAsync("Test Tour");
         var claims = new[] { new Claim(ClaimTypes.Role, "Customer") };
         var identity = new ClaimsIdentity(claims, "TestAuth");
         var principal = new ClaimsPrincipal(identity);
+        // Arrange & Act
+        var methodInfo = typeof(ToursController).GetMethod(nameof(ToursController.UpdateTour));
+        var authorizeAttribute = methodInfo.GetCustomAttributes(typeof(Microsoft.AspNetCore.Authorization.AuthorizeAttribute), false)
+            .OfType<Microsoft.AspNetCore.Authorization.AuthorizeAttribute>()
+            .FirstOrDefault();
 
         _controller.ControllerContext = new ControllerContext
         {
@@ -271,16 +322,25 @@ public class TourManagementTests : IDisposable
 
         // Assert - Should return 403 Forbidden
         var forbiddenResult = Assert.IsType<ForbidResult>(result);
+        // Assert
+        Assert.NotNull(authorizeAttribute);
+        Assert.Equal("Admin", authorizeAttribute.Roles);
     }
 
     [Fact]
     public async Task Scenario4_GivenUserNotAuthorizedAsAdmin_WhenUserAttemptsDeleteTour_ThenOperationDenied()
+    public void Scenario4_GivenDeleteTourEndpoint_WhenCheckedForAuthorization_ThenRequiresAdminRole()
     {
         // Arrange - Create a tour and simulate non-admin user
         var tour = await CreateTestTourAsync("Test Tour");
         var claims = new[] { new Claim(ClaimTypes.Role, "Customer") };
         var identity = new ClaimsIdentity(claims, "TestAuth");
         var principal = new ClaimsPrincipal(identity);
+        // Arrange & Act
+        var methodInfo = typeof(ToursController).GetMethod(nameof(ToursController.DeleteTour));
+        var authorizeAttribute = methodInfo.GetCustomAttributes(typeof(Microsoft.AspNetCore.Authorization.AuthorizeAttribute), false)
+            .OfType<Microsoft.AspNetCore.Authorization.AuthorizeAttribute>()
+            .FirstOrDefault();
 
         _controller.ControllerContext = new ControllerContext
         {
@@ -292,6 +352,9 @@ public class TourManagementTests : IDisposable
 
         // Assert - Should return 403 Forbidden
         var forbiddenResult = Assert.IsType<ForbidResult>(result);
+        // Assert
+        Assert.NotNull(authorizeAttribute);
+        Assert.Equal("Admin", authorizeAttribute.Roles);
     }
 
     #endregion
@@ -415,6 +478,39 @@ public class TourManagementTests : IDisposable
         // Assert
         Assert.True(result.IsSuccess);
         Assert.Equal(15, result.Data.AvailableSlots); // Should preserve existing availability
+    }
+
+    [Fact]
+    public async Task Test_UpdateTour_WithInvalidId_ReturnsNotFound()
+    {
+        // Arrange
+        var updateRequest = new CreateTourRequestDto
+        {
+            Name = "Updated Name",
+            Description = "Updated description",
+            Destination = "Updated destination",
+            Price = 1500m,
+            DurationDays = 10,
+            Capacity = 25
+        };
+
+        // Act
+        var result = await _tourService.UpdateTourAsync(Guid.NewGuid(), updateRequest);
+
+        // Assert
+        Assert.False(result.IsSuccess);
+        Assert.Equal(TourOperationStatus.NotFound, result.Status);
+    }
+
+    [Fact]
+    public async Task Test_DeleteTour_WithInvalidId_ReturnsNotFound()
+    {
+        // Act
+        var result = await _tourService.DeleteTourAsync(Guid.NewGuid());
+
+        // Assert
+        Assert.False(result.IsSuccess);
+        Assert.Equal(TourOperationStatus.NotFound, result.Status);
     }
 
     #endregion
