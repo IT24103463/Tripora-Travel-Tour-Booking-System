@@ -1,5 +1,7 @@
 /* Tour Display Styling */
 
+/* The authenticated shell uses the same destination atmosphere as landing and auth. */
+
 .tour-display-container {
   width: 100%;
   max-width: 1200px;
@@ -247,6 +249,199 @@
 @media (max-width: 768px) {
   .tours-grid {
     grid-template-columns: 1fr;
+  }
+}
+
+/* Tripora visual system */
+.authenticated-mode .tour-display-container {
+  max-width: 1120px;
+  margin: 0 auto;
+  color: #fff;
+}
+
+.authenticated-mode .tour-header {
+  margin-bottom: 2.5rem;
+  text-align: left;
+}
+
+.authenticated-mode .tour-title {
+  margin-bottom: 0.65rem;
+  color: #fff;
+  font-family: Arial, Helvetica, sans-serif;
+  font-size: clamp(2.2rem, 5vw, 3.5rem);
+  font-weight: 700;
+  letter-spacing: -0.055em;
+}
+
+.authenticated-mode .tour-subtitle {
+  max-width: 560px;
+  margin-bottom: 1.5rem;
+  color: rgba(231, 244, 244, 0.72);
+  line-height: 1.6;
+}
+
+.authenticated-mode .tour-controls {
+  justify-content: flex-start;
+  gap: 0.7rem;
+}
+
+.authenticated-mode .toggle-switch {
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  border-radius: 7px;
+  background: rgba(4, 31, 45, 0.72);
+}
+
+.authenticated-mode .toggle-btn {
+  border-radius: 4px;
+  color: rgba(255, 255, 255, 0.68);
+}
+
+.authenticated-mode .toggle-btn.active {
+  background: #f7fbfa;
+  color: #0b3e4c;
+  box-shadow: 0 4px 12px rgba(0, 12, 25, 0.18);
+}
+
+.authenticated-mode .btn-refresh,
+.authenticated-mode .btn-retry {
+  border-radius: 6px;
+  background: #d46b4d;
+  color: #fff;
+  box-shadow: 0 8px 18px rgba(0, 12, 25, 0.18);
+}
+
+.authenticated-mode .btn-refresh:hover,
+.authenticated-mode .btn-retry:hover {
+  background: #e08363;
+}
+
+.authenticated-mode .tour-card,
+.authenticated-mode .tour-modal {
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  border-radius: 12px;
+  background: linear-gradient(145deg, rgba(8, 45, 61, 0.92), rgba(4, 31, 45, 0.82));
+  box-shadow: 0 20px 45px rgba(0, 11, 22, 0.28), inset 0 1px 0 rgba(255, 255, 255, 0.08);
+}
+
+.authenticated-mode .tour-card:hover {
+  border-color: rgba(155, 228, 216, 0.45);
+  box-shadow: 0 25px 55px rgba(0, 11, 22, 0.38), 0 0 0 1px rgba(155, 228, 216, 0.08);
+}
+
+.authenticated-mode .tour-image {
+  background: linear-gradient(135deg, #0b7773, #075653);
+}
+
+.authenticated-mode .tour-image::after {
+  position: absolute;
+  inset: auto 0 0;
+  height: 45%;
+  background: linear-gradient(transparent, rgba(3, 25, 39, 0.5));
+  content: '';
+  pointer-events: none;
+}
+
+.authenticated-mode .tour-destination,
+.authenticated-mode .modal-destination {
+  color: #9be4d8;
+  letter-spacing: 0.14em;
+}
+
+.authenticated-mode .tour-name,
+.authenticated-mode .tour-price,
+.authenticated-mode .empty-state h3,
+.authenticated-mode .error-state h3,
+.authenticated-mode .modal-title {
+  color: #fff;
+}
+
+.authenticated-mode .tour-description,
+.authenticated-mode .tour-detail,
+.authenticated-mode .empty-state p,
+.authenticated-mode .error-state p {
+  color: rgba(231, 244, 244, 0.68);
+}
+
+.authenticated-mode .tour-footer {
+  border-top-color: rgba(255, 255, 255, 0.14);
+}
+
+.authenticated-mode .tour-price {
+  color: #9be4d8;
+}
+
+.authenticated-mode .btn-view-details {
+  border-radius: 6px;
+  background: #f7fbfa;
+  color: #0b3e4c;
+}
+
+.authenticated-mode .btn-view-details:hover:not(:disabled) {
+  background: #ccefe9;
+}
+
+.authenticated-mode .btn-view-details:disabled {
+  background: rgba(255, 255, 255, 0.18);
+  color: rgba(255, 255, 255, 0.55);
+}
+
+.authenticated-mode .spinner {
+  border-color: rgba(255, 255, 255, 0.2);
+  border-top-color: #9be4d8;
+}
+
+.authenticated-mode .tour-modal-overlay {
+  background: rgba(2, 18, 28, 0.78);
+  backdrop-filter: blur(8px);
+}
+
+.authenticated-mode .modal-close {
+  background: rgba(255, 255, 255, 0.12);
+  color: #fff;
+}
+
+.authenticated-mode .modal-close:hover {
+  background: rgba(255, 255, 255, 0.24);
+}
+
+.authenticated-mode .modal-description h4,
+.authenticated-mode .spec-label,
+.authenticated-mode .tour-id,
+.authenticated-mode .tour-dates {
+  color: rgba(231, 244, 244, 0.68);
+}
+
+.authenticated-mode .modal-description p,
+.authenticated-mode .spec-value {
+  color: #fff;
+}
+
+.authenticated-mode .spec-item,
+.authenticated-mode .modal-footer {
+  border-color: rgba(255, 255, 255, 0.14);
+}
+
+@media (max-width: 640px) {
+  .authenticated-mode .tour-header {
+    text-align: left;
+  }
+
+  .authenticated-mode .tour-controls {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .authenticated-mode .toggle-switch,
+  .authenticated-mode .btn-refresh {
+    width: 100%;
+  }
+
+  .authenticated-mode .toggle-switch {
+    justify-content: stretch;
+  }
+
+  .authenticated-mode .toggle-btn {
+    flex: 1;
   }
 }
 

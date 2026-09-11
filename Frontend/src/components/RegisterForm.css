@@ -264,6 +264,16 @@
   justify-content: center;
 }
 
+.toggle-password-btn svg {
+  width: 1.15rem;
+  height: 1.15rem;
+  fill: none;
+  stroke: currentColor;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-width: 1.8;
+}
+
 .toggle-password-btn:hover {
   opacity: 1;
 }

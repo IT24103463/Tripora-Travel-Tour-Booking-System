@@ -11,6 +11,35 @@
   color: #94a3b8;
 }
 
+.toggle-password-btn svg {
+  width: 1.15rem;
+  height: 1.15rem;
+  fill: none;
+  stroke: currentColor;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-width: 1.8;
+}
+
+.auth-mode .toggle-password-btn {
+  right: 0.55rem;
+  width: 2.15rem;
+  height: 2.15rem;
+  border: 1px solid rgba(155, 228, 216, 0.22);
+  border-radius: 6px;
+  background: rgba(4, 31, 45, 0.72);
+  color: #9be4d8;
+  opacity: 1;
+}
+
+.auth-mode .toggle-password-btn:hover,
+.auth-mode .toggle-password-btn:focus-visible {
+  border-color: rgba(155, 228, 216, 0.55);
+  background: rgba(11, 119, 115, 0.7);
+  color: #fff;
+  outline: none;
+}
+
 .link-switch-btn {
   background: none;
   border: none;
