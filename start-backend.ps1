@@ -10,11 +10,9 @@ Command: .\start-backend.ps1 -Mode NewWindow
     This PowerShell script builds and launches the Tripora backend services:
     - ApiGateway           (http://localhost:5120)
     - UserService          (http://localhost:5001)
-    - HotelService         (http://localhost:5002)
     - TourService          (http://localhost:5003)
     - BookingService       (http://localhost:5004)
     - PaymentService       (http://localhost:5005)
-    - NotificationService  (http://localhost:5006)
 
 .PARAMETER Services
     Specific services to start (e.g. -Services User, Tour, ApiGateway). Default is 'All'.
@@ -89,11 +87,9 @@ if ((Split-Path -Leaf $ScriptDir) -ieq "Backend") {
 $AllServices = @(
     [PSCustomObject]@{ Id = "ApiGateway";     Name = "ApiGateway";          Path = "Backend\ApiGateway";                   Port = 5120; Route = "/api/*" },
     [PSCustomObject]@{ Id = "User";           Name = "UserService";         Path = "Backend\Services\Tripora.UserService"; Port = 5001; Route = "/api/users/*" },
-    [PSCustomObject]@{ Id = "Hotel";          Name = "HotelService";        Path = "Backend\Services\Tripora.HotelService";Port = 5002; Route = "/api/hotels/*" },
     [PSCustomObject]@{ Id = "Tour";           Name = "TourService";         Path = "Backend\Services\Tripora.TourService"; Port = 5003; Route = "/api/tours/*" },
     [PSCustomObject]@{ Id = "Booking";        Name = "BookingService";      Path = "Backend\Services\Tripora.BookingService";Port = 5004; Route = "/api/bookings/*" },
-    [PSCustomObject]@{ Id = "Payment";        Name = "PaymentService";      Path = "Backend\Services\Tripora.PaymentService";Port = 5005; Route = "/api/payments/*" },
-    [PSCustomObject]@{ Id = "Notification"; Name = "NotificationService"; Path = "Backend\Services\Tripora.NotificationService"; Port = 5006; Route = "/api/notifications/*" }
+    [PSCustomObject]@{ Id = "Payment";        Name = "PaymentService";      Path = "Backend\Services\Tripora.PaymentService";Port = 5005; Route = "/api/payments/*" }
 )
 
 # Function to stop running backend services by port and PID

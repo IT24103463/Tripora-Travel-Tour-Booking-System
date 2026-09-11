@@ -251,6 +251,7 @@ public class TourManagementTests : IDisposable
     [Fact]
     public async Task Scenario4_GivenUserNotAuthorizedAsAdmin_WhenUserAttemptsCreateTour_ThenOperationDenied()
     public void Scenario4_GivenCreateTourEndpoint_WhenCheckedForAuthorization_ThenRequiresAdminRole()
+    public async Task Scenario4_GivenCreateTourEndpoint_WhenCheckedForAuthorization_ThenRequiresAdminRole()
     {
         // Arrange - Simulate non-admin user context
         var claims = new[] { new Claim(ClaimTypes.Role, "Customer") };
@@ -290,6 +291,7 @@ public class TourManagementTests : IDisposable
     [Fact]
     public async Task Scenario4_GivenUserNotAuthorizedAsAdmin_WhenUserAttemptsUpdateTour_ThenOperationDenied()
     public void Scenario4_GivenUpdateTourEndpoint_WhenCheckedForAuthorization_ThenRequiresAdminRole()
+    public async Task Scenario4_GivenUpdateTourEndpoint_WhenCheckedForAuthorization_ThenRequiresAdminRole()
     {
         // Arrange - Create a tour and simulate non-admin user
         var tour = await CreateTestTourAsync("Test Tour");
@@ -330,6 +332,7 @@ public class TourManagementTests : IDisposable
     [Fact]
     public async Task Scenario4_GivenUserNotAuthorizedAsAdmin_WhenUserAttemptsDeleteTour_ThenOperationDenied()
     public void Scenario4_GivenDeleteTourEndpoint_WhenCheckedForAuthorization_ThenRequiresAdminRole()
+    public async Task Scenario4_GivenDeleteTourEndpoint_WhenCheckedForAuthorization_ThenRequiresAdminRole()
     {
         // Arrange - Create a tour and simulate non-admin user
         var tour = await CreateTestTourAsync("Test Tour");
