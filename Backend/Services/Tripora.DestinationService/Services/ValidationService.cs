@@ -1,6 +1,6 @@
-using Tripora.TourService.DTOs;
+using Tripora.DestinationService.DTOs;
 
-namespace Tripora.TourService.Services;
+namespace Tripora.DestinationService.Services;
 
 public class ValidationService : IValidationService
 {

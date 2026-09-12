@@ -1,4 +1,4 @@
-namespace Tripora.TourService.Models;
+namespace Tripora.DestinationService.Models;
 
 public class Tour
 {

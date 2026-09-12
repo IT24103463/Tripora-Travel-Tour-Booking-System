@@ -1,18 +1,18 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
-using Tripora.TourService.Data;
-using Tripora.TourService.Models;
+using Tripora.DestinationService.Data;
+using Tripora.DestinationService.Models;
 
-namespace Tripora.TourService.Controllers;
+namespace Tripora.DestinationService.Controllers;
 
 [ApiController]
 [Route("api/hotels")]
 public class HotelController : ControllerBase
 {
-    private readonly TourDbContext _context;
+    private readonly DestinationDbContext _context;
 
-    public HotelController(TourDbContext context)
+    public HotelController(DestinationDbContext context)
     {
         _context = context;
     }

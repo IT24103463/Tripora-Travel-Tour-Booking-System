@@ -1,6 +1,6 @@
-using Tripora.TourService.Models;
+using Tripora.DestinationService.Models;
 
-namespace Tripora.TourService.Repositories;
+namespace Tripora.DestinationService.Repositories;
 
 public interface ITourRepository
 {

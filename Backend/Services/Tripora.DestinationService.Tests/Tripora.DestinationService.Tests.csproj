@@ -20,7 +20,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\Tripora.TourService\Tripora.TourService.csproj" />
+    <ProjectReference Include="..\Tripora.DestinationService\Tripora.DestinationService.csproj" />
   </ItemGroup>
 
 </Project>

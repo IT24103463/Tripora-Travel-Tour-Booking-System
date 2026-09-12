@@ -1,14 +1,14 @@
 using Microsoft.EntityFrameworkCore;
-using Tripora.TourService.Data;
-using Tripora.TourService.Models;
+using Tripora.DestinationService.Data;
+using Tripora.DestinationService.Models;
 
-namespace Tripora.TourService.Repositories;
+namespace Tripora.DestinationService.Repositories;
 
 public class TourRepository : ITourRepository
 {
-    private readonly TourDbContext _dbContext;
+    private readonly DestinationDbContext _dbContext;
 
-    public TourRepository(TourDbContext dbContext)
+    public TourRepository(DestinationDbContext dbContext)
     {
         _dbContext = dbContext;
     }

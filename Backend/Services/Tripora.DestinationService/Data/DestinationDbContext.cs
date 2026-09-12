@@ -1,11 +1,11 @@
 using Microsoft.EntityFrameworkCore;
-using Tripora.TourService.Models;
+using Tripora.DestinationService.Models;
 
-namespace Tripora.TourService.Data;
+namespace Tripora.DestinationService.Data;
 
-public class TourDbContext : DbContext
+public class DestinationDbContext : DbContext
 {
-    public TourDbContext(DbContextOptions<TourDbContext> options) : base(options)
+    public DestinationDbContext(DbContextOptions<DestinationDbContext> options) : base(options)
     {
     }
 

@@ -3,9 +3,9 @@ using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using MySql.Data.MySqlClient;
-using Tripora.TourService.Data;
-using Tripora.TourService.Repositories;
-using Tripora.TourService.Services;
+using Tripora.DestinationService.Data;
+using Tripora.DestinationService.Repositories;
+using Tripora.DestinationService.Services;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -21,7 +21,7 @@ if (databasePassword is not null)
     };
     connectionString = connectionStringBuilder.ConnectionString;
 }
-builder.Services.AddDbContext<TourDbContext>(options =>
+builder.Services.AddDbContext<DestinationDbContext>(options =>
     options.UseMySQL(connectionString, x => x.MigrationsHistoryTable("__EFMigrationsHistory_Tours")));
 
 // 2. Configure JWT options (same as User Service for token validation)
@@ -87,7 +87,7 @@ var app = builder.Build();
 // Ensure the MySQL database schema is created on startup
 using (var scope = app.Services.CreateScope())
 {
-    var dbContext = scope.ServiceProvider.GetRequiredService<TourDbContext>();
+    var dbContext = scope.ServiceProvider.GetRequiredService<DestinationDbContext>();
     dbContext.Database.Migrate();
 }
 

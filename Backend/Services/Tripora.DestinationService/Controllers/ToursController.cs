@@ -1,10 +1,10 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using Tripora.TourService.DTOs;
-using Tripora.TourService.Services;
-using static Tripora.TourService.Services.TourOperationStatus;
+using Tripora.DestinationService.DTOs;
+using Tripora.DestinationService.Services;
+using static Tripora.DestinationService.Services.TourOperationStatus;
 
-namespace Tripora.TourService.Controllers;
+namespace Tripora.DestinationService.Controllers;
 
 [ApiController]
 [Route("api/tours")]

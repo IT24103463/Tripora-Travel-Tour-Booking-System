@@ -3,19 +3,19 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging.Abstractions;
-using Tripora.TourService.Controllers;
-using Tripora.TourService.Data;
-using Tripora.TourService.DTOs;
-using Tripora.TourService.Models;
-using Tripora.TourService.Repositories;
-using Tripora.TourService.Services;
+using Tripora.DestinationService.Controllers;
+using Tripora.DestinationService.Data;
+using Tripora.DestinationService.DTOs;
+using Tripora.DestinationService.Models;
+using Tripora.DestinationService.Repositories;
+using Tripora.DestinationService.Services;
 using Xunit;
 
-namespace Tripora.TourService.Tests;
+namespace Tripora.DestinationService.Tests;
 
 public class TourManagementTests : IDisposable
 {
-    private readonly TourDbContext _dbContext;
+    private readonly DestinationDbContext _dbContext;
     private readonly ITourRepository _tourRepository;
     private readonly IValidationService _validationService;
     private readonly ITourService _tourService;
@@ -23,17 +23,16 @@ public class TourManagementTests : IDisposable
 
     public TourManagementTests()
     {
-        var options = new DbContextOptionsBuilder<TourDbContext>()
+        var options = new DbContextOptionsBuilder<DestinationDbContext>()
             .UseInMemoryDatabase(databaseName: $"Tripora_Tour_Test_Db_{Guid.NewGuid()}")
             .Options;
 
-        _dbContext = new TourDbContext(options);
+        _dbContext = new DestinationDbContext(options);
         _dbContext.Database.EnsureCreated();
 
         _tourRepository = new TourRepository(_dbContext);
         _validationService = new ValidationService();
-        _tourService = new TourService(_tourRepository, _validationService, NullLogger<TourService>.Instance);
-        _tourService = new Tripora.TourService.Services.TourService(_tourRepository, _validationService, NullLogger<Tripora.TourService.Services.TourService>.Instance);
+        _tourService = new Tripora.DestinationService.Services.TourService(_tourRepository, _validationService, NullLogger<Tripora.DestinationService.Services.TourService>.Instance);
         _controller = new ToursController(_tourService, NullLogger<ToursController>.Instance);
     }
 
@@ -249,9 +248,7 @@ public class TourManagementTests : IDisposable
     #region Scenario 4 – Unauthorized Management
 
     [Fact]
-    public async Task Scenario4_GivenUserNotAuthorizedAsAdmin_WhenUserAttemptsCreateTour_ThenOperationDenied()
-    public void Scenario4_GivenCreateTourEndpoint_WhenCheckedForAuthorization_ThenRequiresAdminRole()
-    public async Task Scenario4_GivenCreateTourEndpoint_WhenCheckedForAuthorization_ThenRequiresAdminRole()
+        public async Task Scenario4_GivenCreateTourEndpoint_WhenCheckedForAuthorization_ThenRequiresAdminRole()
     {
         // Arrange - Simulate non-admin user context
         var claims = new[] { new Claim(ClaimTypes.Role, "Customer") };
@@ -289,9 +286,7 @@ public class TourManagementTests : IDisposable
     }
 
     [Fact]
-    public async Task Scenario4_GivenUserNotAuthorizedAsAdmin_WhenUserAttemptsUpdateTour_ThenOperationDenied()
-    public void Scenario4_GivenUpdateTourEndpoint_WhenCheckedForAuthorization_ThenRequiresAdminRole()
-    public async Task Scenario4_GivenUpdateTourEndpoint_WhenCheckedForAuthorization_ThenRequiresAdminRole()
+        public async Task Scenario4_GivenUpdateTourEndpoint_WhenCheckedForAuthorization_ThenRequiresAdminRole()
     {
         // Arrange - Create a tour and simulate non-admin user
         var tour = await CreateTestTourAsync("Test Tour");
@@ -330,9 +325,7 @@ public class TourManagementTests : IDisposable
     }
 
     [Fact]
-    public async Task Scenario4_GivenUserNotAuthorizedAsAdmin_WhenUserAttemptsDeleteTour_ThenOperationDenied()
-    public void Scenario4_GivenDeleteTourEndpoint_WhenCheckedForAuthorization_ThenRequiresAdminRole()
-    public async Task Scenario4_GivenDeleteTourEndpoint_WhenCheckedForAuthorization_ThenRequiresAdminRole()
+        public async Task Scenario4_GivenDeleteTourEndpoint_WhenCheckedForAuthorization_ThenRequiresAdminRole()
     {
         // Arrange - Create a tour and simulate non-admin user
         var tour = await CreateTestTourAsync("Test Tour");

@@ -1,9 +1,9 @@
 using Microsoft.Extensions.Logging;
-using Tripora.TourService.DTOs;
-using Tripora.TourService.Models;
-using Tripora.TourService.Repositories;
+using Tripora.DestinationService.DTOs;
+using Tripora.DestinationService.Models;
+using Tripora.DestinationService.Repositories;
 
-namespace Tripora.TourService.Services;
+namespace Tripora.DestinationService.Services;
 
 public class TourService : ITourService
 {

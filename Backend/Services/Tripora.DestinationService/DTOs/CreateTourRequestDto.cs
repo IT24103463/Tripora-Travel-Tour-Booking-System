@@ -1,4 +1,4 @@
-namespace Tripora.TourService.DTOs;
+namespace Tripora.DestinationService.DTOs;
 
 public class CreateTourRequestDto
 {
