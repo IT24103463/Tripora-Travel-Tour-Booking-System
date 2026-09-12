@@ -144,11 +144,6 @@ export default function ProfileView({ token, onSessionExpired, onLogout }) {
           </div>
 
           <div className="profile-field">
-            <label className="field-label">Account ID</label>
-            <div className="field-value mono-value">{profile.id}</div>
-          </div>
-
-          <div className="profile-field">
             <label className="field-label">Account Type</label>
             <div className="field-value">
               <span className="role-badge">{profile.role || 'Customer'}</span>
