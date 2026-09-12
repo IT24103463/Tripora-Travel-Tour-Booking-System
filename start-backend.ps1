@@ -87,7 +87,7 @@ if ((Split-Path -Leaf $ScriptDir) -ieq "Backend") {
 $AllServices = @(
     [PSCustomObject]@{ Id = "ApiGateway";     Name = "ApiGateway";          Path = "Backend\ApiGateway";                   Port = 5120; Route = "/api/*" },
     [PSCustomObject]@{ Id = "User";           Name = "UserService";         Path = "Backend\Services\Tripora.UserService"; Port = 5001; Route = "/api/users/*" },
-    [PSCustomObject]@{ Id = "Tour";           Name = "TourService";         Path = "Backend\Services\Tripora.TourService"; Port = 5003; Route = "/api/tours/*" },
+    [PSCustomObject]@{ Id = "Destination";    Name = "DestinationService";  Path = "Backend\Services\Tripora.DestinationService"; Port = 5003; Route = "/api/tours/*" },
     [PSCustomObject]@{ Id = "Booking";        Name = "BookingService";      Path = "Backend\Services\Tripora.BookingService";Port = 5004; Route = "/api/bookings/*" },
     [PSCustomObject]@{ Id = "Payment";        Name = "PaymentService";      Path = "Backend\Services\Tripora.PaymentService";Port = 5005; Route = "/api/payments/*" }
 )

@@ -54,7 +54,6 @@ public class UserServiceLoginTests : IDisposable
             ExpiryMinutes = 60
         });
 
-        _jwtTokenGenerator = new JwtTokenGenerator(_jwtOptions);
         _jwtTokenGenerator = new JwtTokenGenerator();
 
         _userService = new UserService.Services.UserService(

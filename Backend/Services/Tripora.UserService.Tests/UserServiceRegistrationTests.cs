@@ -38,7 +38,6 @@ public class UserServiceRegistrationTests : IDisposable
             Audience = "Tripora.Client",
             ExpiryMinutes = 60
         });
-        var jwtTokenGenerator = new JwtTokenGenerator(jwtOptions);
         var jwtTokenGenerator = new JwtTokenGenerator();
         _userService = new UserService.Services.UserService(
             _userRepository,
