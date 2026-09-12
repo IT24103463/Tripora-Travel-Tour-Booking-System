@@ -1,6 +1,10 @@
 import { useState, useEffect } from 'react';
 import './TourDisplay.css';
+<<<<<<< Updated upstream
 import { Search, MapPin, DollarSign, X, Clock, Users, Ticket, Sparkles, BedSingle, Star, AlertTriangle, Briefcase, Hotel as HotelIcon, RefreshCw } from 'lucide-react';
+=======
+import { Clock, Users, Ticket, Tag } from 'lucide-react';
+>>>>>>> Stashed changes
 
 const API_ACTIVE_TOURS_ENDPOINT = 'http://localhost:5120/api/tours/active';
 const API_HOTELS_ENDPOINT = 'http://localhost:5120/api/hotels';
@@ -183,6 +187,7 @@ export default function TourDisplay() {
         </div>
       </div>
 
+<<<<<<< Updated upstream
             {!currentDataEmpty && (
         <div className="tour-filters">
           <div className="filter-group">
@@ -222,6 +227,68 @@ export default function TourDisplay() {
               Clear Filters
             </button>
           </div>
+=======
+      {tours.length === 0 ? (
+        <div className="empty-state">
+          <div className="empty-icon">🌍</div>
+          <h3>No Tours Available</h3>
+          <p>
+            {showActiveOnly 
+              ? 'There are currently no active tours available.' 
+              : 'No tours found in the system.'}
+          </p>
+        </div>
+      ) : (
+        <div className="tours-grid">
+          {tours.map((tour) => (
+            <div 
+              key={tour.id} 
+              className={`tour-card ${!tour.isActive ? 'tour-inactive' : ''}`}
+              onClick={() => handleTourClick(tour)}
+            >
+              <div className="tour-image">
+                {tour.imageUrl ? (
+                  <img src={tour.imageUrl} alt={tour.name} />
+                ) : (
+                  <div className="tour-placeholder">
+                    <span className="placeholder-icon">✈️</span>
+                  </div>
+                )}
+                {!tour.isActive && (
+                  <div className="tour-badge inactive">Inactive</div>
+                )}
+              </div>
+              
+              <div className="tour-content">
+                <div className="tour-destination">{tour.destination}</div>
+                <h3 className="tour-name">{tour.name}</h3>
+                <p className="tour-description">{tour.description}</p>
+                
+                <div className="tour-details">
+                  <div className="tour-detail">
+                    <Clock className="detail-icon" size={18} />
+                    <span>{tour.durationDays} days</span>
+                  </div>
+                  <div className="tour-detail">
+                    <Users className="detail-icon" size={18} />
+                    <span>{tour.availableSlots} / {tour.capacity} spots</span>
+                  </div>
+                </div>
+                
+                <div className="tour-footer">
+                  <div className="tour-price">${tour.price.toLocaleString()}</div>
+                  <button 
+                    type="button" 
+                    className="btn-view-details"
+                    disabled={!tour.isActive}
+                  >
+                    {tour.isActive ? 'View Details' : 'Not Available'}
+                  </button>
+                </div>
+              </div>
+            </div>
+          ))}
+>>>>>>> Stashed changes
         </div>
       )}
 
@@ -372,6 +439,7 @@ export default function TourDisplay() {
                 </div>
                 
                 <div className="modal-specs">
+<<<<<<< Updated upstream
                   {activeTab === 'tours' ? (
                     <>
                       <div className="spec-item">
@@ -440,6 +508,49 @@ export default function TourDisplay() {
                 <div className="modal-footer" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                   <div className="tour-id">ID: {selectedItem.id}</div>
                   <button type="button" className="btn-refresh" style={{ margin: 0 }}>Book Now</button>
+=======
+                  <div className="spec-item">
+                    <Clock className="spec-icon" size={20} />
+                    <div className="spec-info">
+                      <span className="spec-label">Duration</span>
+                      <span className="spec-value">{selectedTour.durationDays} days</span>
+                    </div>
+                  </div>
+                  
+                  <div className="spec-item">
+                    <Users className="spec-icon" size={20} />
+                    <div className="spec-info">
+                      <span className="spec-label">Capacity</span>
+                      <span className="spec-value">{selectedTour.capacity} people</span>
+                    </div>
+                  </div>
+                  
+                  <div className="spec-item">
+                    <Ticket className="spec-icon" size={20} />
+                    <div className="spec-info">
+                      <span className="spec-label">Available Spots</span>
+                      <span className="spec-value">{selectedTour.availableSlots} remaining</span>
+                    </div>
+                  </div>
+                  
+                  <div className="spec-item">
+                    <Tag className="spec-icon" size={20} />
+                    <div className="spec-info">
+                      <span className="spec-label">Price</span>
+                      <span className="spec-value">${selectedTour.price.toLocaleString()}</span>
+                    </div>
+                  </div>
+                </div>
+                
+                <div className="modal-footer">
+                  
+                  <div className="tour-dates">
+                    <span>Created: {new Date(selectedTour.createdAt).toLocaleDateString()}</span>
+                    {selectedTour.updatedAt && (
+                      <span>Updated: {new Date(selectedTour.updatedAt).toLocaleDateString()}</span>
+                    )}
+                  </div>
+>>>>>>> Stashed changes
                 </div>
               </div>
             </div>

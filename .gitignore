@@ -481,4 +481,8 @@ $RECYCLE.BIN/
 # Vim temporary swap files
 *.swp
 
+<<<<<<< Updated upstream
+=======
+# Temporary scripts backup
+>>>>>>> Stashed changes
 .temp_scripts_backup/

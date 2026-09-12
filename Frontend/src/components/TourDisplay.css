@@ -585,7 +585,9 @@
 }
 
 .detail-icon {
-  font-size: 1rem;
+  color: var(--teal, #0b7773);
+  display: flex;
+  align-items: center;
 }
 
 .tour-footer {
@@ -806,7 +808,9 @@
 }
 
 .spec-icon {
-  font-size: 1.5rem;
+  color: var(--teal, #0b7773);
+  display: flex;
+  align-items: center;
 }
 
 .spec-info {
