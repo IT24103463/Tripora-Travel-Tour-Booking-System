@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+﻿import { useState, useEffect } from 'react';
 import RegisterForm from './components/RegisterForm';
 import LoginForm from './components/LoginForm';
 import CustomerDashboard from './components/CustomerDashboard';
@@ -118,7 +118,7 @@ function App() {
               onClick={() => setShowAuth(false)}
               aria-label="Return to Tripora home"
             >
-              <span className="brand-mark">✈</span> Tripora
+              <span className="brand-mark">âœˆ</span> Tripora
             </button>
             <span className="brand-tag">Travel & Tours</span>
           </div>
@@ -189,14 +189,19 @@ function App() {
         )}
 
         {!authUser && !showAuth ? (
-          <section className="landing-hero" id="about">
-            <div className="landing-copy">
-              <span className="hero-pill">TRIPORA / CURATED TRAVEL</span>
-              <h1 className="hero-headline">Unforgettable<br />Travel Moments<br /><em>with Tripora</em></h1>
-            </div>
-            <p className="hero-subhead">We take you beyond the ordinary, to places where cultures come alive, landscapes leave you breathless, and every moment becomes a story to tell.</p>
-            <button type="button" className="scroll-cue" onClick={() => setShowAuth(true)} aria-label="Start planning your trip">↓</button>
-          </section>
+          <>
+            <section className="landing-hero" id="about">
+              <div className="landing-copy">
+                <span className="hero-pill">TRIPORA / CURATED TRAVEL</span>
+                <h1 className="hero-headline">Unforgettable<br />Travel Moments<br /><em>with Tripora</em></h1>
+              </div>
+              <p className="hero-subhead">We take you beyond the ordinary, to places where cultures come alive, landscapes leave you breathless, and every moment becomes a story to tell.</p>
+              <button type="button" className="scroll-cue" onClick={() => setShowAuth(true)} aria-label="Start planning your trip">↓</button>
+            </section>
+            
+            {/* Show destinations to guests so they can browse */}
+            <TourDisplay token={authToken} user={authUser} />
+          </>
         ) : (
           <div className="hero-banner">
             <span className="hero-pill">TRIPORA / TRAVEL MANAGEMENT</span>
@@ -222,7 +227,7 @@ function App() {
               />
             )}
             {currentView === 'tours' && (
-              <TourDisplay />
+              <TourDisplay token={authToken} user={authUser} />
             )}
             {currentView === 'destination-management' && (
               <DestinationManagement 
@@ -292,10 +297,12 @@ function App() {
 
       {/* Footer */}
       <footer className="footer">
-        <p>© 2026 Tripora Travel & Tour Booking System. All rights reserved.</p>
+        <p>Â© 2026 Tripora Travel & Tour Booking System. All rights reserved.</p>
       </footer>
     </div>
   );
 }
 
 export default App;
+
+

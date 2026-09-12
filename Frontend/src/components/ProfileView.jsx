@@ -1,8 +1,15 @@
+<<<<<<< Updated upstream
 import { useState, useEffect } from 'react';
 import { isTokenExpired } from '../App.jsx';
 import './ProfileView.css';
+=======
+﻿import { useState, useEffect } from "react";
+import { isTokenExpired } from "../App.jsx";
+import "./ProfileView.css";
+import { AlertTriangle, User, RefreshCw, LogOut } from "lucide-react";
+>>>>>>> Stashed changes
 
-const API_PROFILE_ENDPOINT = 'http://localhost:5001/api/users/me';
+const API_PROFILE_ENDPOINT = "http://localhost:5001/api/users/me";
 
 export default function ProfileView({ token, onSessionExpired, onLogout }) {
   const [profile, setProfile] = useState(null);
@@ -12,7 +19,7 @@ export default function ProfileView({ token, onSessionExpired, onLogout }) {
 
   useEffect(() => {
     if (!token) {
-      setError('Authentication required. Please log in to view your profile.');
+      setError("Authentication required. Please log in to view your profile.");
       setLoading(false);
       return;
     }
@@ -21,7 +28,7 @@ export default function ProfileView({ token, onSessionExpired, onLogout }) {
       if (onSessionExpired) {
         onSessionExpired();
       }
-      setError('Your session has expired. Please log in again.');
+      setError("Your session has expired. Please log in again.");
       setLoading(false);
       return;
     }
@@ -35,11 +42,11 @@ export default function ProfileView({ token, onSessionExpired, onLogout }) {
 
     try {
       const response = await fetch(API_PROFILE_ENDPOINT, {
-        method: 'GET',
+        method: "GET",
         headers: {
-          'Authorization': `Bearer ${token}`,
-          'Accept': 'application/json'
-        }
+          Authorization: `Bearer ${token}`,
+          Accept: "application/json",
+        },
       });
 
       const data = await response.json();
@@ -50,22 +57,24 @@ export default function ProfileView({ token, onSessionExpired, onLogout }) {
         if (onSessionExpired) {
           onSessionExpired();
         }
-        setError('Authentication failed. Please log in again.');
+        setError("Authentication failed. Please log in again.");
       } else if (response.status === 404) {
-        setError('Profile not found. Your account may have been deleted.');
+        setError("Profile not found. Your account may have been deleted.");
       } else {
-        setError(data.message || 'Failed to retrieve profile information.');
+        setError(data.message || "Failed to retrieve profile information.");
       }
     } catch (err) {
-      console.error('Profile fetch error:', err);
-      setError('Unable to connect to the server. Please check your connection and try again.');
+      console.error("Profile fetch error:", err);
+      setError(
+        "Unable to connect to the server. Please check your connection and try again.",
+      );
     } finally {
       setLoading(false);
     }
   };
 
   const handleRetry = () => {
-    setRetryCount(prev => prev + 1);
+    setRetryCount((prev) => prev + 1);
   };
 
   if (loading) {
@@ -83,15 +92,11 @@ export default function ProfileView({ token, onSessionExpired, onLogout }) {
     return (
       <div className="tripora-card profile-card">
         <div className="error-state">
-          <div className="error-icon">⚠️</div>
+          <div className="error-icon"><AlertTriangle size={32} /></div>
           <h3>Profile Error</h3>
           <p>{error}</p>
-          <button 
-            type="button" 
-            className="btn-retry" 
-            onClick={handleRetry}
-          >
-            ↻ Try Again
+          <button type="button" className="btn-retry" onClick={handleRetry}>
+            <RefreshCw size={16} style={{ marginRight: "6px", verticalAlign: "middle" }} className={loading ? "spin-icon" : ""} /> Try Again
           </button>
         </div>
       </div>
@@ -102,15 +107,17 @@ export default function ProfileView({ token, onSessionExpired, onLogout }) {
     return (
       <div className="tripora-card profile-card">
         <div className="error-state">
+<<<<<<< Updated upstream
           <div className="error-icon">👤</div>
+=======
+          <div className="error-icon">
+            <User size={32} />
+          </div>
+>>>>>>> Stashed changes
           <h3>No Profile Data</h3>
           <p>Unable to load profile information.</p>
-          <button 
-            type="button" 
-            className="btn-retry" 
-            onClick={handleRetry}
-          >
-            ↻ Reload
+          <button type="button" className="btn-retry" onClick={handleRetry}>
+            <RefreshCw size={16} style={{ marginRight: "6px", verticalAlign: "middle" }} className={loading ? "spin-icon" : ""} /> Reload
           </button>
         </div>
       </div>
@@ -125,14 +132,16 @@ export default function ProfileView({ token, onSessionExpired, onLogout }) {
         </div>
         <div className="profile-title-section">
           <h2 className="profile-title">My Profile</h2>
-          <p className="profile-subtitle">View and manage your Tripora account information</p>
+          <p className="profile-subtitle">
+            View and manage your Tripora account information
+          </p>
         </div>
       </div>
 
       <div className="profile-content">
         <div className="profile-section">
           <h3 className="section-heading">Personal Information</h3>
-          
+
           <div className="profile-field">
             <label className="field-label">Full Name</label>
             <div className="field-value">{profile.fullName}</div>
@@ -146,17 +155,17 @@ export default function ProfileView({ token, onSessionExpired, onLogout }) {
           <div className="profile-field">
             <label className="field-label">Account Type</label>
             <div className="field-value">
-              <span className="role-badge">{profile.role || 'Customer'}</span>
+              <span className="role-badge">{profile.role || "Customer"}</span>
             </div>
           </div>
 
           <div className="profile-field">
             <label className="field-label">Member Since</label>
             <div className="field-value">
-              {new Date(profile.createdAt).toLocaleDateString('en-US', {
-                year: 'numeric',
-                month: 'long',
-                day: 'numeric'
+              {new Date(profile.createdAt).toLocaleDateString("en-US", {
+                year: "numeric",
+                month: "long",
+                day: "numeric",
               })}
             </div>
           </div>
@@ -171,15 +180,13 @@ export default function ProfileView({ token, onSessionExpired, onLogout }) {
           >
             Sign Out
           </button>
-          <button 
-            type="button" 
-            className="btn-refresh" 
-            onClick={handleRetry}
-          >
-            ↻ Refresh Profile
+          <button type="button" className="btn-refresh" onClick={handleRetry}>
+            <RefreshCw size={16} style={{ marginRight: "6px", verticalAlign: "middle" }} className={loading ? "spin-icon" : ""} /> Refresh Profile
           </button>
         </div>
       </div>
     </div>
   );
 }
+
+

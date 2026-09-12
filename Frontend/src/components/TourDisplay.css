@@ -921,4 +921,302 @@
 .authenticated-mode .spec-value { color: #fff; }
 .authenticated-mode .modal-footer { border-color: rgba(255, 255, 255, 0.16); }
 .authenticated-mode .modal-close { background: rgba(255, 255, 255, 0.14); color: #fff; }
+<<<<<<< Updated upstream
 .authenticated-mode .modal-close:hover { background: rgba(255, 255, 255, 0.24); }
+=======
+.authenticated-mode .modal-close:hover { background: rgba(255, 255, 255, 0.24); }
+/* Tour Filters */
+.tour-filters {
+  display: flex;
+  gap: 1rem;
+  margin-bottom: 2.5rem;
+  background: rgba(8, 47, 58, 0.72);
+  backdrop-filter: blur(12px);
+  padding: 1.25rem 1.75rem;
+  border-radius: 12px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  box-shadow: 0 20px 60px rgba(0, 20, 34, 0.18);
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: flex-start;
+}
+
+.filter-group {
+  display: flex;
+  align-items: center;
+  background: rgba(255, 255, 255, 0.06);
+  border-radius: 999px; /* Pill shape matching typical modern inputs or use 6px depending on preference, but 999px matches btn-book nicely */
+  padding: 0.7rem 1.15rem;
+  flex: 1;
+  min-width: 200px;
+  max-width: 340px;
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  transition: all 0.2s ease;
+}
+
+.filter-group:hover {
+  background: rgba(255, 255, 255, 0.1);
+  border-color: rgba(255, 255, 255, 0.25);
+}
+
+.filter-group:focus-within {
+  background: rgba(255, 255, 255, 0.12);
+  border-color: rgba(255, 255, 255, 0.4);
+  box-shadow: 0 0 0 4px rgba(255, 255, 255, 0.08);
+}
+
+.filter-icon {
+  margin-right: 0.75rem;
+  font-size: 1.05rem;
+  color: rgba(255, 255, 255, 0.7);
+}
+
+.filter-input {
+  border: none;
+  background: transparent;
+  outline: none;
+  width: 100%;
+  font-size: 0.88rem;
+  color: #ffffff;
+  font-family: Arial, Helvetica, sans-serif;
+  font-weight: 600;
+}
+
+.filter-input::placeholder {
+  color: rgba(255, 255, 255, 0.5);
+  font-weight: 400;
+}
+
+.filter-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.85rem;
+  margin-left: auto;
+  flex-wrap: wrap;
+}
+
+/* Matching btn-book exactly as requested for the Clear Filters button */
+.btn-filter-clear {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.4rem;
+  padding: 0.7rem 1.25rem;
+  border: 0;
+  border-radius: 999px;
+  background: #ffffff;
+  color: #10233b;
+  cursor: pointer;
+  font-size: 0.72rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  box-shadow: 0 5px 14px rgba(3, 25, 39, 0.16);
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.btn-filter-clear:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 18px rgba(3, 25, 39, 0.24);
+}
+
+@media (max-width: 768px) {
+  .tour-filters {
+    border-radius: 12px;
+    padding: 1rem;
+  }
+  .filter-group {
+    max-width: 100%;
+  }
+  .filter-actions {
+    margin-left: 0;
+    width: 100%;
+    justify-content: flex-end;
+  }
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   TOAST NOTIFICATIONS
+   ═══════════════════════════════════════════════════════════════ */
+.toast-stack {
+  position: fixed;
+  bottom: 28px;
+  right: 28px;
+  z-index: 9999;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  pointer-events: none;
+}
+
+.toast {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 280px;
+  max-width: 420px;
+  padding: 12px 16px;
+  border-radius: 10px;
+  font-size: 0.9rem;
+  font-weight: 500;
+  pointer-events: all;
+  backdrop-filter: blur(12px);
+  animation: toastIn 0.3s ease;
+  box-shadow: 0 6px 24px rgba(0,0,0,0.25);
+}
+
+.toast-success { background: rgba(16, 185, 129, 0.92); color: #fff; }
+.toast-error   { background: rgba(239, 68, 68, 0.92);  color: #fff; }
+.toast-warning { background: rgba(234, 179, 8, 0.92);  color: #1a1a1a; }
+.toast-info    { background: rgba(99, 102, 241, 0.92); color: #fff; }
+
+.toast-msg  { flex: 1; line-height: 1.4; }
+.toast-close {
+  background: transparent;
+  border: none;
+  color: inherit;
+  cursor: pointer;
+  font-size: 1rem;
+  opacity: 0.75;
+  padding: 0 2px;
+  flex-shrink: 0;
+}
+.toast-close:hover { opacity: 1; }
+
+@keyframes toastIn {
+  from { opacity: 0; transform: translateY(12px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   BOOK NOW BUTTON (modal footer)
+   ═══════════════════════════════════════════════════════════════ */
+.btn-book-now {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 11px 28px;
+  background: var(--teal, #0b7773);
+  color: #fff;
+  border: none;
+  border-radius: 8px;
+  font-size: 0.95rem;
+  font-weight: 600;
+  cursor: pointer;
+  letter-spacing: 0.02em;
+  transition: background 0.18s, transform 0.12s, box-shadow 0.18s;
+  box-shadow: 0 3px 12px rgba(11, 119, 115, 0.35);
+}
+.btn-book-now:hover {
+  background: #0a6461;
+  transform: translateY(-1px);
+  box-shadow: 0 6px 18px rgba(11, 119, 115, 0.45);
+}
+.btn-book-now:active { transform: translateY(0); }
+
+/* ═══════════════════════════════════════════════════════════════
+   BOOKING FORM (inside modal)
+   ═══════════════════════════════════════════════════════════════ */
+.booking-form {
+  margin-top: 20px;
+  padding: 20px;
+  background: rgba(255,255,255,0.04);
+  border: 1px solid rgba(255,255,255,0.10);
+  border-radius: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.booking-form-title {
+  font-size: 1rem;
+  font-weight: 600;
+  color: var(--teal, #0b7773);
+  margin: 0 0 4px;
+  display: flex;
+  align-items: center;
+}
+
+.booking-field {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+.booking-label {
+  font-size: 0.82rem;
+  font-weight: 500;
+  color: rgba(255,255,255,0.65);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+.booking-input {
+  padding: 9px 12px;
+  border-radius: 8px;
+  border: 1px solid rgba(255,255,255,0.15);
+  background: rgba(255,255,255,0.07);
+  color: #f0f0f0;
+  font-size: 0.92rem;
+  outline: none;
+  transition: border-color 0.18s;
+  color-scheme: dark;
+}
+.booking-input:focus { border-color: var(--teal, #0b7773); }
+
+.booking-summary {
+  font-size: 0.9rem;
+  color: rgba(255,255,255,0.75);
+  background: rgba(11,119,115,0.12);
+  border: 1px solid rgba(11,119,115,0.25);
+  padding: 10px 14px;
+  border-radius: 8px;
+}
+.booking-summary strong { color: #fff; }
+
+.booking-actions {
+  display: flex;
+  gap: 10px;
+  justify-content: flex-end;
+  margin-top: 4px;
+}
+
+.btn-booking-cancel {
+  padding: 9px 20px;
+  border-radius: 8px;
+  border: 1px solid rgba(255,255,255,0.2);
+  background: transparent;
+  color: rgba(255,255,255,0.75);
+  font-size: 0.9rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s;
+}
+.btn-booking-cancel:hover:not(:disabled) { background: rgba(255,255,255,0.08); color: #fff; }
+.btn-booking-cancel:disabled { opacity: 0.45; cursor: not-allowed; }
+
+.btn-booking-confirm {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 9px 22px;
+  border-radius: 8px;
+  border: none;
+  background: var(--teal, #0b7773);
+  color: #fff;
+  font-size: 0.9rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.15s, transform 0.1s;
+}
+.btn-booking-confirm:hover:not(:disabled) { background: #0a6461; transform: translateY(-1px); }
+.btn-booking-confirm:disabled { opacity: 0.55; cursor: not-allowed; transform: none; }
+
+/* Spinner for loading state inside button */
+.spin-icon {
+  animation: spin 0.8s linear infinite;
+  margin-right: 6px;
+}
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to   { transform: rotate(360deg); }
+}
+>>>>>>> Stashed changes

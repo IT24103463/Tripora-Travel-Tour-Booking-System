@@ -480,3 +480,14 @@ $RECYCLE.BIN/
 
 # Vim temporary swap files
 *.swp
+<<<<<<< Updated upstream
+=======
+
+<<<<<<< Updated upstream
+=======
+# Temporary scripts backup
+>>>>>>> Stashed changes
+.temp_scripts_backup/
+
+Backend/Services/Tripora.BookingService/*.db
+>>>>>>> Stashed changes
