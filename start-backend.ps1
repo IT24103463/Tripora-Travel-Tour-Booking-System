@@ -173,6 +173,28 @@ if (!(Test-Path $LogDir)) {
     New-Item -ItemType Directory -Path $LogDir -Force | Out-Null
 }
 
+Write-Host "`nChecking for orphaned processes on required ports..." -ForegroundColor Cyan
+foreach ($svc in $TargetServices) {
+    $port = $svc.Port
+    $connections = Get-NetTCPConnection -LocalPort $port -ErrorAction SilentlyContinue
+    if ($connections) {
+        foreach ($conn in $connections) {
+            $processId = $conn.OwningProcess
+            if ($processId -and $processId -ne 0) {
+                try {
+                    $proc = Get-Process -Id $processId -ErrorAction SilentlyContinue
+                    if ($proc) {
+                        Write-Host "Warning: Port $port is in use. Killing orphaned $($proc.ProcessName) (PID: $processId)..." -ForegroundColor Yellow
+                        Stop-Process -Id $processId -Force -ErrorAction SilentlyContinue
+                        Start-Sleep -Milliseconds 500
+                    }
+                } catch {}
+            }
+        }
+    }
+}
+
+
 # Step 2: Launch Services
 Write-Host "`n[2/2] Launching $($TargetServices.Count) Service(s) in '$Mode' mode..." -ForegroundColor Yellow
 

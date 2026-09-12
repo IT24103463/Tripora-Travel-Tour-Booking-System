@@ -1,4 +1,5 @@
 import './CustomerDashboard.css';
+import { Compass, User } from 'lucide-react';
 
 export default function CustomerDashboard({ user, onNavigate }) {
 
@@ -41,11 +42,11 @@ export default function CustomerDashboard({ user, onNavigate }) {
         </div>
         <div className="dashboard-action-grid">
           <button type="button" className="dashboard-action" onClick={() => onNavigate('tours')}>
-            <span className="dashboard-action-icon">✈</span>
+            <Compass className="dashboard-action-icon" size={24} />
             <span><strong>Explore tours</strong><small>Find your next destination</small></span>
           </button>
           <button type="button" className="dashboard-action" onClick={() => onNavigate('profile')}>
-            <span className="dashboard-action-icon">◉</span>
+            <User className="dashboard-action-icon" size={24} />
             <span><strong>View your profile</strong><small>Review your account details</small></span>
           </button>
         </div>

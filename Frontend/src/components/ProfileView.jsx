@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { isTokenExpired } from '../App.jsx';
 import './ProfileView.css';
+import { AlertTriangle, User, RefreshCw, LogOut } from 'lucide-react';
 
 const API_PROFILE_ENDPOINT = 'http://localhost:5001/api/users/me';
 
@@ -102,7 +103,7 @@ export default function ProfileView({ token, onSessionExpired, onLogout }) {
     return (
       <div className="tripora-card profile-card">
         <div className="error-state">
-          <div className="error-icon">👤</div>
+          <div className="error-icon"><User size={32} /></div>
           <h3>No Profile Data</h3>
           <p>Unable to load profile information.</p>
           <button 

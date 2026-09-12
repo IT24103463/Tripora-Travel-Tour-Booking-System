@@ -115,7 +115,7 @@ public class TourService : ITourService
                 DurationDays = request.DurationDays,
                 Capacity = request.Capacity,
                 AvailableSlots = existingTour.AvailableSlots, // Preserve existing availability
-                IsActive = existingTour.IsActive,
+                IsActive = request.IsActive,
                 ImageUrl = request.ImageUrl?.Trim()
             };
 

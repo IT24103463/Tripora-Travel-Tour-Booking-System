@@ -922,3 +922,112 @@
 .authenticated-mode .modal-footer { border-color: rgba(255, 255, 255, 0.16); }
 .authenticated-mode .modal-close { background: rgba(255, 255, 255, 0.14); color: #fff; }
 .authenticated-mode .modal-close:hover { background: rgba(255, 255, 255, 0.24); }
+/* Tour Filters */
+.tour-filters {
+  display: flex;
+  gap: 1rem;
+  margin-bottom: 2.5rem;
+  background: rgba(8, 47, 58, 0.72);
+  backdrop-filter: blur(12px);
+  padding: 1.25rem 1.75rem;
+  border-radius: 12px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  box-shadow: 0 20px 60px rgba(0, 20, 34, 0.18);
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: flex-start;
+}
+
+.filter-group {
+  display: flex;
+  align-items: center;
+  background: rgba(255, 255, 255, 0.06);
+  border-radius: 999px; /* Pill shape matching typical modern inputs or use 6px depending on preference, but 999px matches btn-book nicely */
+  padding: 0.7rem 1.15rem;
+  flex: 1;
+  min-width: 200px;
+  max-width: 340px;
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  transition: all 0.2s ease;
+}
+
+.filter-group:hover {
+  background: rgba(255, 255, 255, 0.1);
+  border-color: rgba(255, 255, 255, 0.25);
+}
+
+.filter-group:focus-within {
+  background: rgba(255, 255, 255, 0.12);
+  border-color: rgba(255, 255, 255, 0.4);
+  box-shadow: 0 0 0 4px rgba(255, 255, 255, 0.08);
+}
+
+.filter-icon {
+  margin-right: 0.75rem;
+  font-size: 1.05rem;
+  color: rgba(255, 255, 255, 0.7);
+}
+
+.filter-input {
+  border: none;
+  background: transparent;
+  outline: none;
+  width: 100%;
+  font-size: 0.88rem;
+  color: #ffffff;
+  font-family: Arial, Helvetica, sans-serif;
+  font-weight: 600;
+}
+
+.filter-input::placeholder {
+  color: rgba(255, 255, 255, 0.5);
+  font-weight: 400;
+}
+
+.filter-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.85rem;
+  margin-left: auto;
+  flex-wrap: wrap;
+}
+
+/* Matching btn-book exactly as requested for the Clear Filters button */
+.btn-filter-clear {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.4rem;
+  padding: 0.7rem 1.25rem;
+  border: 0;
+  border-radius: 999px;
+  background: #ffffff;
+  color: #10233b;
+  cursor: pointer;
+  font-size: 0.72rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  box-shadow: 0 5px 14px rgba(3, 25, 39, 0.16);
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.btn-filter-clear:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 18px rgba(3, 25, 39, 0.24);
+}
+
+@media (max-width: 768px) {
+  .tour-filters {
+    border-radius: 12px;
+    padding: 1rem;
+  }
+  .filter-group {
+    max-width: 100%;
+  }
+  .filter-actions {
+    margin-left: 0;
+    width: 100%;
+    justify-content: flex-end;
+  }
+}

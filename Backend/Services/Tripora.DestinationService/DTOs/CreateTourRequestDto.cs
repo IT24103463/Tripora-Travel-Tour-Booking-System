@@ -14,5 +14,7 @@ public class CreateTourRequestDto
     
     public int Capacity { get; set; }
     
+    public bool IsActive { get; set; } = true;
+    
     public string? ImageUrl { get; set; }
 }

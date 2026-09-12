@@ -1,5 +1,6 @@
 import { useState, useMemo } from 'react';
 import './RegisterForm.css';
+import { AlertTriangle, Check, Circle, RefreshCw } from 'lucide-react';
 
 const API_ENDPOINT = import.meta.env.VITE_API_URL || 'http://localhost:5001/api/users/register';
 
@@ -416,7 +417,7 @@ export default function RegisterForm({ onSwitchToLogin }) {
           )}
           {formData.confirmPassword && isConfirmPasswordValid && (
             <span className="field-success" id="confirmPassword-success">
-              ✓ Passwords match
+              <Check size={14} style={{marginRight:"4px", verticalAlign:"middle"}} /> Passwords match
             </span>
           )}
         </div>

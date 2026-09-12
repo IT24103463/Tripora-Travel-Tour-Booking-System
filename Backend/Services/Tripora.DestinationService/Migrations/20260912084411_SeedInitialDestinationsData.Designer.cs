@@ -2,6 +2,7 @@
 using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Tripora.DestinationService.Data;
 
@@ -10,9 +11,11 @@ using Tripora.DestinationService.Data;
 namespace Tripora.DestinationService.Migrations
 {
     [DbContext(typeof(DestinationDbContext))]
-    partial class DestinationDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260912084411_SeedInitialDestinationsData")]
+    partial class SeedInitialDestinationsData
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder

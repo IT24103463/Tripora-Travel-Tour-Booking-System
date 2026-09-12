@@ -207,7 +207,6 @@ public class UserServiceLoginTests : IDisposable
         var tokenHandler = new JwtSecurityTokenHandler();
         var validationParameters = new TokenValidationParameters
         {
-            ValidateIssuerSigningKey = true,
             ValidateIssuerSigningKey = false,
             RequireSignedTokens = false,
             SignatureValidator = delegate(string token, TokenValidationParameters parameters)
@@ -320,3 +319,4 @@ public class UserServiceLoginTests : IDisposable
 
     #endregion
 }
+

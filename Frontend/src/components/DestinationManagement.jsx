@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { isTokenExpired } from '../App.jsx';
 import './DestinationManagement.css';
+import { RefreshCw, AlertTriangle, X, Compass, Hotel, Edit, Trash2, Plus } from 'lucide-react';
 
 const API_TOURS_ENDPOINT = 'http://localhost:5120/api/tours';
 const API_HOTELS_ENDPOINT = 'http://localhost:5120/api/hotels';
@@ -12,6 +13,7 @@ export default function DestinationManagement({ token, user, onSessionExpired })
   const [hotels, setHotels] = useState([]);
   
   const [loading, setLoading] = useState(true);
+  const [togglingId, setTogglingId] = useState(null);
   const [error, setError] = useState(null);
   
   const [showCreateForm, setShowCreateForm] = useState(false);
@@ -44,6 +46,7 @@ export default function DestinationManagement({ token, user, onSessionExpired })
   useEffect(() => {
     if (!token || isTokenExpired(token)) {
       if (onSessionExpired) onSessionExpired();
+      setLoading(false);
       return;
     }
 
@@ -71,7 +74,6 @@ export default function DestinationManagement({ token, user, onSessionExpired })
       const data = await response.json();
       if (response.status === 401) {
         if (onSessionExpired) onSessionExpired();
-        setError('Authentication failed. Please log in again.');
         return;
       }
       if (response.ok && data.success) {
@@ -80,7 +82,8 @@ export default function DestinationManagement({ token, user, onSessionExpired })
         setError(data.message || 'Failed to retrieve tours.');
       }
     } catch (err) {
-      setError('Unable to connect to the tour service.');
+      console.error('Fetch tours error:', err);
+      setError('An error occurred while fetching tours.');
     } finally {
       setLoading(false);
     }
@@ -90,7 +93,6 @@ export default function DestinationManagement({ token, user, onSessionExpired })
     setLoading(true);
     setError(null);
     try {
-      // Include inactive to allow admin to see all hotels
       const response = await fetch(`${API_HOTELS_ENDPOINT}?includeInactive=true`, {
         method: 'GET',
         headers: { 'Authorization': `Bearer ${token}`, 'Accept': 'application/json' }
@@ -98,7 +100,6 @@ export default function DestinationManagement({ token, user, onSessionExpired })
       const data = await response.json();
       if (response.status === 401) {
         if (onSessionExpired) onSessionExpired();
-        setError('Authentication failed. Please log in again.');
         return;
       }
       if (response.ok) {
@@ -107,116 +108,79 @@ export default function DestinationManagement({ token, user, onSessionExpired })
         setError(data.message || 'Failed to retrieve hotels.');
       }
     } catch (err) {
-      setError('Unable to connect to the hotel service.');
+      console.error('Fetch hotels error:', err);
+      setError('An error occurred while fetching hotels.');
     } finally {
       setLoading(false);
     }
   };
 
-  const handleInputChange = (e) => {
-    const { name, value, type, checked } = e.target;
-    setFormData(prev => ({ 
-      ...prev, 
-      [name]: type === 'checkbox' ? checked : value 
-    }));
-    setFormErrors([]);
-  };
+  const handleToggleStatus = async (item, type) => {
+    if (togglingId) return; // Prevent concurrent toggles
+    setTogglingId(item.id);
 
-  const validateForm = () => {
-    const errors = [];
-    if (!formData.name.trim()) errors.push('Name is required.');
-    if (!formData.description.trim()) errors.push('Description is required.');
-
-    if (activeTab === 'tours') {
-      if (!formData.destination.trim()) errors.push('Destination is required.');
-      if (!formData.price || parseFloat(formData.price) <= 0) errors.push('Price must be > 0.');
-      if (!formData.durationDays || parseInt(formData.durationDays) <= 0) errors.push('Duration must be >= 1.');
-      if (!formData.capacity || parseInt(formData.capacity) <= 0) errors.push('Capacity must be >= 1.');
-    } else {
-      if (!formData.location.trim()) errors.push('Location is required.');
-      if (!formData.pricePerNight || parseFloat(formData.pricePerNight) <= 0) errors.push('Price per night must be > 0.');
-      if (!formData.availableRooms || parseInt(formData.availableRooms) < 0) errors.push('Available rooms must be >= 0.');
-      if (!formData.rating || parseFloat(formData.rating) < 0 || parseFloat(formData.rating) > 5) errors.push('Rating must be between 0 and 5.');
-    }
+    // Optimistic update
+    const prevItems = type === 'tour' ? tours : hotels;
     
-    if (formData.imageUrl && !formData.imageUrl.startsWith('http')) {
-      errors.push('Image URL must start with http or https.');
+    // Update local state immediately
+    if (type === 'tour') {
+      setTours(tours.map(t => t.id === item.id ? { ...t, isActive: !t.isActive } : t));
+    } else {
+      setHotels(hotels.map(h => h.id === item.id ? { ...h, isActive: !h.isActive } : h));
     }
-    return errors;
-  };
-
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    const errors = validateForm();
-    if (errors.length > 0) {
-      setFormErrors(errors);
-      return;
-    }
-
-    setIsSubmitting(true);
-    setFormErrors([]);
 
     try {
-      const endpoint = editingItem 
-        ? `${activeTab === 'tours' ? API_TOURS_ENDPOINT : API_HOTELS_ENDPOINT}/${editingItem.id}`
-        : (activeTab === 'tours' ? API_TOURS_ENDPOINT : API_HOTELS_ENDPOINT);
-
-      const method = editingItem ? 'PUT' : 'POST';
+      const endpoint = type === 'tour' ? `${API_TOURS_ENDPOINT}/${item.id}` : `${API_HOTELS_ENDPOINT}/${item.id}`;
       
-      const payload = activeTab === 'tours' ? {
-        name: formData.name.trim(),
-        description: formData.description.trim(),
-        destination: formData.destination.trim(),
-        price: parseFloat(formData.price),
-        durationDays: parseInt(formData.durationDays),
-        capacity: parseInt(formData.capacity),
-        imageUrl: formData.imageUrl.trim() || null,
-        isActive: formData.isActive
-      } : {
-        name: formData.name.trim(),
-        description: formData.description.trim(),
-        location: formData.location.trim(),
-        pricePerNight: parseFloat(formData.pricePerNight),
-        availableRooms: parseInt(formData.availableRooms),
-        rating: parseFloat(formData.rating),
-        amenities: formData.amenities.trim(),
-        imageUrl: formData.imageUrl.trim() || null,
-        isActive: formData.isActive
-      };
+      let payload;
+      if (type === 'tour') {
+        payload = {
+          name: item.name,
+          description: item.description,
+          destination: item.destination,
+          price: item.price,
+          durationDays: item.durationDays,
+          capacity: item.capacity,
+          imageUrl: item.imageUrl,
+          isActive: !item.isActive
+        };
+      } else {
+        payload = {
+          name: item.name,
+          description: item.description,
+          location: item.location,
+          pricePerNight: item.pricePerNight,
+          availableRooms: item.availableRooms,
+          rating: item.rating,
+          amenities: item.amenities,
+          imageUrl: item.imageUrl,
+          isActive: !item.isActive
+        };
+      }
 
       const response = await fetch(endpoint, {
-        method,
+        method: 'PUT',
         headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json'
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
         },
         body: JSON.stringify(payload)
       });
 
-      const data = await response.json();
-
-      if (response.status === 401) {
-        if (onSessionExpired) onSessionExpired();
-        setError('Authentication failed. Please log in again.');
-        return;
-      }
-      if (response.status === 403) {
-        setError('Access denied. Admin privileges required.');
-        return;
-      }
-
-      if (response.ok) {
-        resetForm();
-        if (activeTab === 'tours') await fetchTours();
-        else await fetchHotels();
-        setShowCreateForm(false);
-      } else {
-        setFormErrors(data.errors || [data.message || 'Operation failed.']);
+      if (!response.ok) {
+        throw new Error('Failed to toggle status');
       }
     } catch (err) {
-      setFormErrors(['Unable to connect to the server. Please try again.']);
+      console.error('Toggle status error:', err);
+      setError(`Failed to toggle status: ${err.message}`);
+      // Revert on failure
+      if (type === 'tour') {
+        setTours(prevItems);
+      } else {
+        setHotels(prevItems);
+      }
     } finally {
-      setIsSubmitting(false);
+      setTogglingId(null);
     }
   };
 
@@ -277,10 +241,21 @@ export default function DestinationManagement({ token, user, onSessionExpired })
       } else {
         setError(data.message || 'Failed to delete.');
       }
+    
     } catch (err) {
-      setError('Unable to connect to the server.');
+      console.error('Toggle status error:', err);
+      setError(`Failed to toggle status: ${err.message}`);
+      // Revert on failure
+      if (type === 'tour') {
+        setTours(prevItems);
+      } else {
+        setHotels(prevItems);
+      }
+    } finally {
+      setTogglingId(null);
     }
   };
+
 
   const resetForm = () => {
     setFormData({
@@ -316,7 +291,7 @@ export default function DestinationManagement({ token, user, onSessionExpired })
           <h3>Access Error</h3>
           <p>{error}</p>
           <button type="button" className="btn-retry" onClick={activeTab === 'tours' ? fetchTours : fetchHotels}>
-            🔄 Try Again
+            <RefreshCw size={16} className="button-icon" style={{marginRight: "4px"}} /> Try Again
           </button>
         </div>
       </div>
@@ -352,10 +327,10 @@ export default function DestinationManagement({ token, user, onSessionExpired })
             className="btn-create"
             onClick={() => { resetForm(); setShowCreateForm(true); }}
           >
-            + Create New {activeTab === 'tours' ? 'Tour' : 'Hotel'}
+            <Plus size={16} className="button-icon" style={{marginRight: "4px"}} /> Create New {activeTab === 'tours' ? 'Tour' : 'Hotel'}
           </button>
           <button type="button" className="btn-refresh" onClick={activeTab === 'tours' ? fetchTours : fetchHotels}>
-            🔄 Refresh
+            <RefreshCw size={16} className="button-icon" style={{marginRight: "4px"}} /> Refresh
           </button>
         </div>
       </div>
@@ -364,7 +339,7 @@ export default function DestinationManagement({ token, user, onSessionExpired })
         <div className="tour-form-container">
           <div className="form-header">
             <h3>{editingItem ? `Edit ${activeTab === 'tours' ? 'Tour' : 'Hotel'}` : `Create New ${activeTab === 'tours' ? 'Tour' : 'Hotel'}`}</h3>
-            <button type="button" className="btn-close" onClick={handleCancel}>✕</button>
+            <button type="button" className="btn-close" onClick={handleCancel}><X size={20} /></button>
           </div>
 
           <form onSubmit={handleSubmit} className="tour-form">
@@ -489,7 +464,19 @@ export default function DestinationManagement({ token, user, onSessionExpired })
                     <td>${tour.price.toLocaleString()}</td>
                     <td>{tour.durationDays} days</td>
                     <td>{tour.availableSlots} / {tour.capacity}</td>
-                    <td><span className={"status-badge " + (tour.isActive ? 'active' : 'inactive')}>{tour.isActive ? 'Active' : 'Inactive'}</span></td>
+                    <td>
+                        <button 
+                          type="button"
+                          onClick={() => handleToggleStatus(tour, 'tour')}
+                          className={"status-badge toggle-badge " + (tour.isActive ? 'active' : 'inactive')}
+                          title={tour.isActive ? "Click to deactivate" : "Click to activate"}
+                          disabled={togglingId === tour.id}
+                          style={{ opacity: togglingId === tour.id ? 0.6 : 1, cursor: togglingId === tour.id ? 'wait' : 'pointer' }}
+                        >
+                          {togglingId === tour.id ? <RefreshCw size={14} className="spin-icon" style={{marginRight:'4px'}} /> : null}
+                          {tour.isActive ? 'Active' : 'Inactive'}
+                        </button>
+                      </td>
                     <td>
                       <div className="action-buttons">
                         <button type="button" className="btn-action btn-edit" onClick={() => handleEdit(tour)}>✏️</button>
@@ -504,7 +491,7 @@ export default function DestinationManagement({ token, user, onSessionExpired })
         ) : (
           hotels.length === 0 ? (
             <div className="empty-state">
-              <div className="empty-icon">🏢</div>
+              <div className="empty-icon"><Hotel size={48} /></div>
               <h3>No Hotels Found</h3>
               <p>Create your first hotel to get started.</p>
             </div>
@@ -529,7 +516,19 @@ export default function DestinationManagement({ token, user, onSessionExpired })
                     <td>${hotel.pricePerNight.toLocaleString()}</td>
                     <td>{hotel.availableRooms}</td>
                     <td>{hotel.rating} ⭐</td>
-                    <td><span className={"status-badge " + (hotel.isActive ? 'active' : 'inactive')}>{hotel.isActive ? 'Active' : 'Inactive'}</span></td>
+                    <td>
+                        <button 
+                          type="button"
+                          onClick={() => handleToggleStatus(hotel, 'hotel')}
+                          className={"status-badge toggle-badge " + (hotel.isActive ? 'active' : 'inactive')}
+                          title={hotel.isActive ? "Click to deactivate" : "Click to activate"}
+                          disabled={togglingId === hotel.id}
+                          style={{ opacity: togglingId === hotel.id ? 0.6 : 1, cursor: togglingId === hotel.id ? 'wait' : 'pointer' }}
+                        >
+                          {togglingId === hotel.id ? <RefreshCw size={14} className="spin-icon" style={{marginRight:'4px'}} /> : null}
+                          {hotel.isActive ? 'Active' : 'Inactive'}
+                        </button>
+                      </td>
                     <td>
                       <div className="action-buttons">
                         <button type="button" className="btn-action btn-edit" onClick={() => handleEdit(hotel)}>✏️</button>
