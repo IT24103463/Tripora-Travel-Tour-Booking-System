@@ -12,6 +12,8 @@ public class Hotel
     public int AvailableRooms { get; set; }
     public bool IsActive { get; set; } = true;
     public string? ImageUrl { get; set; }
+    public double Rating { get; set; } = 0.0;
+    public string Amenities { get; set; } = string.Empty;
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
     public DateTime? UpdatedAt { get; set; }
 }
