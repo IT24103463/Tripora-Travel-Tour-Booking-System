@@ -1,10 +1,10 @@
 import { useState, useEffect } from 'react';
 import { isTokenExpired } from '../App.jsx';
-import './TourManagement.css';
+import './DestinationManagement.css';
 
 const API_TOURS_ENDPOINT = 'http://localhost:5025/api/tours';
 
-export default function TourManagement({ token, user, onSessionExpired }) {
+export default function DestinationManagement({ token, user, onSessionExpired }) {
   const [tours, setTours] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -277,7 +277,7 @@ export default function TourManagement({ token, user, onSessionExpired }) {
       <div className="tour-management-container">
         <div className="loading-state">
           <div className="spinner"></div>
-          <p>Loading tour management...</p>
+          <p>Loading Destination Management...</p>
         </div>
       </div>
     );
@@ -301,7 +301,7 @@ export default function TourManagement({ token, user, onSessionExpired }) {
   return (
     <div className="tour-management-container">
       <div className="management-header">
-        <h2 className="management-title">Tour Management</h2>
+        <h2 className="management-title">Destination Management</h2>
         <p className="management-subtitle">Create, edit, and manage tour packages</p>
         
         <div className="management-actions">

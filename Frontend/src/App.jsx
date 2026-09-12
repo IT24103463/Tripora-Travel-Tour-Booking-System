@@ -4,7 +4,7 @@ import LoginForm from './components/LoginForm';
 import CustomerDashboard from './components/CustomerDashboard';
 import ProfileView from './components/ProfileView';
 import TourDisplay from './components/TourDisplay';
-import TourManagement from './components/TourManagement';
+import DestinationManagement from './components/DestinationManagement';
 import './App.css';
 
 // Helper function to decode JWT and check expiration
@@ -51,7 +51,7 @@ function App() {
 
   const [activeTab, setActiveTab] = useState('login'); // 'login' | 'register'
   const [showAuth, setShowAuth] = useState(false);
-  const [currentView, setCurrentView] = useState('dashboard'); // 'dashboard' | 'profile' | 'tours' | 'tour-management'
+  const [currentView, setCurrentView] = useState('dashboard'); // 'dashboard' | 'profile' | 'tours' | 'destination-management'
   const [sessionExpired, setSessionExpired] = useState(false);
   const [profileMenuOpen, setProfileMenuOpen] = useState(false);
 
@@ -123,11 +123,11 @@ function App() {
             <span className="brand-tag">Travel & Tours</span>
           </div>
           <nav className="nav-links">
-            <a href="#about">About Us</a>
             <a href="#destinations" onClick={(e) => { if (authUser) { e.preventDefault(); setCurrentView('tours'); } }}>Destinations</a>
             <a href="#tours" onClick={(e) => { if (authUser) { e.preventDefault(); setCurrentView('tours'); } }}>Travel Packages</a>
             <a href="#offers">Offers</a>
             <a href="#support">Contact</a>
+            <a href="#about">About Us</a>
           </nav>
           <div className="nav-actions">
             {authUser ? (
@@ -154,12 +154,10 @@ function App() {
                     <button type="button" className={`profile-menu-item ${currentView === 'profile' ? 'active' : ''}`} onClick={() => { setCurrentView('profile'); setProfileMenuOpen(false); }} role="menuitem">
                       Profile
                     </button>
-                    <button type="button" className={`profile-menu-item ${currentView === 'tours' ? 'active' : ''}`} onClick={() => { setCurrentView('tours'); setProfileMenuOpen(false); }} role="menuitem">
-                      Tours
-                    </button>
+
                     {authUser?.role === 'Admin' && (
-                      <button type="button" className={`profile-menu-item ${currentView === 'tour-management' ? 'active' : ''}`} onClick={() => { setCurrentView('tour-management'); setProfileMenuOpen(false); }} role="menuitem">
-                        Manage Tours
+                      <button type="button" className={`profile-menu-item ${currentView === 'destination-management' ? 'active' : ''}`} onClick={() => { setCurrentView('destination-management'); setProfileMenuOpen(false); }} role="menuitem">
+                        Manage Destinations
                       </button>
                     )}
                     <button type="button" className="profile-menu-item sign-out" onClick={handleLogout} role="menuitem">
@@ -226,8 +224,8 @@ function App() {
             {currentView === 'tours' && (
               <TourDisplay />
             )}
-            {currentView === 'tour-management' && (
-              <TourManagement 
+            {currentView === 'destination-management' && (
+              <DestinationManagement 
                 token={authToken}
                 user={authUser}
                 onSessionExpired={handleSessionExpired}
