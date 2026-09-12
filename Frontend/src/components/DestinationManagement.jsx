@@ -2,138 +2,151 @@ import { useState, useEffect } from 'react';
 import { isTokenExpired } from '../App.jsx';
 import './DestinationManagement.css';
 
-const API_TOURS_ENDPOINT = 'http://localhost:5025/api/tours';
+const API_TOURS_ENDPOINT = 'http://localhost:5120/api/tours';
+const API_HOTELS_ENDPOINT = 'http://localhost:5120/api/hotels';
 
 export default function DestinationManagement({ token, user, onSessionExpired }) {
+  const [activeTab, setActiveTab] = useState('tours'); // 'tours' | 'hotels'
+  
   const [tours, setTours] = useState([]);
+  const [hotels, setHotels] = useState([]);
+  
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  
   const [showCreateForm, setShowCreateForm] = useState(false);
-  const [editingTour, setEditingTour] = useState(null);
+  const [editingItem, setEditingItem] = useState(null);
+  
   const [formData, setFormData] = useState({
+    // Shared
     name: '',
     description: '',
+    imageUrl: '',
+    isActive: true,
+    
+    // Tours
     destination: '',
     price: '',
     durationDays: '',
     capacity: '',
-    imageUrl: ''
+    
+    // Hotels
+    location: '',
+    pricePerNight: '',
+    availableRooms: '',
+    rating: '',
+    amenities: ''
   });
+  
   const [formErrors, setFormErrors] = useState([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   useEffect(() => {
     if (!token || isTokenExpired(token)) {
-      if (onSessionExpired) {
-        onSessionExpired();
-      }
+      if (onSessionExpired) onSessionExpired();
       return;
     }
 
-    // Check if user is admin
     if (user?.role !== 'Admin') {
       setError('Access denied. Admin privileges required.');
       setLoading(false);
       return;
     }
 
-    fetchTours();
-  }, [token, user]);
+    if (activeTab === 'tours') {
+      fetchTours();
+    } else {
+      fetchHotels();
+    }
+  }, [token, user, activeTab]);
 
   const fetchTours = async () => {
     setLoading(true);
     setError(null);
-
     try {
       const response = await fetch(API_TOURS_ENDPOINT, {
         method: 'GET',
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Accept': 'application/json'
-        }
+        headers: { 'Authorization': `Bearer ${token}`, 'Accept': 'application/json' }
       });
-
       const data = await response.json();
-
       if (response.status === 401) {
-        if (onSessionExpired) {
-          onSessionExpired();
-        }
+        if (onSessionExpired) onSessionExpired();
         setError('Authentication failed. Please log in again.');
         return;
       }
-
       if (response.ok && data.success) {
         setTours(data.data || []);
       } else {
         setError(data.message || 'Failed to retrieve tours.');
       }
     } catch (err) {
-      console.error('Tour fetch error:', err);
-      setError('Unable to connect to the tour service. Please check your connection.');
+      setError('Unable to connect to the tour service.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const fetchHotels = async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      // Include inactive to allow admin to see all hotels
+      const response = await fetch(`${API_HOTELS_ENDPOINT}?includeInactive=true`, {
+        method: 'GET',
+        headers: { 'Authorization': `Bearer ${token}`, 'Accept': 'application/json' }
+      });
+      const data = await response.json();
+      if (response.status === 401) {
+        if (onSessionExpired) onSessionExpired();
+        setError('Authentication failed. Please log in again.');
+        return;
+      }
+      if (response.ok) {
+        setHotels(data || []);
+      } else {
+        setError(data.message || 'Failed to retrieve hotels.');
+      }
+    } catch (err) {
+      setError('Unable to connect to the hotel service.');
     } finally {
       setLoading(false);
     }
   };
 
   const handleInputChange = (e) => {
-    const { name, value } = e.target;
-    setFormData(prev => ({ ...prev, [name]: value }));
+    const { name, value, type, checked } = e.target;
+    setFormData(prev => ({ 
+      ...prev, 
+      [name]: type === 'checkbox' ? checked : value 
+    }));
     setFormErrors([]);
   };
 
   const validateForm = () => {
     const errors = [];
+    if (!formData.name.trim()) errors.push('Name is required.');
+    if (!formData.description.trim()) errors.push('Description is required.');
 
-    if (!formData.name.trim()) {
-      errors.push('Tour name is required.');
-    } else if (formData.name.trim().length < 3) {
-      errors.push('Tour name must be at least 3 characters.');
+    if (activeTab === 'tours') {
+      if (!formData.destination.trim()) errors.push('Destination is required.');
+      if (!formData.price || parseFloat(formData.price) <= 0) errors.push('Price must be > 0.');
+      if (!formData.durationDays || parseInt(formData.durationDays) <= 0) errors.push('Duration must be >= 1.');
+      if (!formData.capacity || parseInt(formData.capacity) <= 0) errors.push('Capacity must be >= 1.');
+    } else {
+      if (!formData.location.trim()) errors.push('Location is required.');
+      if (!formData.pricePerNight || parseFloat(formData.pricePerNight) <= 0) errors.push('Price per night must be > 0.');
+      if (!formData.availableRooms || parseInt(formData.availableRooms) < 0) errors.push('Available rooms must be >= 0.');
+      if (!formData.rating || parseFloat(formData.rating) < 0 || parseFloat(formData.rating) > 5) errors.push('Rating must be between 0 and 5.');
     }
-
-    if (!formData.description.trim()) {
-      errors.push('Description is required.');
-    } else if (formData.description.trim().length < 10) {
-      errors.push('Description must be at least 10 characters.');
+    
+    if (formData.imageUrl && !formData.imageUrl.startsWith('http')) {
+      errors.push('Image URL must start with http or https.');
     }
-
-    if (!formData.destination.trim()) {
-      errors.push('Destination is required.');
-    } else if (formData.destination.trim().length < 2) {
-      errors.push('Destination must be at least 2 characters.');
-    }
-
-    if (!formData.price || parseFloat(formData.price) <= 0) {
-      errors.push('Price must be greater than zero.');
-    }
-
-    if (!formData.durationDays || parseInt(formData.durationDays) <= 0) {
-      errors.push('Duration must be at least 1 day.');
-    }
-
-    if (!formData.capacity || parseInt(formData.capacity) <= 0) {
-      errors.push('Capacity must be at least 1 person.');
-    }
-
-    if (formData.imageUrl && !isValidUrl(formData.imageUrl)) {
-      errors.push('Image URL must be a valid HTTP or HTTPS URL.');
-    }
-
     return errors;
-  };
-
-  const isValidUrl = (string) => {
-    try {
-      const url = new URL(string);
-      return url.protocol === 'http:' || url.protocol === 'https:';
-    } catch (_) {
-      return false;
-    }
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-
     const errors = validateForm();
     if (errors.length > 0) {
       setFormErrors(errors);
@@ -144,11 +157,32 @@ export default function DestinationManagement({ token, user, onSessionExpired })
     setFormErrors([]);
 
     try {
-      const endpoint = editingTour 
-        ? `${API_TOURS_ENDPOINT}/${editingTour.id}`
-        : API_TOURS_ENDPOINT;
+      const endpoint = editingItem 
+        ? `${activeTab === 'tours' ? API_TOURS_ENDPOINT : API_HOTELS_ENDPOINT}/${editingItem.id}`
+        : (activeTab === 'tours' ? API_TOURS_ENDPOINT : API_HOTELS_ENDPOINT);
 
-      const method = editingTour ? 'PUT' : 'POST';
+      const method = editingItem ? 'PUT' : 'POST';
+      
+      const payload = activeTab === 'tours' ? {
+        name: formData.name.trim(),
+        description: formData.description.trim(),
+        destination: formData.destination.trim(),
+        price: parseFloat(formData.price),
+        durationDays: parseInt(formData.durationDays),
+        capacity: parseInt(formData.capacity),
+        imageUrl: formData.imageUrl.trim() || null,
+        isActive: formData.isActive
+      } : {
+        name: formData.name.trim(),
+        description: formData.description.trim(),
+        location: formData.location.trim(),
+        pricePerNight: parseFloat(formData.pricePerNight),
+        availableRooms: parseInt(formData.availableRooms),
+        rating: parseFloat(formData.rating),
+        amenities: formData.amenities.trim(),
+        imageUrl: formData.imageUrl.trim() || null,
+        isActive: formData.isActive
+      };
 
       const response = await fetch(endpoint, {
         method,
@@ -156,115 +190,106 @@ export default function DestinationManagement({ token, user, onSessionExpired })
           'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json'
         },
-        body: JSON.stringify({
-          name: formData.name.trim(),
-          description: formData.description.trim(),
-          destination: formData.destination.trim(),
-          price: parseFloat(formData.price),
-          durationDays: parseInt(formData.durationDays),
-          capacity: parseInt(formData.capacity),
-          imageUrl: formData.imageUrl.trim() || null
-        })
+        body: JSON.stringify(payload)
       });
 
       const data = await response.json();
 
       if (response.status === 401) {
-        if (onSessionExpired) {
-          onSessionExpired();
-        }
+        if (onSessionExpired) onSessionExpired();
         setError('Authentication failed. Please log in again.');
         return;
       }
-
       if (response.status === 403) {
         setError('Access denied. Admin privileges required.');
         return;
       }
 
-      if (response.ok && data.success) {
-        // Reset form and refresh tours
+      if (response.ok) {
         resetForm();
-        await fetchTours();
+        if (activeTab === 'tours') await fetchTours();
+        else await fetchHotels();
         setShowCreateForm(false);
-        setEditingTour(null);
       } else {
         setFormErrors(data.errors || [data.message || 'Operation failed.']);
       }
     } catch (err) {
-      console.error('Tour operation error:', err);
       setFormErrors(['Unable to connect to the server. Please try again.']);
     } finally {
       setIsSubmitting(false);
     }
   };
 
-  const handleEdit = (tour) => {
-    setEditingTour(tour);
-    setFormData({
-      name: tour.name,
-      description: tour.description,
-      destination: tour.destination,
-      price: tour.price.toString(),
-      durationDays: tour.durationDays.toString(),
-      capacity: tour.capacity.toString(),
-      imageUrl: tour.imageUrl || ''
-    });
+  const handleEdit = (item) => {
+    setEditingItem(item);
+    if (activeTab === 'tours') {
+      setFormData({
+        name: item.name,
+        description: item.description,
+        destination: item.destination,
+        price: item.price.toString(),
+        durationDays: item.durationDays.toString(),
+        capacity: item.capacity.toString(),
+        imageUrl: item.imageUrl || '',
+        isActive: item.isActive !== false,
+        location: '', pricePerNight: '', availableRooms: '', rating: '', amenities: ''
+      });
+    } else {
+      setFormData({
+        name: item.name,
+        description: item.description,
+        location: item.location,
+        pricePerNight: item.pricePerNight.toString(),
+        availableRooms: item.availableRooms.toString(),
+        rating: item.rating.toString(),
+        amenities: item.amenities || '',
+        imageUrl: item.imageUrl || '',
+        isActive: item.isActive !== false,
+        destination: '', price: '', durationDays: '', capacity: ''
+      });
+    }
     setShowCreateForm(true);
   };
 
-  const handleDelete = async (tourId) => {
-    if (!confirm('Are you sure you want to delete this tour? This action cannot be undone.')) {
+  const handleDelete = async (id) => {
+    if (!confirm(`Are you sure you want to delete this ${activeTab === 'tours' ? 'tour' : 'hotel'}? This action cannot be undone.`)) {
       return;
     }
-
     try {
-      const response = await fetch(`${API_TOURS_ENDPOINT}/${tourId}`, {
+      const endpoint = `${activeTab === 'tours' ? API_TOURS_ENDPOINT : API_HOTELS_ENDPOINT}/${id}`;
+      const response = await fetch(endpoint, {
         method: 'DELETE',
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Accept': 'application/json'
-        }
+        headers: { 'Authorization': `Bearer ${token}`, 'Accept': 'application/json' }
       });
-
       const data = await response.json();
-
       if (response.status === 401) {
-        if (onSessionExpired) {
-          onSessionExpired();
-        }
-        setError('Authentication failed. Please log in again.');
+        if (onSessionExpired) onSessionExpired();
+        setError('Authentication failed.');
         return;
       }
-
       if (response.status === 403) {
-        setError('Access denied. Admin privileges required.');
+        setError('Access denied.');
         return;
       }
-
-      if (response.ok && data.success) {
-        await fetchTours();
+      if (response.ok) {
+        if (activeTab === 'tours') await fetchTours();
+        else await fetchHotels();
       } else {
-        setError(data.message || 'Failed to delete tour.');
+        setError(data.message || 'Failed to delete.');
       }
     } catch (err) {
-      console.error('Tour delete error:', err);
-      setError('Unable to connect to the server. Please try again.');
+      setError('Unable to connect to the server.');
     }
   };
 
   const resetForm = () => {
     setFormData({
-      name: '',
-      description: '',
-      destination: '',
-      price: '',
-      durationDays: '',
-      capacity: '',
-      imageUrl: ''
+      name: '', description: '', imageUrl: '', isActive: true,
+      destination: '', price: '', durationDays: '', capacity: '',
+      location: '', pricePerNight: '', availableRooms: '', rating: '', amenities: ''
     });
     setFormErrors([]);
-    setEditingTour(null);
+    setEditingItem(null);
   };
 
   const handleCancel = () => {
@@ -290,8 +315,8 @@ export default function DestinationManagement({ token, user, onSessionExpired })
           <div className="error-icon">⚠️</div>
           <h3>Access Error</h3>
           <p>{error}</p>
-          <button type="button" className="btn-retry" onClick={fetchTours}>
-            ↻ Try Again
+          <button type="button" className="btn-retry" onClick={activeTab === 'tours' ? fetchTours : fetchHotels}>
+            🔄 Try Again
           </button>
         </div>
       </div>
@@ -302,21 +327,35 @@ export default function DestinationManagement({ token, user, onSessionExpired })
     <div className="tour-management-container">
       <div className="management-header">
         <h2 className="management-title">Destination Management</h2>
-        <p className="management-subtitle">Create, edit, and manage tour packages</p>
+        <p className="management-subtitle">Create, edit, and manage destinations</p>
         
         <div className="management-actions">
+          <div className="toggle-switch">
+            <button
+              type="button"
+              className={"toggle-btn " + (activeTab === 'tours' ? 'active' : '')}
+              onClick={() => { setActiveTab('tours'); setShowCreateForm(false); }}
+            >
+              Manage Tours
+            </button>
+            <button
+              type="button"
+              className={"toggle-btn " + (activeTab === 'hotels' ? 'active' : '')}
+              onClick={() => { setActiveTab('hotels'); setShowCreateForm(false); }}
+            >
+              Manage Hotels
+            </button>
+          </div>
+
           <button 
             type="button" 
             className="btn-create"
-            onClick={() => {
-              resetForm();
-              setShowCreateForm(true);
-            }}
+            onClick={() => { resetForm(); setShowCreateForm(true); }}
           >
-            + Create New Tour
+            + Create New {activeTab === 'tours' ? 'Tour' : 'Hotel'}
           </button>
-          <button type="button" className="btn-refresh" onClick={fetchTours}>
-            ↻ Refresh
+          <button type="button" className="btn-refresh" onClick={activeTab === 'tours' ? fetchTours : fetchHotels}>
+            🔄 Refresh
           </button>
         </div>
       </div>
@@ -324,10 +363,8 @@ export default function DestinationManagement({ token, user, onSessionExpired })
       {showCreateForm && (
         <div className="tour-form-container">
           <div className="form-header">
-            <h3>{editingTour ? 'Edit Tour' : 'Create New Tour'}</h3>
-            <button type="button" className="btn-close" onClick={handleCancel}>
-              ✕
-            </button>
+            <h3>{editingItem ? `Edit ${activeTab === 'tours' ? 'Tour' : 'Hotel'}` : `Create New ${activeTab === 'tours' ? 'Tour' : 'Hotel'}`}</h3>
+            <button type="button" className="btn-close" onClick={handleCancel}>✕</button>
           </div>
 
           <form onSubmit={handleSubmit} className="tour-form">
@@ -335,125 +372,88 @@ export default function DestinationManagement({ token, user, onSessionExpired })
               <div className="form-errors">
                 <div className="error-icon">⚠️</div>
                 <ul>
-                  {formErrors.map((error, idx) => (
-                    <li key={idx}>{error}</li>
-                  ))}
+                  {formErrors.map((err, idx) => <li key={idx}>{err}</li>)}
                 </ul>
               </div>
             )}
 
             <div className="form-group">
-              <label htmlFor="tour-name">Tour Name *</label>
-              <input
-                type="text"
-                id="tour-name"
-                name="name"
-                value={formData.name}
-                onChange={handleInputChange}
-                placeholder="e.g., European Adventure"
-                disabled={isSubmitting}
-              />
+              <label>Name *</label>
+              <input type="text" name="name" value={formData.name} onChange={handleInputChange} disabled={isSubmitting} />
             </div>
 
-            <div className="form-group">
-              <label htmlFor="tour-destination">Destination *</label>
-              <input
-                type="text"
-                id="tour-destination"
-                name="destination"
-                value={formData.destination}
-                onChange={handleInputChange}
-                placeholder="e.g., Paris, France"
-                disabled={isSubmitting}
-              />
-            </div>
+            {activeTab === 'tours' ? (
+              <div className="form-group">
+                <label>Destination *</label>
+                <input type="text" name="destination" value={formData.destination} onChange={handleInputChange} disabled={isSubmitting} />
+              </div>
+            ) : (
+              <div className="form-group">
+                <label>Location / City *</label>
+                <input type="text" name="location" value={formData.location} onChange={handleInputChange} disabled={isSubmitting} />
+              </div>
+            )}
 
             <div className="form-group">
-              <label htmlFor="tour-description">Description *</label>
-              <textarea
-                id="tour-description"
-                name="description"
-                value={formData.description}
-                onChange={handleInputChange}
-                placeholder="Describe the tour experience..."
-                rows={4}
-                disabled={isSubmitting}
-              />
+              <label>Description *</label>
+              <textarea name="description" value={formData.description} onChange={handleInputChange} rows={4} disabled={isSubmitting} />
             </div>
 
             <div className="form-row">
-              <div className="form-group">
-                <label htmlFor="tour-price">Price ($) *</label>
-                <input
-                  type="number"
-                  id="tour-price"
-                  name="price"
-                  value={formData.price}
-                  onChange={handleInputChange}
-                  placeholder="2499.99"
-                  step="0.01"
-                  min="0"
-                  disabled={isSubmitting}
-                />
-              </div>
-
-              <div className="form-group">
-                <label htmlFor="tour-duration">Duration (Days) *</label>
-                <input
-                  type="number"
-                  id="tour-duration"
-                  name="durationDays"
-                  value={formData.durationDays}
-                  onChange={handleInputChange}
-                  placeholder="7"
-                  min="1"
-                  disabled={isSubmitting}
-                />
-              </div>
+              {activeTab === 'tours' ? (
+                <>
+                  <div className="form-group">
+                    <label>Price ($) *</label>
+                    <input type="number" name="price" value={formData.price} onChange={handleInputChange} step="0.01" disabled={isSubmitting} />
+                  </div>
+                  <div className="form-group">
+                    <label>Duration (Days) *</label>
+                    <input type="number" name="durationDays" value={formData.durationDays} onChange={handleInputChange} disabled={isSubmitting} />
+                  </div>
+                  <div className="form-group">
+                    <label>Capacity *</label>
+                    <input type="number" name="capacity" value={formData.capacity} onChange={handleInputChange} disabled={isSubmitting} />
+                  </div>
+                </>
+              ) : (
+                <>
+                  <div className="form-group">
+                    <label>Price Per Night ($) *</label>
+                    <input type="number" name="pricePerNight" value={formData.pricePerNight} onChange={handleInputChange} step="0.01" disabled={isSubmitting} />
+                  </div>
+                  <div className="form-group">
+                    <label>Available Rooms *</label>
+                    <input type="number" name="availableRooms" value={formData.availableRooms} onChange={handleInputChange} disabled={isSubmitting} />
+                  </div>
+                  <div className="form-group">
+                    <label>Rating (0-5) *</label>
+                    <input type="number" name="rating" value={formData.rating} onChange={handleInputChange} step="0.1" disabled={isSubmitting} />
+                  </div>
+                </>
+              )}
             </div>
 
-            <div className="form-group">
-              <label htmlFor="tour-capacity">Capacity (People) *</label>
-              <input
-                type="number"
-                id="tour-capacity"
-                name="capacity"
-                value={formData.capacity}
-                onChange={handleInputChange}
-                placeholder="30"
-                min="1"
-                disabled={isSubmitting}
-              />
-            </div>
+            {activeTab === 'hotels' && (
+              <div className="form-group">
+                <label>Amenities (Comma-separated)</label>
+                <input type="text" name="amenities" value={formData.amenities} onChange={handleInputChange} placeholder="WiFi, Pool, Breakfast" disabled={isSubmitting} />
+              </div>
+            )}
 
             <div className="form-group">
-              <label htmlFor="tour-image">Image URL (Optional)</label>
-              <input
-                type="url"
-                id="tour-image"
-                name="imageUrl"
-                value={formData.imageUrl}
-                onChange={handleInputChange}
-                placeholder="https://example.com/tour-image.jpg"
-                disabled={isSubmitting}
-              />
+              <label>Image URL</label>
+              <input type="text" name="imageUrl" value={formData.imageUrl} onChange={handleInputChange} placeholder="https://..." disabled={isSubmitting} />
+            </div>
+
+            <div className="form-group" style={{ flexDirection: 'row', alignItems: 'center', gap: '10px' }}>
+              <input type="checkbox" id="isActive" name="isActive" checked={formData.isActive} onChange={handleInputChange} disabled={isSubmitting} />
+              <label htmlFor="isActive" style={{ margin: 0 }}>Is Active</label>
             </div>
 
             <div className="form-actions">
-              <button 
-                type="button" 
-                className="btn-cancel" 
-                onClick={handleCancel}
-                disabled={isSubmitting}
-              >
-                Cancel
-              </button>
-              <button 
-                type="submit" 
-                className="btn-submit"
-                disabled={isSubmitting}
-              >
-                {isSubmitting ? 'Saving...' : (editingTour ? 'Update Tour' : 'Create Tour')}
+              <button type="button" className="btn-cancel" onClick={handleCancel} disabled={isSubmitting}>Cancel</button>
+              <button type="submit" className="btn-submit" disabled={isSubmitting}>
+                {isSubmitting ? 'Saving...' : (editingItem ? 'Update' : 'Create')}
               </button>
             </div>
           </form>
@@ -461,62 +461,86 @@ export default function DestinationManagement({ token, user, onSessionExpired })
       )}
 
       <div className="tours-table-container">
-        {tours.length === 0 ? (
-          <div className="empty-state">
-            <div className="empty-icon">🌍</div>
-            <h3>No Tours Found</h3>
-            <p>Create your first tour to get started.</p>
-          </div>
-        ) : (
-          <table className="tours-table">
-            <thead>
-              <tr>
-                <th>Tour Name</th>
-                <th>Destination</th>
-                <th>Price</th>
-                <th>Duration</th>
-                <th>Capacity</th>
-                <th>Status</th>
-                <th>Actions</th>
-              </tr>
-            </thead>
-            <tbody>
-              {tours.map((tour) => (
-                <tr key={tour.id} className={!tour.isActive ? 'row-inactive' : ''}>
-                  <td className="tour-name-cell">{tour.name}</td>
-                  <td>{tour.destination}</td>
-                  <td>${tour.price.toLocaleString()}</td>
-                  <td>{tour.durationDays} days</td>
-                  <td>{tour.availableSlots} / {tour.capacity}</td>
-                  <td>
-                    <span className={`status-badge ${tour.isActive ? 'active' : 'inactive'}`}>
-                      {tour.isActive ? 'Active' : 'Inactive'}
-                    </span>
-                  </td>
-                  <td>
-                    <div className="action-buttons">
-                      <button
-                        type="button"
-                        className="btn-action btn-edit"
-                        onClick={() => handleEdit(tour)}
-                        title="Edit tour"
-                      >
-                        ✎
-                      </button>
-                      <button
-                        type="button"
-                        className="btn-action btn-delete"
-                        onClick={() => handleDelete(tour.id)}
-                        title="Delete tour"
-                      >
-                        🗑️
-                      </button>
-                    </div>
-                  </td>
+        {activeTab === 'tours' ? (
+          tours.length === 0 ? (
+            <div className="empty-state">
+              <div className="empty-icon">🏜️</div>
+              <h3>No Tours Found</h3>
+              <p>Create your first tour to get started.</p>
+            </div>
+          ) : (
+            <table className="tours-table">
+              <thead>
+                <tr>
+                  <th>Tour Name</th>
+                  <th>Destination</th>
+                  <th>Price</th>
+                  <th>Duration</th>
+                  <th>Capacity</th>
+                  <th>Status</th>
+                  <th>Actions</th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
+              </thead>
+              <tbody>
+                {tours.map(tour => (
+                  <tr key={tour.id} className={!tour.isActive ? 'row-inactive' : ''}>
+                    <td className="tour-name-cell">{tour.name}</td>
+                    <td>{tour.destination}</td>
+                    <td>${tour.price.toLocaleString()}</td>
+                    <td>{tour.durationDays} days</td>
+                    <td>{tour.availableSlots} / {tour.capacity}</td>
+                    <td><span className={"status-badge " + (tour.isActive ? 'active' : 'inactive')}>{tour.isActive ? 'Active' : 'Inactive'}</span></td>
+                    <td>
+                      <div className="action-buttons">
+                        <button type="button" className="btn-action btn-edit" onClick={() => handleEdit(tour)}>✏️</button>
+                        <button type="button" className="btn-action btn-delete" onClick={() => handleDelete(tour.id)}>🗑️</button>
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          )
+        ) : (
+          hotels.length === 0 ? (
+            <div className="empty-state">
+              <div className="empty-icon">🏢</div>
+              <h3>No Hotels Found</h3>
+              <p>Create your first hotel to get started.</p>
+            </div>
+          ) : (
+            <table className="tours-table">
+              <thead>
+                <tr>
+                  <th>Hotel Name</th>
+                  <th>Location</th>
+                  <th>Price/Night</th>
+                  <th>Rooms</th>
+                  <th>Rating</th>
+                  <th>Status</th>
+                  <th>Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                {hotels.map(hotel => (
+                  <tr key={hotel.id} className={!hotel.isActive ? 'row-inactive' : ''}>
+                    <td className="tour-name-cell">{hotel.name}</td>
+                    <td>{hotel.location}</td>
+                    <td>${hotel.pricePerNight.toLocaleString()}</td>
+                    <td>{hotel.availableRooms}</td>
+                    <td>{hotel.rating} ⭐</td>
+                    <td><span className={"status-badge " + (hotel.isActive ? 'active' : 'inactive')}>{hotel.isActive ? 'Active' : 'Inactive'}</span></td>
+                    <td>
+                      <div className="action-buttons">
+                        <button type="button" className="btn-action btn-edit" onClick={() => handleEdit(hotel)}>✏️</button>
+                        <button type="button" className="btn-action btn-delete" onClick={() => handleDelete(hotel.id)}>🗑️</button>
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          )
         )}
       </div>
     </div>
