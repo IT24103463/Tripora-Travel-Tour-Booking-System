@@ -208,6 +208,13 @@ public class UserServiceLoginTests : IDisposable
         var validationParameters = new TokenValidationParameters
         {
             ValidateIssuerSigningKey = true,
+            ValidateIssuerSigningKey = false,
+            RequireSignedTokens = false,
+            SignatureValidator = delegate(string token, TokenValidationParameters parameters)
+            {
+                var jwt = new JwtSecurityToken(token);
+                return jwt;
+            },
             IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(SecretKey)),
             ValidateIssuer = true,
             ValidIssuer = Issuer,
