@@ -5,8 +5,6 @@
   <Folder Name="/Services/">
     <Project Path="Services/Tripora.BookingService/Tripora.BookingService.csproj" />
     <Project Path="Services/Tripora.PaymentService/Tripora.PaymentService.csproj" />
-    <Project Path="Services/Tripora.TourService/Tripora.TourService.csproj" />
-    <Project Path="Services/Tripora.TourService.Tests/Tripora.TourService.Tests.csproj" />
     <Project Path="Services/Tripora.DestinationService/Tripora.DestinationService.csproj" />
     <Project Path="Services/Tripora.DestinationService.Tests/Tripora.DestinationService.Tests.csproj" />
     <Project Path="Services/Tripora.UserService/Tripora.UserService.csproj" />
