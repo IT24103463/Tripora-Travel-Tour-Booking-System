@@ -81,6 +81,9 @@ public class DestinationDbContext : DbContext
                 .IsRequired()
                 .HasPrecision(18, 2);
 
+            entity.Property(h => h.TotalRooms)
+                .IsRequired();
+
             entity.Property(h => h.AvailableRooms)
                 .IsRequired();
 

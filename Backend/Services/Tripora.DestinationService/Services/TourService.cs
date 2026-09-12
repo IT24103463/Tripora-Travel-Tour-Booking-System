@@ -103,8 +103,17 @@ public class TourService : ITourService
             return TourOperationResult.NotFound("Tour not found.");
         }
 
+        
         try
         {
+            int bookedSlots = existingTour.Capacity - existingTour.AvailableSlots;
+            if (request.Capacity < bookedSlots)
+            {
+                return TourOperationResult.ValidationFailed(new[] { $"Cannot reduce capacity below currently booked slots ({bookedSlots})." });
+            }
+            int netCapacityChange = request.Capacity - existingTour.Capacity;
+            int newAvailableSlots = existingTour.AvailableSlots + netCapacityChange;
+
             var updatedTour = new Tour
             {
                 Id = id,
@@ -114,12 +123,11 @@ public class TourService : ITourService
                 Price = request.Price,
                 DurationDays = request.DurationDays,
                 Capacity = request.Capacity,
-                AvailableSlots = existingTour.AvailableSlots, // Preserve existing availability
+                AvailableSlots = newAvailableSlots,
                 IsActive = existingTour.IsActive,
                 ImageUrl = request.ImageUrl?.Trim()
             };
-
-            var result = await _tourRepository.UpdateAsync(updatedTour, cancellationToken);
+var result = await _tourRepository.UpdateAsync(updatedTour, cancellationToken);
             if (result == null)
             {
                 return TourOperationResult.NotFound("Tour not found.");
@@ -166,7 +174,69 @@ public class TourService : ITourService
         }
     }
 
+    
+    public async Task<TourOperationResult> ReserveSlotsAsync(Guid id, int count, CancellationToken cancellationToken = default)
+    {
+        _logger.LogInformation("Reserving {Count} slots for tour {TourId}", count, id);
+        if (count <= 0) return TourOperationResult.ValidationFailed(new[] { "Count must be greater than zero." });
+
+        try
+        {
+            var existingTour = await _tourRepository.GetByIdAsync(id, cancellationToken);
+            if (existingTour == null) return TourOperationResult.NotFound("Tour not found.");
+
+            if (existingTour.AvailableSlots < count)
+            {
+                return TourOperationResult.ValidationFailed(new[] { $"Not enough available slots. Requested: {count}, Available: {existingTour.AvailableSlots}" });
+            }
+
+            existingTour.AvailableSlots -= count;
+            var result = await _tourRepository.UpdateAsync(existingTour, cancellationToken);
+            return TourOperationResult.Succeeded(MapToResponseDto(result), $"Reserved {count} slots successfully.");
+        }
+        catch (Microsoft.EntityFrameworkCore.DbUpdateConcurrencyException)
+        {
+            return TourOperationResult.Failed("Concurrency conflict occurred. Please try again.");
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error reserving slots for tour {TourId}", id);
+            return TourOperationResult.Failed("Failed to reserve slots. Please try again.");
+        }
+    }
+
+    public async Task<TourOperationResult> ReleaseSlotsAsync(Guid id, int count, CancellationToken cancellationToken = default)
+    {
+        _logger.LogInformation("Releasing {Count} slots for tour {TourId}", count, id);
+        if (count <= 0) return TourOperationResult.ValidationFailed(new[] { "Count must be greater than zero." });
+
+        try
+        {
+            var existingTour = await _tourRepository.GetByIdAsync(id, cancellationToken);
+            if (existingTour == null) return TourOperationResult.NotFound("Tour not found.");
+
+            if (existingTour.AvailableSlots + count > existingTour.Capacity)
+            {
+                return TourOperationResult.ValidationFailed(new[] { "Cannot release more slots than capacity allows." });
+            }
+
+            existingTour.AvailableSlots += count;
+            var result = await _tourRepository.UpdateAsync(existingTour, cancellationToken);
+            return TourOperationResult.Succeeded(MapToResponseDto(result), $"Released {count} slots successfully.");
+        }
+        catch (Microsoft.EntityFrameworkCore.DbUpdateConcurrencyException)
+        {
+            return TourOperationResult.Failed("Concurrency conflict occurred. Please try again.");
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error releasing slots for tour {TourId}", id);
+            return TourOperationResult.Failed("Failed to release slots. Please try again.");
+        }
+    }
+
     private static TourResponseDto MapToResponseDto(Tour tour)
+
     {
         return new TourResponseDto
         {

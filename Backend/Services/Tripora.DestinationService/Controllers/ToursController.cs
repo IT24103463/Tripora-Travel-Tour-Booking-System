@@ -204,4 +204,40 @@ public class ToursController : ControllerBase
                 ApiResponse<TourResponseDto>.FailureResponse(result.Message, result.Errors))
         };
     }
+
+    [HttpPost("{id}/reserve")]
+    [Authorize]
+    [ProducesResponseType(typeof(ApiResponse<TourResponseDto>), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ApiResponse<TourResponseDto>), StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(typeof(ApiResponse<TourResponseDto>), StatusCodes.Status404NotFound)]
+    [ProducesResponseType(typeof(ApiResponse<TourResponseDto>), StatusCodes.Status409Conflict)]
+    public async Task<IActionResult> ReserveSlots(Guid id, [FromQuery] int count, CancellationToken cancellationToken)
+    {
+        var result = await _tourService.ReserveSlotsAsync(id, count, cancellationToken);
+        return result.Status switch
+        {
+            TourOperationStatus.Success => Ok(ApiResponse<TourResponseDto>.SuccessResponse(result.Data!, result.Message)),
+            TourOperationStatus.NotFound => NotFound(ApiResponse<TourResponseDto>.FailureResponse(result.Message, result.Errors)),
+            TourOperationStatus.ValidationError => BadRequest(ApiResponse<TourResponseDto>.FailureResponse(result.Message, result.Errors)),
+            _ => StatusCode(StatusCodes.Status500InternalServerError, ApiResponse<TourResponseDto>.FailureResponse(result.Message, result.Errors))
+        };
+    }
+
+    [HttpPost("{id}/release")]
+    [Authorize]
+    [ProducesResponseType(typeof(ApiResponse<TourResponseDto>), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ApiResponse<TourResponseDto>), StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(typeof(ApiResponse<TourResponseDto>), StatusCodes.Status404NotFound)]
+    [ProducesResponseType(typeof(ApiResponse<TourResponseDto>), StatusCodes.Status409Conflict)]
+    public async Task<IActionResult> ReleaseSlots(Guid id, [FromQuery] int count, CancellationToken cancellationToken)
+    {
+        var result = await _tourService.ReleaseSlotsAsync(id, count, cancellationToken);
+        return result.Status switch
+        {
+            TourOperationStatus.Success => Ok(ApiResponse<TourResponseDto>.SuccessResponse(result.Data!, result.Message)),
+            TourOperationStatus.NotFound => NotFound(ApiResponse<TourResponseDto>.FailureResponse(result.Message, result.Errors)),
+            TourOperationStatus.ValidationError => BadRequest(ApiResponse<TourResponseDto>.FailureResponse(result.Message, result.Errors)),
+            _ => StatusCode(StatusCodes.Status500InternalServerError, ApiResponse<TourResponseDto>.FailureResponse(result.Message, result.Errors))
+        };
+    }
 }
