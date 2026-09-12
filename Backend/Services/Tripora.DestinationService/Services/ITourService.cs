@@ -10,6 +10,8 @@ public interface ITourService
     Task<TourResponseDto?> GetTourByIdAsync(Guid id, CancellationToken cancellationToken = default);
     Task<TourOperationResult> UpdateTourAsync(Guid id, CreateTourRequestDto request, CancellationToken cancellationToken = default);
     Task<TourOperationResult> DeleteTourAsync(Guid id, CancellationToken cancellationToken = default);
+    Task<TourOperationResult> ReserveTourAsync(Guid id, int count, CancellationToken cancellationToken = default);
+    Task<TourOperationResult> ReleaseTourAsync(Guid id, int count, CancellationToken cancellationToken = default);
 }
 
 public enum TourOperationStatus

@@ -1,4 +1,4 @@
-using Microsoft.Extensions.Logging;
+﻿using Microsoft.Extensions.Logging;
 using Tripora.DestinationService.DTOs;
 using Tripora.DestinationService.Models;
 using Tripora.DestinationService.Repositories;
@@ -183,5 +183,36 @@ public class TourService : ITourService
             CreatedAt = tour.CreatedAt,
             UpdatedAt = tour.UpdatedAt
         };
+    }
+
+    public async Task<TourOperationResult> ReserveTourAsync(Guid id, int count, CancellationToken cancellationToken = default)
+    {
+        var tour = await _tourRepository.GetByIdAsync(id, cancellationToken);
+        if (tour == null) return TourOperationResult.NotFound();
+        if (!tour.IsActive) return TourOperationResult.ValidationFailed(new[] { "Tour is no longer active." });
+        if (tour.AvailableSlots < count) return TourOperationResult.ValidationFailed(new[] { "Not enough available slots." });
+        
+        tour.AvailableSlots -= count;
+        try {
+            var updatedTour = await _tourRepository.UpdateAsync(tour, cancellationToken);
+            return TourOperationResult.Succeeded(MapToResponseDto(updatedTour), "Tour reserved successfully.");
+        } catch (Microsoft.EntityFrameworkCore.DbUpdateConcurrencyException) {
+            return TourOperationResult.ValidationFailed(new[] { "Concurrency conflict. Please try again." });
+        }
+    }
+
+    public async Task<TourOperationResult> ReleaseTourAsync(Guid id, int count, CancellationToken cancellationToken = default)
+    {
+        var tour = await _tourRepository.GetByIdAsync(id, cancellationToken);
+        if (tour == null) return TourOperationResult.NotFound();
+        if (tour.AvailableSlots + count > tour.Capacity) return TourOperationResult.ValidationFailed(new[] { "Release would exceed capacity." });
+        
+        tour.AvailableSlots += count;
+        try {
+            var updatedTour = await _tourRepository.UpdateAsync(tour, cancellationToken);
+            return TourOperationResult.Succeeded(MapToResponseDto(updatedTour), "Tour released successfully.");
+        } catch (Microsoft.EntityFrameworkCore.DbUpdateConcurrencyException) {
+            return TourOperationResult.ValidationFailed(new[] { "Concurrency conflict. Please try again." });
+        }
     }
 }

@@ -1,4 +1,4 @@
-using Microsoft.AspNetCore.Authorization;
+﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Tripora.DestinationService.Data;
@@ -102,3 +102,4 @@ public class HotelController : ControllerBase
         return Ok(new { success = true, message = "Hotel deleted successfully" });
     }
 }
+

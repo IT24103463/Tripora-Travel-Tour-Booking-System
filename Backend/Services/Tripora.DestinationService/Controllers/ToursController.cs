@@ -1,4 +1,4 @@
-using Microsoft.AspNetCore.Authorization;
+﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Tripora.DestinationService.DTOs;
 using Tripora.DestinationService.Services;
@@ -203,5 +203,41 @@ public class ToursController : ControllerBase
                 StatusCodes.Status500InternalServerError,
                 ApiResponse<TourResponseDto>.FailureResponse(result.Message, result.Errors))
         };
+    }
+    [HttpPost("{id}/reserve")]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [ProducesResponseType(StatusCodes.Status409Conflict)]
+    public async Task<IActionResult> ReserveTour(Guid id, [FromQuery] int count, CancellationToken cancellationToken)
+    {
+        var result = await _tourService.ReserveTourAsync(id, count, cancellationToken);
+        if (result.Status == TourOperationStatus.NotFound)
+            return NotFound(result.Message);
+        
+        if (result.Status == TourOperationStatus.ValidationError)
+        {
+            if (result.Errors.Contains("Concurrency conflict. Please try again."))
+                return Conflict(result.Errors);
+            return BadRequest(result.Errors);
+        }
+
+        return Ok(result.Data);
+    }
+
+    [HttpPost("{id}/release")]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> ReleaseTour(Guid id, [FromQuery] int count, CancellationToken cancellationToken)
+    {
+        var result = await _tourService.ReleaseTourAsync(id, count, cancellationToken);
+        if (result.Status == TourOperationStatus.NotFound)
+            return NotFound(result.Message);
+        
+        if (result.Status == TourOperationStatus.ValidationError)
+            return BadRequest(result.Errors);
+
+        return Ok(result.Data);
     }
 }
