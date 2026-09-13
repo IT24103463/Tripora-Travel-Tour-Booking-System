@@ -1,29 +1,76 @@
-using System;
+﻿using System;
+using System.Net;
 using System.Net.Http;
 using System.Threading.Tasks;
+using Microsoft.Extensions.Logging;
 
 namespace Tripora.BookingService.Clients;
 
 public class DestinationClient : IDestinationClient
 {
     private readonly HttpClient _httpClient;
+    private readonly ILogger<DestinationClient> _logger;
 
-    public DestinationClient(HttpClient httpClient)
+    public DestinationClient(HttpClient httpClient, ILogger<DestinationClient> logger)
     {
         _httpClient = httpClient;
+        _logger = logger;
+    }
+
+    public async Task<bool> CheckItemExistsAsync(Guid itemId, string itemType)
+    {
+        try
+        {
+            var segment = itemType.ToLower() == "hotel" ? "hotels" : "tours";
+            var response = await _httpClient.GetAsync($"api/{segment}/{itemId}");
+            return response.IsSuccessStatusCode;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Failed to check item existence for {ItemType} {ItemId}", itemType, itemId);
+            throw; // Let Polly retry
+        }
     }
 
     public async Task<bool> ReserveInventoryAsync(Guid itemId, string itemType, int count)
     {
-        var endpoint = itemType.ToLower() == "hotel" ? $"api/hotels/{itemId}/reserve?count={count}" : $"api/tours/{itemId}/reserve?count={count}";
-        var response = await _httpClient.PostAsync(endpoint, null);
-        return response.IsSuccessStatusCode;
+        try
+        {
+            var segment = itemType.ToLower() == "hotel" ? "hotels" : "tours";
+            // Use the legacy endpoint route from HEAD since we kept it
+            var endpoint = $"api/{segment}/{itemId}/reserve?count={count}";
+            var response = await _httpClient.PostAsync(endpoint, null);
+
+            if (response.StatusCode == HttpStatusCode.BadRequest ||
+                response.StatusCode == HttpStatusCode.Conflict)
+            {
+                var body = await response.Content.ReadAsStringAsync();
+                _logger.LogWarning("Reservation rejected for {ItemType} {ItemId}: {Body}", itemType, itemId, body);
+                return false;
+            }
+
+            return response.IsSuccessStatusCode;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Failed to reserve {Count} slots for {ItemType} {ItemId}", count, itemType, itemId);
+            throw; 
+        }
     }
 
     public async Task<bool> ReleaseInventoryAsync(Guid itemId, string itemType, int count)
     {
-        var endpoint = itemType.ToLower() == "hotel" ? $"api/hotels/{itemId}/release?count={count}" : $"api/tours/{itemId}/release?count={count}";
-        var response = await _httpClient.PostAsync(endpoint, null);
-        return response.IsSuccessStatusCode;
+        try
+        {
+            var segment = itemType.ToLower() == "hotel" ? "hotels" : "tours";
+            var endpoint = $"api/{segment}/{itemId}/release?count={count}";
+            var response = await _httpClient.PostAsync(endpoint, null);
+            return response.IsSuccessStatusCode;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Failed to release {Count} slots for {ItemType} {ItemId}", count, itemType, itemId);
+            throw;
+        }
     }
 }

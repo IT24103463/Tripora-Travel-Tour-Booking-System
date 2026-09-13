@@ -486,3 +486,7 @@ $RECYCLE.BIN/
 # Temporary scripts backup
 >>>>>>> Stashed changes
 .temp_scripts_backup/
+
+*.db
+*.db-shm
+*.db-wal

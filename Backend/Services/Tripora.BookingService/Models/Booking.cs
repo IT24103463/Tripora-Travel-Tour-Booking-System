@@ -1,13 +1,44 @@
-using System;
+﻿using System;
+using System.ComponentModel.DataAnnotations;
+using System.ComponentModel.DataAnnotations.Schema;
 
 namespace Tripora.BookingService.Models;
 
 public class Booking
 {
+    [Key]
     public Guid Id { get; set; } = Guid.NewGuid();
-    public Guid UserId { get; set; }
+
+    [Required]
+    public string UserId { get; set; } = string.Empty;
+
+    // From TRIP-53
+    [Required]
+    public BookingType BookingType { get; set; }
+
+    public Guid? TourId { get; set; }
+    public Guid? HotelId { get; set; }
+
+    public DateTime BookingDate { get; set; } = DateTime.UtcNow;
+    public DateTime TravelDate { get; set; }
+    public DateTime? CheckInDate { get; set; }
+    public DateTime? CheckOutDate { get; set; }
+
+    [Required]
+    [Range(1, 100)]
+    public int Quantity { get; set; }
+
+    [Column(TypeName = "TEXT")]
+    public decimal TotalAmount { get; set; }
+
+    public BookingStatus Status { get; set; } = BookingStatus.Pending;
+
+    public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
+    public DateTime? UpdatedAt { get; set; }
+
+    // From HEAD (Legacy)
     public Guid ItemId { get; set; }
-    public string ItemType { get; set; } = "Tour"; // Tour or Hotel
+    public string ItemType { get; set; } = "Tour"; 
     public int Count { get; set; }
-    public string Status { get; set; } = "Confirmed";
+    public string LegacyStatus { get; set; } = "Confirmed";
 }
