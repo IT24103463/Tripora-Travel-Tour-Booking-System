@@ -49,7 +49,7 @@ public class BookingServiceTests
 
         Assert.True(success);
         Assert.NotNull(booking);
-        Assert.Equal(BookingStatus.Confirmed, booking!.Status);
+        Assert.Equal(BookingStatus.Pending, booking!.Status);
         Assert.Equal("user-123", booking.UserId);
         Assert.Equal(1, await db.Bookings.CountAsync());
 
@@ -103,7 +103,7 @@ public class BookingServiceTests
             TravelDate = DateTime.UtcNow.AddDays(15),
             Quantity = 1,
             TotalAmount = 250.00m,
-            Status = BookingStatus.Confirmed
+            Status = BookingStatus.Pending
         };
         db.Bookings.Add(booking);
         await db.SaveChangesAsync();
@@ -139,7 +139,7 @@ public class BookingServiceTests
             TravelDate = DateTime.UtcNow.AddDays(20),
             Quantity = 1,
             TotalAmount = 300.00m,
-            Status = BookingStatus.Confirmed
+            Status = BookingStatus.Pending
         };
         db.Bookings.Add(booking);
         await db.SaveChangesAsync();
@@ -155,7 +155,10 @@ public class BookingServiceTests
 
         // Booking still confirmed, no release triggered
         var unchanged = await db.Bookings.FindAsync(booking.Id);
-        Assert.Equal(BookingStatus.Confirmed, unchanged!.Status);
+        Assert.Equal(BookingStatus.Pending, unchanged!.Status);
         mockClient.Verify(c => c.ReleaseInventoryAsync(It.IsAny<Guid>(), It.IsAny<string>(), It.IsAny<int>()), Times.Never);
     }
 }
+
+
+

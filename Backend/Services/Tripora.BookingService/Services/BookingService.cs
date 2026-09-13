@@ -1,4 +1,4 @@
-using Microsoft.EntityFrameworkCore;
+﻿using Microsoft.EntityFrameworkCore;
 using Tripora.BookingService.Clients;
 using Tripora.BookingService.Data;
 using Tripora.BookingService.DTOs;
@@ -72,7 +72,7 @@ public class BookingService : IBookingService
             CheckOutDate = dto.CheckOutDate,
             Quantity = dto.Quantity,
             TotalAmount = dto.TotalAmount,
-            Status = BookingStatus.Confirmed,
+            Status = BookingStatus.Pending,
             CreatedAt = DateTime.UtcNow
         };
 
@@ -116,7 +116,7 @@ public class BookingService : IBookingService
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Failed to release inventory on cancellation for booking {BookingId}", id);
-                // Continue with cancellation even if release fails — log for manual reconciliation
+                // Continue with cancellation even if release fails â€” log for manual reconciliation
             }
         }
 
@@ -159,3 +159,4 @@ public class BookingService : IBookingService
         CreatedAt = b.CreatedAt
     };
 }
+

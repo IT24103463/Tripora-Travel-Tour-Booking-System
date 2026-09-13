@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+﻿import { useState, useEffect } from 'react';
 import { isTokenExpired } from '../App.jsx';
 import './DestinationManagement.css';
 import { RefreshCw, AlertTriangle, X, Compass, Hotel, Edit, Trash2, Plus } from 'lucide-react';
@@ -182,40 +182,49 @@ export default function DestinationManagement({ token, user, onSessionExpired })
     } finally {
       setTogglingId(null);
     }
-  };
-
-  const handleEdit = (item) => {
-    setEditingItem(item);
-    if (activeTab === 'tours') {
-      setFormData({
-        name: item.name,
-        description: item.description,
-        destination: item.destination,
-        price: item.price.toString(),
-        durationDays: item.durationDays.toString(),
-        capacity: item.capacity.toString(),
-        imageUrl: item.imageUrl || '',
-        isActive: item.isActive !== false,
-        location: '', pricePerNight: '', availableRooms: '', rating: '', amenities: ''
-      });
-    } else {
-      setFormData({
-        name: item.name,
-        description: item.description,
-        location: item.location,
-        pricePerNight: item.pricePerNight.toString(),
-        availableRooms: item.availableRooms.toString(),
-        rating: item.rating.toString(),
-        amenities: item.amenities || '',
-        imageUrl: item.imageUrl || '',
-        isActive: item.isActive !== false,
-        destination: '', price: '', durationDays: '', capacity: ''
-      });
+  };  const handleEdit = (item) => {
+    if (!item || typeof item !== 'object') {
+      console.error("Invalid edit payload:", item);
+      return;
     }
-    setShowCreateForm(true);
-  };
+    try {
+      console.log("Edit clicked. Item data:", item);
+      setEditingItem(item);
+      if (activeTab === 'tours') {
+        setFormData({
+          id: item?.id ?? item?._id ?? '',
+          name: item?.title ?? item?.name ?? '',
+          description: item?.description ?? '',
+          destination: item?.destination ?? item?.location ?? '',
+          price: item?.price ?? 0,
+          durationDays: item?.durationDays ?? 0,
+          capacity: item?.availableSpots ?? item?.capacity ?? 0,
+          imageUrl: item?.imageUrl ?? '',
+          isActive: item?.isActive ?? true,
+          location: '', pricePerNight: '', availableRooms: '', rating: '', amenities: ''
+        });
+      } else {
+        setFormData({
+          id: item?.id ?? item?._id ?? '',
+          name: item?.title ?? item?.name ?? '',
+          description: item?.description ?? '',
+          location: item?.location ?? '',
+          pricePerNight: item?.pricePerNight ?? 0,
+          availableRooms: item?.availableRooms ?? 0,
+          rating: item?.rating ?? 0,
+          amenities: item?.amenities ?? '',
+          imageUrl: item?.imageUrl ?? '',
+          isActive: item?.isActive ?? true,
+          destination: '', price: '', durationDays: '', capacity: ''
+        });
+      }
+      setShowCreateForm(true);
+    } catch (err) {
+      console.error("Crash before render:", err);
+    }
+  };;
 
-  const handleDelete = async (id) => {
+    const handleDelete = async (id) => {
     if (!confirm(`Are you sure you want to delete this ${activeTab === 'tours' ? 'tour' : 'hotel'}? This action cannot be undone.`)) {
       return;
     }
@@ -225,7 +234,6 @@ export default function DestinationManagement({ token, user, onSessionExpired })
         method: 'DELETE',
         headers: { 'Authorization': `Bearer ${token}`, 'Accept': 'application/json' }
       });
-      const data = await response.json();
       if (response.status === 401) {
         if (onSessionExpired) onSessionExpired();
         setError('Authentication failed.');
@@ -239,23 +247,91 @@ export default function DestinationManagement({ token, user, onSessionExpired })
         if (activeTab === 'tours') await fetchTours();
         else await fetchHotels();
       } else {
+        const data = await response.json();
         setError(data.message || 'Failed to delete.');
       }
-    
     } catch (err) {
-      console.error('Toggle status error:', err);
-      setError(`Failed to toggle status: ${err.message}`);
-      // Revert on failure
-      if (type === 'tour') {
-        setTours(prevItems);
-      } else {
-        setHotels(prevItems);
-      }
-    } finally {
-      setTogglingId(null);
+      console.error('Delete error:', err);
+      setError(`Failed to delete: ${err.message}`);
     }
   };
 
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    setIsSubmitting(true);
+    setFormErrors([]);
+
+    let payload;
+    if (activeTab === 'tours') {
+      payload = {
+        name: formData.name,
+        description: formData.description,
+        destination: formData.destination,
+        price: parseFloat(formData.price),
+        durationDays: parseInt(formData.durationDays, 10),
+        capacity: parseInt(formData.capacity, 10),
+        imageUrl: formData.imageUrl,
+        isActive: formData.isActive
+      };
+    } else {
+      payload = {
+        name: formData.name,
+        description: formData.description,
+        location: formData.location,
+        pricePerNight: parseFloat(formData.pricePerNight),
+        availableRooms: parseInt(formData.availableRooms, 10),
+        rating: parseFloat(formData.rating),
+        amenities: formData.amenities,
+        imageUrl: formData.imageUrl,
+        isActive: formData.isActive
+      };
+    }
+
+    try {
+      const endpoint = editingItem 
+        ? `${activeTab === 'tours' ? API_TOURS_ENDPOINT : API_HOTELS_ENDPOINT}/${editingItem.id}` 
+        : (activeTab === 'tours' ? API_TOURS_ENDPOINT : API_HOTELS_ENDPOINT);
+
+      const response = await fetch(endpoint, {
+        method: editingItem ? 'PUT' : 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify(payload)
+      });
+
+      if (response.ok) {
+        if (activeTab === 'tours') await fetchTours();
+        else await fetchHotels();
+        handleCancel();
+      } else {
+        const data = await response.json();
+        if (data.errors) {
+          const msgs = [];
+          Object.values(data.errors).forEach(errArr => {
+            if (Array.isArray(errArr)) msgs.push(...errArr);
+          });
+          setFormErrors(msgs);
+        } else {
+          setFormErrors([data.message || 'Validation failed.']);
+        }
+      }
+    } catch (err) {
+      console.error('Submit error:', err);
+      setFormErrors([err.message]);
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+    const handleInputChange = (e) => {
+    const { name, value, type, checked } = e.target;
+    setFormData(prev => ({
+      ...prev,
+      [name]: type === 'checkbox' ? checked : value
+    }));
+  };
 
   const resetForm = () => {
     setFormData({
@@ -287,7 +363,7 @@ export default function DestinationManagement({ token, user, onSessionExpired })
     return (
       <div className="tour-management-container">
         <div className="error-state">
-          <div className="error-icon">⚠️</div>
+          <div className="error-icon"><AlertTriangle size={24} /></div>
           <h3>Access Error</h3>
           <p>{error}</p>
           <button type="button" className="btn-retry" onClick={activeTab === 'tours' ? fetchTours : fetchHotels}>
@@ -345,7 +421,7 @@ export default function DestinationManagement({ token, user, onSessionExpired })
           <form onSubmit={handleSubmit} className="tour-form">
             {formErrors.length > 0 && (
               <div className="form-errors">
-                <div className="error-icon">⚠️</div>
+                <div className="error-icon"><AlertTriangle size={24} /></div>
                 <ul>
                   {formErrors.map((err, idx) => <li key={idx}>{err}</li>)}
                 </ul>
@@ -354,24 +430,24 @@ export default function DestinationManagement({ token, user, onSessionExpired })
 
             <div className="form-group">
               <label>Name *</label>
-              <input type="text" name="name" value={formData.name} onChange={handleInputChange} disabled={isSubmitting} />
+              <input type="text" name="name" value={formData.name || ''} onChange={handleInputChange} disabled={isSubmitting} />
             </div>
 
             {activeTab === 'tours' ? (
               <div className="form-group">
                 <label>Destination *</label>
-                <input type="text" name="destination" value={formData.destination} onChange={handleInputChange} disabled={isSubmitting} />
+                <input type="text" name="destination" value={formData.destination || ''} onChange={handleInputChange} disabled={isSubmitting} />
               </div>
             ) : (
               <div className="form-group">
                 <label>Location / City *</label>
-                <input type="text" name="location" value={formData.location} onChange={handleInputChange} disabled={isSubmitting} />
+                <input type="text" name="location" value={formData.location || ''} onChange={handleInputChange} disabled={isSubmitting} />
               </div>
             )}
 
             <div className="form-group">
               <label>Description *</label>
-              <textarea name="description" value={formData.description} onChange={handleInputChange} rows={4} disabled={isSubmitting} />
+              <textarea name="description" value={formData.description || ''} onChange={handleInputChange} rows={4} disabled={isSubmitting} />
             </div>
 
             <div className="form-row">
@@ -379,30 +455,30 @@ export default function DestinationManagement({ token, user, onSessionExpired })
                 <>
                   <div className="form-group">
                     <label>Price ($) *</label>
-                    <input type="number" name="price" value={formData.price} onChange={handleInputChange} step="0.01" disabled={isSubmitting} />
+                    <input type="number" name="price" value={formData.price || ''} onChange={handleInputChange} step="0.01" disabled={isSubmitting} />
                   </div>
                   <div className="form-group">
                     <label>Duration (Days) *</label>
-                    <input type="number" name="durationDays" value={formData.durationDays} onChange={handleInputChange} disabled={isSubmitting} />
+                    <input type="number" name="durationDays" value={formData.durationDays || ''} onChange={handleInputChange} disabled={isSubmitting} />
                   </div>
                   <div className="form-group">
                     <label>Capacity *</label>
-                    <input type="number" name="capacity" value={formData.capacity} onChange={handleInputChange} disabled={isSubmitting} />
+                    <input type="number" name="capacity" value={formData.capacity || ''} onChange={handleInputChange} disabled={isSubmitting} />
                   </div>
                 </>
               ) : (
                 <>
                   <div className="form-group">
                     <label>Price Per Night ($) *</label>
-                    <input type="number" name="pricePerNight" value={formData.pricePerNight} onChange={handleInputChange} step="0.01" disabled={isSubmitting} />
+                    <input type="number" name="pricePerNight" value={formData.pricePerNight || ''} onChange={handleInputChange} step="0.01" disabled={isSubmitting} />
                   </div>
                   <div className="form-group">
                     <label>Available Rooms *</label>
-                    <input type="number" name="availableRooms" value={formData.availableRooms} onChange={handleInputChange} disabled={isSubmitting} />
+                    <input type="number" name="availableRooms" value={formData.availableRooms || ''} onChange={handleInputChange} disabled={isSubmitting} />
                   </div>
                   <div className="form-group">
                     <label>Rating (0-5) *</label>
-                    <input type="number" name="rating" value={formData.rating} onChange={handleInputChange} step="0.1" disabled={isSubmitting} />
+                    <input type="number" name="rating" value={formData.rating || ''} onChange={handleInputChange} step="0.1" disabled={isSubmitting} />
                   </div>
                 </>
               )}
@@ -411,17 +487,17 @@ export default function DestinationManagement({ token, user, onSessionExpired })
             {activeTab === 'hotels' && (
               <div className="form-group">
                 <label>Amenities (Comma-separated)</label>
-                <input type="text" name="amenities" value={formData.amenities} onChange={handleInputChange} placeholder="WiFi, Pool, Breakfast" disabled={isSubmitting} />
+                <input type="text" name="amenities" value={formData.amenities || ''} onChange={handleInputChange} placeholder="WiFi, Pool, Breakfast" disabled={isSubmitting} />
               </div>
             )}
 
             <div className="form-group">
               <label>Image URL</label>
-              <input type="text" name="imageUrl" value={formData.imageUrl} onChange={handleInputChange} placeholder="https://..." disabled={isSubmitting} />
+              <input type="text" name="imageUrl" value={formData.imageUrl || ''} onChange={handleInputChange} placeholder="https://..." disabled={isSubmitting} />
             </div>
 
             <div className="form-group" style={{ flexDirection: 'row', alignItems: 'center', gap: '10px' }}>
-              <input type="checkbox" id="isActive" name="isActive" checked={formData.isActive} onChange={handleInputChange} disabled={isSubmitting} />
+              <input type="checkbox" id="isActive" name="isActive" checked={formData.isActive || false} onChange={handleInputChange} disabled={isSubmitting} />
               <label htmlFor="isActive" style={{ margin: 0 }}>Is Active</label>
             </div>
 
@@ -439,7 +515,7 @@ export default function DestinationManagement({ token, user, onSessionExpired })
         {activeTab === 'tours' ? (
           tours.length === 0 ? (
             <div className="empty-state">
-              <div className="empty-icon">🏜️</div>
+              <div className="empty-icon"><Compass size={48} /></div>
               <h3>No Tours Found</h3>
               <p>Create your first tour to get started.</p>
             </div>
@@ -461,7 +537,7 @@ export default function DestinationManagement({ token, user, onSessionExpired })
                   <tr key={tour.id} className={!tour.isActive ? 'row-inactive' : ''}>
                     <td className="tour-name-cell">{tour.name}</td>
                     <td>{tour.destination}</td>
-                    <td>${tour.price.toLocaleString()}</td>
+                    <td>${tour.price?.toLocaleString() ?? 0}</td>
                     <td>{tour.durationDays} days</td>
                     <td>{tour.availableSlots} / {tour.capacity}</td>
                     <td>
@@ -479,8 +555,8 @@ export default function DestinationManagement({ token, user, onSessionExpired })
                       </td>
                     <td>
                       <div className="action-buttons">
-                        <button type="button" className="btn-action btn-edit" onClick={() => handleEdit(tour)}>✏️</button>
-                        <button type="button" className="btn-action btn-delete" onClick={() => handleDelete(tour.id)}>🗑️</button>
+                        <button type="button" className="btn-action btn-edit" onClick={() => handleEdit(tour)}><Edit size={16} /></button>
+                        <button type="button" className="btn-action btn-delete" onClick={() => handleDelete(tour.id)}><Trash2 size={16} /></button>
                       </div>
                     </td>
                   </tr>
@@ -513,9 +589,9 @@ export default function DestinationManagement({ token, user, onSessionExpired })
                   <tr key={hotel.id} className={!hotel.isActive ? 'row-inactive' : ''}>
                     <td className="tour-name-cell">{hotel.name}</td>
                     <td>{hotel.location}</td>
-                    <td>${hotel.pricePerNight.toLocaleString()}</td>
+                    <td>${hotel.pricePerNight?.toLocaleString() ?? 0}</td>
                     <td>{hotel.availableRooms}</td>
-                    <td>{hotel.rating} ⭐</td>
+                    <td>{hotel.rating} â­</td>
                     <td>
                         <button 
                           type="button"
@@ -531,8 +607,8 @@ export default function DestinationManagement({ token, user, onSessionExpired })
                       </td>
                     <td>
                       <div className="action-buttons">
-                        <button type="button" className="btn-action btn-edit" onClick={() => handleEdit(hotel)}>✏️</button>
-                        <button type="button" className="btn-action btn-delete" onClick={() => handleDelete(hotel.id)}>🗑️</button>
+                        <button type="button" className="btn-action btn-edit" onClick={() => handleEdit(hotel)}><Edit size={16} /></button>
+                        <button type="button" className="btn-action btn-delete" onClick={() => handleDelete(hotel.id)}><Trash2 size={16} /></button>
                       </div>
                     </td>
                   </tr>
@@ -545,3 +621,14 @@ export default function DestinationManagement({ token, user, onSessionExpired })
     </div>
   );
 }
+
+
+
+
+
+
+
+
+
+
+

@@ -1,7 +1,8 @@
-import { useState, useEffect } from 'react';
+﻿import { useState, useEffect } from 'react';
 import RegisterForm from './components/RegisterForm';
 import LoginForm from './components/LoginForm';
 import CustomerDashboard from './components/CustomerDashboard';
+import ErrorBoundary from './components/ErrorBoundary';
 import ProfileView from './components/ProfileView';
 import TourDisplay from './components/TourDisplay';
 import DestinationManagement from './components/DestinationManagement';
@@ -188,8 +189,7 @@ function App() {
           </div>
         )}
 
-        {!authUser && !showAuth ? (
-          <section className="landing-hero" id="about">
+        {!authUser && !showAuth ? (          <section className="landing-hero" id="about">
             <div className="landing-copy">
               <span className="hero-pill">TRIPORA / CURATED TRAVEL</span>
               <h1 className="hero-headline">Unforgettable<br />Travel Moments<br /><em>with Tripora</em></h1>
@@ -222,7 +222,7 @@ function App() {
               />
             )}
             {currentView === 'tours' && (
-              <TourDisplay />
+              <TourDisplay token={authToken} user={authUser} onRequireAuth={() => { setShowAuth(true); setActiveTab("login"); }} />
             )}
             {currentView === 'destination-management' && (
               <DestinationManagement 
@@ -299,3 +299,8 @@ function App() {
 }
 
 export default App;
+
+
+
+
+
