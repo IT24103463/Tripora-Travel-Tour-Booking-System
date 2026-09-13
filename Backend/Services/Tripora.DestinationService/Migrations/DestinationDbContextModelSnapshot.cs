@@ -30,6 +30,7 @@ namespace Tripora.DestinationService.Migrations
                         .HasColumnType("longtext");
 
                     b.Property<int>("AvailableRooms")
+                        .IsConcurrencyToken()
                         .HasColumnType("int");
 
                     b.Property<DateTime>("CreatedAt")
@@ -87,6 +88,7 @@ namespace Tripora.DestinationService.Migrations
                             Id = new Guid("55555555-5555-5555-5555-555555555555"),
                             Amenities = "Ocean View, Private Pool, Free WiFi, Spa, Breakfast Included, Airport Shuttle",
                             AvailableRooms = 15,
+                            TotalRooms = 15,
                             CreatedAt = new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
                             Description = "Overwater luxury villas featuring direct lagoon access, sunset infinity pools, and world-class fine dining.",
                             ImageUrl = "https://images.unsplash.com/photo-1571896349842-33c89424de2d?auto=format&fit=crop&w=800&q=80",
@@ -101,6 +103,7 @@ namespace Tripora.DestinationService.Migrations
                             Id = new Guid("66666666-6666-6666-6666-666666666666"),
                             Amenities = "Ski-in/Ski-out, Spa & Sauna, Free WiFi, Mountain View, Restaurant, Bar",
                             AvailableRooms = 25,
+                            TotalRooms = 25,
                             CreatedAt = new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
                             Description = "Cozy alpine chalet-style architecture offering panoramic Matterhorn views, heated thermal baths, and fireside lounges.",
                             ImageUrl = "https://images.unsplash.com/photo-1582719478250-c89cae4dc85b?auto=format&fit=crop&w=800&q=80",
@@ -147,6 +150,7 @@ namespace Tripora.DestinationService.Migrations
                         .HasColumnType("char(36)");
 
                     b.Property<int>("AvailableSlots")
+                        .IsConcurrencyToken()
                         .HasColumnType("int");
 
                     b.Property<int>("Capacity")
@@ -266,3 +270,5 @@ namespace Tripora.DestinationService.Migrations
         }
     }
 }
+
+

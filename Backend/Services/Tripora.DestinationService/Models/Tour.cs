@@ -1,3 +1,4 @@
+using System.ComponentModel.DataAnnotations;
 namespace Tripora.DestinationService.Models;
 
 public class Tour
@@ -16,6 +17,7 @@ public class Tour
     
     public int Capacity { get; set; }
     
+    [ConcurrencyCheck]
     public int AvailableSlots { get; set; }
     
     public bool IsActive { get; set; } = true;

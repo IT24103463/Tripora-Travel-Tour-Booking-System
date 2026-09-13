@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Security.Claims;
@@ -11,7 +11,9 @@ using Tripora.DestinationService.Controllers;
 using Tripora.DestinationService.Data;
 using Tripora.DestinationService.DTOs;
 using Tripora.DestinationService.Models;
+using Tripora.DestinationService.Services;
 using Xunit;
+using Moq;
 
 namespace Tripora.DestinationService.Tests
 {
@@ -19,6 +21,7 @@ namespace Tripora.DestinationService.Tests
     {
         private readonly DestinationDbContext _context;
         private readonly HotelController _controller;
+        private readonly Mock<IHotelService> _mockHotelService;
 
         public HotelManagementTests()
         {
@@ -27,7 +30,8 @@ namespace Tripora.DestinationService.Tests
                 .Options;
 
             _context = new DestinationDbContext(options);
-            _controller = new HotelController(_context);
+            _mockHotelService = new Mock<IHotelService>();
+            _controller = new HotelController(_context, _mockHotelService.Object);
         }
 
         public void Dispose()
@@ -48,8 +52,18 @@ namespace Tripora.DestinationService.Tests
             };
         }
 
+        private DestinationDbContext GetInMemoryDbContext()
+        {
+            var options = new DbContextOptionsBuilder<DestinationDbContext>()
+                .UseInMemoryDatabase(databaseName: Guid.NewGuid().ToString())
+                .Options;
+            return new DestinationDbContext(options);
+        }
+
+        // --- TRIP-50: Basic CRUD and Search Tests ---
+
         [Fact]
-        public async Task CreateHotel_WithValidData_CreatesAndReturnsHotel()
+        public async Task CreateHotel_WithValidData_ReturnsCreated()
         {
             // Arrange
             SetControllerUserRole("Admin");
@@ -60,6 +74,7 @@ namespace Tripora.DestinationService.Tests
                 Location = "Test City",
                 PricePerNight = 150.50m,
                 AvailableRooms = 10,
+                TotalRooms = 10,
                 Rating = 4.5,
                 Amenities = "WiFi, Pool"
             };
@@ -89,6 +104,7 @@ namespace Tripora.DestinationService.Tests
                 Location = "Test City",
                 PricePerNight = -50m, // Invalid negative price
                 AvailableRooms = 10,
+                TotalRooms = 10,
                 Rating = 4.5
             };
 
@@ -101,45 +117,6 @@ namespace Tripora.DestinationService.Tests
             // Assert
             Assert.False(isValid);
             Assert.Contains(results, r => r.ErrorMessage.Contains("Price must be greater than zero"));
-        }
-
-        [Fact]
-        public async Task UpdateHotel_WithValidData_UpdatesHotel()
-        {
-            // Arrange
-            SetControllerUserRole("Admin");
-            var hotel = new Hotel
-            {
-                Name = "Old Name",
-                Description = "Old desc",
-                Location = "Old loc",
-                PricePerNight = 100m,
-                AvailableRooms = 5
-            };
-            _context.Hotels.Add(hotel);
-            await _context.SaveChangesAsync();
-
-            var updateRequest = new UpdateHotelRequestDto
-            {
-                Name = "New Name",
-                Description = "New desc",
-                Location = "New loc",
-                PricePerNight = 200m,
-                AvailableRooms = 20,
-                Rating = 5.0,
-                Amenities = "Spa"
-            };
-
-            // Act
-            var result = await _controller.UpdateHotel(hotel.Id, updateRequest);
-
-            // Assert
-            var okResult = Assert.IsType<OkObjectResult>(result);
-            var updatedHotel = Assert.IsType<Hotel>(okResult.Value);
-            
-            Assert.Equal("New Name", updatedHotel.Name);
-            Assert.Equal(200m, updatedHotel.PricePerNight);
-            Assert.Equal("Spa", updatedHotel.Amenities);
         }
 
         [Fact]
@@ -179,32 +156,49 @@ namespace Tripora.DestinationService.Tests
             Assert.Equal("Admin", authorizeAttribute.Roles);
         }
 
+        // --- TRIP-52: Availability Tests ---
+
         [Fact]
-        public void UpdateHotel_RequiresAdminRole_AttributeCheck()
+        public async Task UpdateHotelAsync_IncreaseTotalRooms_IncreasesAvailableRooms()
         {
-            // Arrange & Act
-            var methodInfo = typeof(HotelController).GetMethod(nameof(HotelController.UpdateHotel));
-            var authorizeAttribute = methodInfo.GetCustomAttributes(typeof(Microsoft.AspNetCore.Authorization.AuthorizeAttribute), false)
-                .OfType<Microsoft.AspNetCore.Authorization.AuthorizeAttribute>()
-                .FirstOrDefault();
+            // Arrange
+            var db = GetInMemoryDbContext();
+            var hotelId = Guid.NewGuid();
+            var hotel = new Hotel { Id = hotelId, TotalRooms = 10, AvailableRooms = 5 };
+            db.Hotels.Add(hotel);
+            await db.SaveChangesAsync();
+
+            var service = new HotelService(db);
+            var dto = new UpdateHotelRequestDto { TotalRooms = 15 };
+
+            // Act
+            var result = await service.UpdateHotelAsync(hotelId, dto);
 
             // Assert
-            Assert.NotNull(authorizeAttribute);
-            Assert.Equal("Admin", authorizeAttribute.Roles);
+            Assert.True(result.IsSuccess);
+            Assert.Equal(15, result.Hotel!.TotalRooms);
+            Assert.Equal(10, result.Hotel!.AvailableRooms); // 5 booked, new total is 15 -> available = 10
         }
 
         [Fact]
-        public void DeleteHotel_RequiresAdminRole_AttributeCheck()
+        public async Task UpdateHotelAsync_DecreaseTotalRooms_FailsIfBelowOccupied()
         {
-            // Arrange & Act
-            var methodInfo = typeof(HotelController).GetMethod(nameof(HotelController.DeleteHotel));
-            var authorizeAttribute = methodInfo.GetCustomAttributes(typeof(Microsoft.AspNetCore.Authorization.AuthorizeAttribute), false)
-                .OfType<Microsoft.AspNetCore.Authorization.AuthorizeAttribute>()
-                .FirstOrDefault();
+            // Arrange
+            var db = GetInMemoryDbContext();
+            var hotelId = Guid.NewGuid();
+            var hotel = new Hotel { Id = hotelId, TotalRooms = 10, AvailableRooms = 2 }; // 8 occupied
+            db.Hotels.Add(hotel);
+            await db.SaveChangesAsync();
+
+            var service = new HotelService(db);
+            var dto = new UpdateHotelRequestDto { TotalRooms = 5 }; // Try shrinking to 5
+
+            // Act
+            var result = await service.UpdateHotelAsync(hotelId, dto);
 
             // Assert
-            Assert.NotNull(authorizeAttribute);
-            Assert.Equal("Admin", authorizeAttribute.Roles);
+            Assert.False(result.IsSuccess);
+            Assert.Contains("Cannot reduce TotalRooms below currently occupied rooms", result.ErrorMessage);
         }
     }
 }

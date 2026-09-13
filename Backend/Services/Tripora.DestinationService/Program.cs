@@ -60,6 +60,7 @@ builder.Services.AddAuthorization();
 builder.Services.AddScoped<ITourRepository, TourRepository>();
 builder.Services.AddSingleton<IValidationService, ValidationService>();
 builder.Services.AddScoped<ITourService, TourService>();
+builder.Services.AddScoped<IHotelService, HotelService>();
 
 // 5. Register controllers
 builder.Services.AddControllers();

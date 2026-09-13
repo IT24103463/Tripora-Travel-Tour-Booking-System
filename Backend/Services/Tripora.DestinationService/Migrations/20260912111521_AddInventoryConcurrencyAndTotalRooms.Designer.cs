@@ -11,8 +11,8 @@ using Tripora.DestinationService.Data;
 namespace Tripora.DestinationService.Migrations
 {
     [DbContext(typeof(DestinationDbContext))]
-    [Migration("20260912071100_AddHotelRatingAmenities")]
-    partial class AddHotelRatingAmenities
+    [Migration("20260912111521_AddInventoryConcurrencyAndTotalRooms")]
+    partial class AddInventoryConcurrencyAndTotalRooms
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
@@ -27,10 +27,6 @@ namespace Tripora.DestinationService.Migrations
                     b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("char(36)");
-
-                    b.Property<string>("Amenities")
-                        .IsRequired()
-                        .HasColumnType("longtext");
 
                     b.Property<int>("AvailableRooms")
                         .IsConcurrencyToken()
@@ -69,8 +65,8 @@ namespace Tripora.DestinationService.Migrations
                         .HasPrecision(18, 2)
                         .HasColumnType("decimal(18,2)");
 
-b.Property<double>("Rating")
-                        .HasColumnType("double");
+                    b.Property<int>("TotalRooms")
+                        .HasColumnType("int");
 
                     b.Property<DateTime?>("UpdatedAt")
                         .HasColumnType("datetime(6)");
@@ -155,4 +151,3 @@ b.Property<double>("Rating")
         }
     }
 }
-

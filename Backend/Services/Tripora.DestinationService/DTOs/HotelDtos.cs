@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.ComponentModel.DataAnnotations;
 
 namespace Tripora.DestinationService.DTOs;
@@ -16,6 +16,9 @@ public class CreateHotelRequestDto
 
     [Range(0.01, double.MaxValue, ErrorMessage = "Price must be greater than zero.")]
     public decimal PricePerNight { get; set; }
+
+    [Range(0, int.MaxValue, ErrorMessage = "Total rooms cannot be negative.")]
+    public int TotalRooms { get; set; }
 
     [Range(0, int.MaxValue, ErrorMessage = "Available rooms cannot be negative.")]
     public int AvailableRooms { get; set; }
