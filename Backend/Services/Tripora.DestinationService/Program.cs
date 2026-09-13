@@ -1,4 +1,4 @@
-using System.Text;
+﻿using System.Text;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
@@ -75,7 +75,7 @@ builder.Services.AddCors(options =>
                 "http://localhost:5000",
                 "http://localhost:5292")
             .AllowAnyHeader()
-            .AllowAnyMethod();
+            .AllowAnyMethod().AllowCredentials();
     });
 });
 
