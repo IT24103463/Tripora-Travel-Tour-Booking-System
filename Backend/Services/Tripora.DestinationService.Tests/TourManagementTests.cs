@@ -28,7 +28,11 @@ public class TourManagementTests : IDisposable
             .Options;
 
         _dbContext = new DestinationDbContext(options);
-        _dbContext.Database.EnsureCreated();
+_dbContext.Database.EnsureCreated();
+
+_dbContext.Tours.RemoveRange(_dbContext.Tours);
+_dbContext.Hotels.RemoveRange(_dbContext.Hotels);
+_dbContext.SaveChanges();
 
         _tourRepository = new TourRepository(_dbContext);
         _validationService = new ValidationService();
