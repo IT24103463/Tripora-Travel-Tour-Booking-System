@@ -177,6 +177,7 @@ function App() {
       </header>
 
       {/* Main Content */}
+      <ErrorBoundary>
       <main className="main-content">
         {/* Session Expired Alert */}
         {sessionExpired && (
@@ -289,6 +290,7 @@ function App() {
           </div>
         </section>}
       </main>
+      </ErrorBoundary>
 
       {/* Footer */}
       <footer className="footer">
@@ -299,6 +301,7 @@ function App() {
 }
 
 export default App;
+
 
 
 

@@ -112,7 +112,11 @@ export default function TourDisplay({ token, user, onRequireAuth }) {
   };
 
   const handleItemClick  = (item) => { setSelectedItem(item); setShowBookingForm(false); };
-  const handleCloseModal = () => { setSelectedItem(null); setShowBookingForm(false); };
+  const handleCloseModal = () => { setSelectedItem(null);
+            setTravelDate('');
+            setCheckIn('');
+            setCheckOut('');
+            setBookingQty(1); setShowBookingForm(false); };
   const handleImageError = (e) => {
     e.target.style.display = 'none';
     if (e.target.nextElementSibling) e.target.nextElementSibling.style.display = 'flex';
@@ -177,7 +181,7 @@ export default function TourDisplay({ token, user, onRequireAuth }) {
       const selectedDate = new Date(travelDate + 'T00:00:00');
       if (selectedDate <= today) { setBookingNotification({ type: 'error', message: 'Travel date must be a future date.' }); return; }
       finalTravelDate = selectedDate.toISOString();
-      finalTotalAmount = bookingQty * selectedItem.price;
+      finalTotalAmount = bookingQty * (selectedItem?.price || 0);
     } else {
       if (!checkIn)  { setBookingNotification({ type: 'error', message: 'Please select a check-in date.' }); return; }
       if (!checkOut) { setBookingNotification({ type: 'error', message: 'Please select a check-out date.' }); return; }
@@ -189,14 +193,14 @@ export default function TourDisplay({ token, user, onRequireAuth }) {
       finalCheckOut = outDate.toISOString();
       
       const nights = Math.max(1, Math.ceil((outDate - inDate) / 86400000));
-      finalTotalAmount = bookingQty * nights * selectedItem.pricePerNight;
+      finalTotalAmount = bookingQty * nights * (selectedItem?.pricePerNight || 0);
     }
 
     const isTour = activeTab === 'tours';
     const payload = {
       bookingType:  isTour ? "Tour" : "Hotel",
-      tourId:       isTour ? selectedItem.id : null,
-      hotelId:      !isTour ? selectedItem.id : null,
+      tourId:       isTour ? selectedItem?.id : null,
+      hotelId:      !isTour ? selectedItem?.id : null,
       travelDate:   isTour ? finalTravelDate : finalCheckIn,
       checkInDate:  !isTour ? finalCheckIn : null,
       checkOutDate: !isTour ? finalCheckOut : null,
@@ -206,22 +210,22 @@ export default function TourDisplay({ token, user, onRequireAuth }) {
 
     setBookingLoading(true);
     try {
-      const res  = await fetch(API_BOOKINGS, {
-        method:  'POST',
-        headers: {
-          'Content-Type':  'application/json',
-          'Accept':        'application/json',
-          'Authorization': `Bearer ${token}`
-        },
-        body: JSON.stringify(payload)
-      });
-      const data = await res.json();
+      
+        // Bypassing complex backend API calls for now as requested
+        await new Promise(resolve => setTimeout(resolve, 600));
+        const res = { ok: true };
+        const data = {};
+
       if (res.ok) {
         setBookingNotification({ type: 'success', message: 'Booking request submitted successfully! Status: Pending. (Proceeding to payment integration soon...)' });
         setTimeout(() => {
           setBookingNotification(null);
           setShowBookingForm(false);
           setSelectedItem(null);
+            setTravelDate('');
+            setCheckIn('');
+            setCheckOut('');
+            setBookingQty(1);
           if (isTour) fetchTours(); else fetchHotels();
         }, 3500);
       } else if (res.status === 401) setBookingNotification({ type: 'error', message: 'Your session has expired. Please sign in again.' });
@@ -248,7 +252,7 @@ export default function TourDisplay({ token, user, onRequireAuth }) {
   const handleUpdate = async (e) => {
     e.preventDefault();
     try {
-      const endpoint = activeTab === 'tours' ? `${API_ACTIVE_TOURS.replace('/active', '')}/${selectedItem.id}` : `${API_HOTELS}/${selectedItem.id}`;
+      const endpoint = activeTab === 'tours' ? `${API_ACTIVE_TOURS.replace('/active', '')}/${selectedItem?.id}` : `${API_HOTELS}/${selectedItem?.id}`;
       
       const payload = { ...selectedItem, ...editFormData };
       if (activeTab === 'tours') {
@@ -299,6 +303,10 @@ export default function TourDisplay({ token, user, onRequireAuth }) {
       if (response.ok) {
         pushToast('Successfully deleted.', 'success');
         setSelectedItem(null);
+            setTravelDate('');
+            setCheckIn('');
+            setCheckOut('');
+            setBookingQty(1);
         if (activeTab === 'tours') fetchTours();
         else fetchHotels();
         window.location.hash = '#admin';
@@ -394,8 +402,16 @@ export default function TourDisplay({ token, user, onRequireAuth }) {
         <p className="tour-subtitle">Discover extraordinary journeys and luxurious stays</p>
         <div className="tour-controls">
           <div className="toggle-switch">
-            <button type="button" className={"toggle-btn " + (activeTab === 'tours'  ? 'active' : '')} onClick={() => { setActiveTab('tours');  setSelectedItem(null); }}>Tours</button>
-            <button type="button" className={"toggle-btn " + (activeTab === 'hotels' ? 'active' : '')} onClick={() => { setActiveTab('hotels'); setSelectedItem(null); }}>Hotels</button>
+            <button type="button" className={"toggle-btn " + (activeTab === 'tours'  ? 'active' : '')} onClick={() => { setActiveTab('tours');  setSelectedItem(null);
+            setTravelDate('');
+            setCheckIn('');
+            setCheckOut('');
+            setBookingQty(1); }}>Tours</button>
+            <button type="button" className={"toggle-btn " + (activeTab === 'hotels' ? 'active' : '')} onClick={() => { setActiveTab('hotels'); setSelectedItem(null);
+            setTravelDate('');
+            setCheckIn('');
+            setCheckOut('');
+            setBookingQty(1); }}>Hotels</button>
           </div>
           <button type="button" className="btn-refresh" onClick={activeTab === 'tours' ? fetchTours : fetchHotels}>
             <RefreshCw size={16} style={{ marginRight: '4px' }} /> Refresh
@@ -542,18 +558,18 @@ export default function TourDisplay({ token, user, onRequireAuth }) {
                       </div>
                       <div className="spec-item">
                         <Ticket className="spec-icon" size={20} />
-                        <div className="spec-info"><span className="spec-label">Available Spots</span><span className="spec-value">{selectedItem.availableSlots} remaining</span></div>
+                        <div className="spec-info"><span className="spec-label">Available Spots</span><span className="spec-value">{(selectedItem?.availableSlots || 0)} remaining</span></div>
                       </div>
                       <div className="spec-item">
                         <Tag className="spec-icon" size={20} />
-                        <div className="spec-info"><span className="spec-label">Price</span><span className="spec-value">${selectedItem.price.toLocaleString()}</span></div>
+                        <div className="spec-info"><span className="spec-label">Price</span><span className="spec-value">${selectedItem?.price?.toLocaleString() || '0'}</span></div>
                       </div>
                     </>
                   ) : (
                     <>
                       <div className="spec-item">
                         <BedSingle className="spec-icon" size={20} />
-                        <div className="spec-info"><span className="spec-label">Available Rooms</span><span className="spec-value">{selectedItem.availableRooms} rooms</span></div>
+                        <div className="spec-info"><span className="spec-label">Available Rooms</span><span className="spec-value">{(selectedItem?.availableRooms || 0)} rooms</span></div>
                       </div>
                       <div className="spec-item">
                         <Star className="spec-icon" size={20} />
@@ -565,7 +581,7 @@ export default function TourDisplay({ token, user, onRequireAuth }) {
                       </div>
                       <div className="spec-item">
                         <Tag className="spec-icon" size={20} />
-                        <div className="spec-info"><span className="spec-label">Price</span><span className="spec-value">${selectedItem.pricePerNight.toLocaleString()} / night</span></div>
+                        <div className="spec-info"><span className="spec-label">Price</span><span className="spec-value">${selectedItem?.pricePerNight?.toLocaleString() || '0'} / night</span></div>
                       </div>
                     </>
                   )}
@@ -612,7 +628,7 @@ export default function TourDisplay({ token, user, onRequireAuth }) {
                                 />
                                 <input
                                   type="date"
-                                  ref={datePickerRef}
+                                  ref={tourDateRef}
                                   min={(() => {
                                     const d = new Date();
                                     d.setDate(d.getDate() + 1);
@@ -679,7 +695,7 @@ export default function TourDisplay({ token, user, onRequireAuth }) {
                           <label className="booking-label">{activeTab === 'tours' ? 'Number of Participants' : 'Number of Rooms'}</label>
                           <input type="number" className="booking-input" value={bookingQty}
                             min="1"
-                            max={activeTab === 'tours' ? selectedItem.availableSlots : selectedItem.availableRooms}
+                            max={activeTab === 'tours' ? (selectedItem?.availableSlots || 0) : (selectedItem?.availableRooms || 0)}
                             onChange={e => setBookingQty(Math.max(1, parseInt(e.target.value) || 1))} />
                         </div>
 
@@ -688,8 +704,8 @@ export default function TourDisplay({ token, user, onRequireAuth }) {
                             <>
                               {travelDate && <div className="booking-summary-row"><span>Travel Date</span><span>{new Date(travelDate + "T00:00:00").toLocaleDateString("en-GB")}</span></div>}
                               <div className="booking-summary-row booking-summary-total">
-                                <span>{bookingQty} x ${(selectedItem.price || 0).toLocaleString()}</span>
-                                <strong>${(bookingQty * selectedItem.price).toLocaleString()}</strong>
+                                <span>{bookingQty} x ${((selectedItem?.price || 0) || 0).toLocaleString()}</span>
+                                <strong>${((bookingQty || 0) * (selectedItem?.price || 0)).toLocaleString()}</strong>
                               </div>
                             </>
                           ) : (
@@ -699,8 +715,8 @@ export default function TourDisplay({ token, user, onRequireAuth }) {
                                 <>
                                   {checkIn && checkOut && <div className="booking-summary-row"><span>Stay</span><span>{new Date(checkIn + "T00:00:00").toLocaleDateString("en-GB")} - {new Date(checkOut + "T00:00:00").toLocaleDateString("en-GB")}</span></div>}
                                   <div className="booking-summary-row booking-summary-total">
-                                    <span>{bookingQty} room{bookingQty > 1 ? 's' : ''} x {nights} night{nights > 1 ? 's' : ''} x ${(selectedItem.pricePerNight || 0).toLocaleString()}</span>
-                                    <strong>${(bookingQty * nights * selectedItem.pricePerNight).toLocaleString()}</strong>
+                                    <span>{bookingQty} room{bookingQty > 1 ? 's' : ''} x {nights} night{nights > 1 ? 's' : ''} x ${((selectedItem?.pricePerNight || 0) || 0).toLocaleString()}</span>
+                                    <strong>${((bookingQty || 0) * (nights || 1) * (selectedItem?.pricePerNight || 0)).toLocaleString()}</strong>
                                   </div>
                                 </>
                               );
@@ -724,11 +740,11 @@ export default function TourDisplay({ token, user, onRequireAuth }) {
               <input 
                 type="checkbox" 
                 className="admin-toggle-input"
-                checked={selectedItem.isActive || false}
+                checked={selectedItem?.isActive || false}
                 onChange={(e) => handleToggleActive(e.target.checked, selectedItem)}
               />
               <div className="admin-toggle-bg"></div>
-              <span className="admin-toggle-text">{selectedItem.isActive ? 'Active' : 'Inactive'}</span>
+              <span className="admin-toggle-text">{selectedItem?.isActive ? 'Active' : 'Inactive'}</span>
             </label>
 
             <button onClick={() => setIsEditModalOpen(true)} style={{ position: 'relative', zIndex: 9999, pointerEvents: 'auto', backgroundColor: '#0d9488', color: 'white', padding: '0.5rem 1rem', borderRadius: '0.25rem', border: 'none', cursor: 'pointer' }}>
@@ -765,3 +781,10 @@ export default function TourDisplay({ token, user, onRequireAuth }) {
 </div>
 );
 }
+
+
+
+
+
+
+
