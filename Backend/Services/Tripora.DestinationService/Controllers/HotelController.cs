@@ -15,13 +15,23 @@ namespace Tripora.DestinationService.Controllers;
 [Route("api/hotels")]
 public class HotelController : ControllerBase
 {
+    [HttpPatch("{id}/book")]
+    [AllowAnonymous]
+    public async Task<IActionResult> BookHotel(Guid id, [FromBody] Tripora.DestinationService.DTOs.BookRequestDto req)
+    {
+        var result = await ReserveRooms(id, req.Quantity);
+        if (result is BadRequestObjectResult) return BadRequest("Not enough capacity");
+        return result;
+    }
     private readonly DestinationDbContext _context;
     private readonly IHotelService _hotelService;
+    private readonly IConfiguration _configuration;
 
-    public HotelController(DestinationDbContext context, IHotelService hotelService)
+    public HotelController(DestinationDbContext context, IHotelService hotelService, IConfiguration? configuration = null)
     {
         _context = context;
         _hotelService = hotelService;
+        _configuration = configuration ?? new ConfigurationBuilder().Build();
     }
 
     [HttpGet]
@@ -83,6 +93,19 @@ public class HotelController : ControllerBase
         return Ok(result.Hotel); // Match expected return from HEAD
     }
 
+        [HttpPut("{id}/availability")]
+    [Authorize(Roles = "Admin")]
+    public async Task<IActionResult> UpdateAvailability(Guid id, [FromBody] UpdateAvailabilityRequestDto request)
+    {
+        var result = await _hotelService.UpdateAvailabilityAsync(id, request);
+        if (!result.IsSuccess)
+        {
+            if (result.ErrorMessage == "Hotel not found.") return NotFound(new { Message = result.ErrorMessage });
+            return BadRequest(new { Message = result.ErrorMessage });
+        }
+        return Ok(result.Hotel);
+    }
+
     [HttpDelete("{id}")]
     [Authorize(Roles = "Admin")]
     public async Task<IActionResult> DeleteHotel(Guid id)
@@ -97,8 +120,10 @@ public class HotelController : ControllerBase
     }
 
     [HttpPost("{id}/reserve")]
+    [AllowAnonymous]
     public async Task<IActionResult> ReserveRooms(Guid id, [FromQuery] int count)
     {
+        if (!HasInternalServiceKey()) return Unauthorized();
         if (count <= 0) return BadRequest(new { Message = "Count must be greater than zero." });
 
         try
@@ -106,13 +131,18 @@ public class HotelController : ControllerBase
             var hotel = await _context.Hotels.FindAsync(id);
             if (hotel == null) return NotFound(new { Message = "Hotel not found." });
 
-            if (hotel.AvailableRooms < count)
+            var updated = await _context.Hotels
+                .Where(h => h.Id == id && h.IsActive && h.AvailableRooms >= count)
+                .ExecuteUpdateAsync(update => update
+                    .SetProperty(h => h.AvailableRooms, h => h.AvailableRooms - count)
+                    .SetProperty(h => h.UpdatedAt, DateTime.UtcNow));
+
+            if (updated == 0)
             {
-                return BadRequest(new { Message = $"Not enough available rooms. Requested: {count}, Available: {hotel.AvailableRooms}" });
+                return Conflict(new { Message = "Not enough available rooms or the hotel is no longer active." });
             }
 
-            hotel.AvailableRooms -= count;
-            await _context.SaveChangesAsync();
+            hotel = await _context.Hotels.FindAsync(id);
             return Ok(new { Message = $"Reserved {count} rooms successfully.", Data = hotel });
         }
         catch (DbUpdateConcurrencyException)
@@ -121,9 +151,19 @@ public class HotelController : ControllerBase
         }
     }
 
+    [HttpPatch("{id}/decrement-inventory")]
+    [AllowAnonymous]
+    public Task<IActionResult> DecrementInventory(Guid id, [FromQuery] int count) => ReserveRooms(id, count);
+
+    private bool HasInternalServiceKey() =>
+        Request.Headers.TryGetValue("X-Internal-Service-Key", out var key) &&
+        key == _configuration["InternalServiceApiKey"];
+
     [HttpPost("{id}/release")]
+    [AllowAnonymous]
     public async Task<IActionResult> ReleaseRooms(Guid id, [FromQuery] int count)
     {
+        if (!HasInternalServiceKey()) return Unauthorized();
         if (count <= 0) return BadRequest(new { Message = "Count must be greater than zero." });
 
         try
@@ -146,4 +186,6 @@ public class HotelController : ControllerBase
         }
     }
 }
+
+
 

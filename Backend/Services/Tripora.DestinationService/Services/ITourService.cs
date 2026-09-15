@@ -12,6 +12,7 @@ public interface ITourService
     Task<TourOperationResult> DeleteTourAsync(Guid id, CancellationToken cancellationToken = default);
 Task<TourOperationResult> ReserveSlotsAsync(Guid id, int count, CancellationToken cancellationToken = default);
     Task<TourOperationResult> ReleaseSlotsAsync(Guid id, int count, CancellationToken cancellationToken = default);
+    Task<TourOperationResult> UpdateAvailabilityAsync(Guid id, UpdateAvailabilityRequestDto request, CancellationToken cancellationToken = default);
     Task<TourOperationResult> ReserveTourAsync(Guid id, int count, CancellationToken cancellationToken = default);
     Task<TourOperationResult> ReleaseTourAsync(Guid id, int count, CancellationToken cancellationToken = default);
 }
@@ -74,3 +75,4 @@ public class TourOperationResult
             Errors = errors != null ? new List<string>(errors) : new List<string> { message }
         };
 }
+

@@ -254,7 +254,34 @@ var result = await _tourRepository.UpdateAsync(updatedTour, cancellationToken);
             UpdatedAt = tour.UpdatedAt
         };
     }
-public async Task<TourOperationResult> ReserveTourAsync(Guid id, int count, CancellationToken cancellationToken = default)
+    public async Task<TourOperationResult> UpdateAvailabilityAsync(Guid id, UpdateAvailabilityRequestDto request, CancellationToken cancellationToken = default)
+    {
+        _logger.LogInformation("Updating availability for tour: {TourId}", id);
+        
+        try
+        {
+            var existingTour = await _tourRepository.GetByIdAsync(id, cancellationToken);
+            if (existingTour == null) return TourOperationResult.NotFound("Tour not found.");
+            
+            if (request.Capacity.HasValue) existingTour.Capacity = request.Capacity.Value;
+            if (request.Available.HasValue) existingTour.AvailableSlots = request.Available.Value;
+            if (request.Status.HasValue) existingTour.Status = request.Status.Value;
+            
+            var result = await _tourRepository.UpdateAsync(existingTour, cancellationToken);
+            return TourOperationResult.Succeeded(MapToResponseDto(result), "Availability updated successfully.");
+        }
+        catch (Microsoft.EntityFrameworkCore.DbUpdateConcurrencyException)
+        {
+            return TourOperationResult.Failed("Concurrency conflict occurred. Please try again.");
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error updating availability for tour {TourId}", id);
+            return TourOperationResult.Failed("Failed to update availability.");
+        }
+    }
+
+    public async Task<TourOperationResult> ReserveTourAsync(Guid id, int count, CancellationToken cancellationToken = default)
     {
         var tour = await _tourRepository.GetByIdAsync(id, cancellationToken);
         if (tour == null) return TourOperationResult.NotFound();
@@ -285,4 +312,5 @@ public async Task<TourOperationResult> ReserveTourAsync(Guid id, int count, Canc
         }
     }
 }
+
 

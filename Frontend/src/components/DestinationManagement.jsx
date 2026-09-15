@@ -1,7 +1,7 @@
 ﻿import { useState, useEffect } from 'react';
 import { isTokenExpired } from '../App.jsx';
 import './DestinationManagement.css';
-import { RefreshCw, AlertTriangle, X, Compass, Hotel, Edit, Trash2, Plus } from 'lucide-react';
+import { RefreshCw, AlertTriangle, X, Compass, Hotel, Edit, Trash2, Plus, Settings } from 'lucide-react';
 
 const API_TOURS_ENDPOINT = 'http://localhost:5120/api/tours';
 const API_HOTELS_ENDPOINT = 'http://localhost:5120/api/hotels';
@@ -18,6 +18,43 @@ export default function DestinationManagement({ token, user, onSessionExpired })
   
   const [showCreateForm, setShowCreateForm] = useState(false);
   const [editingItem, setEditingItem] = useState(null);
+  const [editingAvailabilityItem, setEditingAvailabilityItem] = useState(null);
+  const [availabilityData, setAvailabilityData] = useState({ capacity: '', available: '', status: 0 });
+
+  const handleEditAvailability = (item) => {
+    setEditingAvailabilityItem(item);
+    setAvailabilityData({
+      capacity: activeTab === 'tours' ? item.capacity : item.totalRooms,
+      available: activeTab === 'tours' ? item.availableSlots : item.availableRooms,
+      status: item.status || 0
+    });
+  };
+
+  const handleUpdateAvailability = async (e) => {
+    e.preventDefault();
+    try {
+      const endpoint = `${activeTab === "tours" ? API_TOURS_ENDPOINT : API_HOTELS_ENDPOINT}/${editingAvailabilityItem.id}/availability`;
+      const response = await fetch(endpoint, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': Bearer 
+        },
+        body: JSON.stringify({
+          capacity: parseInt(availabilityData.capacity, 10),
+          available: parseInt(availabilityData.available, 10),
+          status: parseInt(availabilityData.status, 10)
+        })
+      });
+      if (response.ok) {
+        setEditingAvailabilityItem(null);
+        if (activeTab === 'tours') await fetchTours();
+        else await fetchHotels();
+      }
+    } catch (err) {
+      console.error(err);
+    }
+  };
   
   const [formData, setFormData] = useState({
     // Shared
@@ -411,8 +448,39 @@ export default function DestinationManagement({ token, user, onSessionExpired })
         </div>
       </div>
 
-      {showCreateForm && (
-        <div className="tour-form-container">
+            {editingAvailabilityItem && (
+        <div className="tour-form-container" style={{position: 'fixed', top: '50%', left: '50%', transform: 'translate(-50%, -50%)', zIndex: 1000, background: '#1e293b', padding: '20px', borderRadius: '8px', boxShadow: '0 4px 6px rgba(0,0,0,0.3)', width: '400px'}}>
+          <div className="form-header">
+            <h3>Manage Availability</h3>
+            <button type="button" className="btn-close" onClick={() => setEditingAvailabilityItem(null)}><X size={20} /></button>
+          </div>
+          <form onSubmit={handleUpdateAvailability} className="tour-form">
+            <div className="form-group">
+              <label>Capacity / Total Rooms</label>
+              <input type="number" value={availabilityData.capacity} onChange={(e) => setAvailabilityData({...availabilityData, capacity: e.target.value})} required />
+            </div>
+            <div className="form-group">
+              <label>Available Slots / Rooms</label>
+              <input type="number" value={availabilityData.available} onChange={(e) => setAvailabilityData({...availabilityData, available: e.target.value})} required />
+            </div>
+            <div className="form-group">
+              <label>Status</label>
+              <select value={availabilityData.status} onChange={(e) => setAvailabilityData({...availabilityData, status: e.target.value})} style={{width: '100%', padding: '0.5rem', background: '#0f172a', color: 'white', border: '1px solid #334155'}}>
+                <option value={0}>Available</option>
+                <option value={1}>Full</option>
+                <option value={2}>Unavailable</option>
+              </select>
+            </div>
+            <div className="form-actions">
+              <button type="button" className="btn-cancel" onClick={() => setEditingAvailabilityItem(null)}>Cancel</button>
+              <button type="submit" className="btn-submit">Save</button>
+            </div>
+          </form>
+        </div>
+      )}
+
+        {showCreateForm && (
+          <div className="tour-form-container">
           <div className="form-header">
             <h3>{editingItem ? `Edit ${activeTab === 'tours' ? 'Tour' : 'Hotel'}` : `Create New ${activeTab === 'tours' ? 'Tour' : 'Hotel'}`}</h3>
             <button type="button" className="btn-close" onClick={handleCancel}><X size={20} /></button>
@@ -555,7 +623,8 @@ export default function DestinationManagement({ token, user, onSessionExpired })
                       </td>
                     <td>
                       <div className="action-buttons">
-                        <button type="button" className="btn-action btn-edit" onClick={() => handleEdit(tour)}><Edit size={16} /></button>
+                        <button type="button" className="btn-action btn-edit" title="Manage Availability" onClick={() => handleEditAvailability(tour)}><Settings size={16} /></button>
+                          <button type="button" className="btn-action btn-edit" onClick={() => handleEdit(tour)}><Edit size={16} /></button>
                         <button type="button" className="btn-action btn-delete" onClick={() => handleDelete(tour.id)}><Trash2 size={16} /></button>
                       </div>
                     </td>
@@ -607,7 +676,8 @@ export default function DestinationManagement({ token, user, onSessionExpired })
                       </td>
                     <td>
                       <div className="action-buttons">
-                        <button type="button" className="btn-action btn-edit" onClick={() => handleEdit(hotel)}><Edit size={16} /></button>
+                        <button type="button" className="btn-action btn-edit" title="Manage Availability" onClick={() => handleEditAvailability(hotel)}><Settings size={16} /></button>
+                          <button type="button" className="btn-action btn-edit" onClick={() => handleEdit(hotel)}><Edit size={16} /></button>
                         <button type="button" className="btn-action btn-delete" onClick={() => handleDelete(hotel.id)}><Trash2 size={16} /></button>
                       </div>
                     </td>
@@ -621,6 +691,12 @@ export default function DestinationManagement({ token, user, onSessionExpired })
     </div>
   );
 }
+
+
+
+
+
+
 
 
 

@@ -37,7 +37,8 @@ export default function TourDisplay({ token, user, onRequireAuth }) {
   const [hotels, setHotels] = useState([]);
   const [loading, setLoading]         = useState(true);
   const [error,   setError]           = useState(null);
-  const [selectedItem, setSelectedItem] = useState(null);
+    const [selectedItem, setSelectedItem] = useState(null);
+  const isSoldOut = selectedItem ? ((selectedItem.availableSlots ?? selectedItem.availableRooms) <= 0 || selectedItem.status === 1 || selectedItem.status === 2) : false;
 
   // Filters
   const [searchTerm,     setSearchTerm]     = useState('');
@@ -161,7 +162,19 @@ export default function TourDisplay({ token, user, onRequireAuth }) {
     }
     setBookingQty(1); setTravelDate(''); setCheckIn(''); setCheckOut('');
     setShowBookingForm(true);
-  };  const handleConfirmBooking = async () => {
+  };      const parseDateInput = (dateStr) => {
+      if (!dateStr) return null;
+      if (dateStr.includes('/')) {
+        const parts = dateStr.split('/');
+        if (parts.length === 3) {
+          // Assume DD/MM/YYYY
+          return new Date(`${parts[2]}-${parts[1]}-${parts[0]}T00:00:00`);
+        }
+      }
+      return new Date(dateStr + (dateStr.includes('T') ? '' : 'T00:00:00'));
+    };
+
+  const handleConfirmBooking = async () => {
     if (!token || !user) {
       if (onRequireAuth) onRequireAuth();
       return;
@@ -178,15 +191,15 @@ export default function TourDisplay({ token, user, onRequireAuth }) {
 
     if (activeTab === 'tours') {
       if (!travelDate) { setBookingNotification({ type: 'error', message: 'Please select a travel date.' }); return; }
-      const selectedDate = new Date(travelDate + 'T00:00:00');
+      const selectedDate = parseDateInput(travelDate);
       if (selectedDate <= today) { setBookingNotification({ type: 'error', message: 'Travel date must be a future date.' }); return; }
       finalTravelDate = selectedDate.toISOString();
       finalTotalAmount = bookingQty * (selectedItem?.price || 0);
     } else {
       if (!checkIn)  { setBookingNotification({ type: 'error', message: 'Please select a check-in date.' }); return; }
       if (!checkOut) { setBookingNotification({ type: 'error', message: 'Please select a check-out date.' }); return; }
-      const inDate = new Date(checkIn + 'T00:00:00');
-      const outDate = new Date(checkOut + 'T00:00:00');
+      const inDate = parseDateInput(checkIn);
+      const outDate = parseDateInput(checkOut);
       if (inDate <= today) { setBookingNotification({ type: 'error', message: 'Check-in date must be a future date.' }); return; }
       if (outDate <= inDate) { setBookingNotification({ type: 'error', message: 'Check-out date must be at least one day after check-in date.' }); return; }
       finalCheckIn = inDate.toISOString();
@@ -210,13 +223,24 @@ export default function TourDisplay({ token, user, onRequireAuth }) {
 
     setBookingLoading(true);
     try {
-      
-        // Bypassing complex backend API calls for now as requested
-        await new Promise(resolve => setTimeout(resolve, 600));
-        const res = { ok: true };
-        const data = {};
+      const res = await fetch(API_BOOKINGS, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify(payload)
+      });
+      const data = await res.json().catch(() => ({}));
 
       if (res.ok) {
+        const remainingField = isTour ? 'availableSlots' : 'availableRooms';
+        const updateItem = item => item?.id === selectedItem?.id
+          ? { ...item, [remainingField]: Math.max(0, (item[remainingField] ?? 0) - bookingQty) }
+          : item;
+        if (isTour) setTours(prev => prev.map(updateItem));
+        else setHotels(prev => prev.map(updateItem));
+        setSelectedItem(prev => prev ? { ...prev, [remainingField]: Math.max(0, (prev[remainingField] ?? 0) - bookingQty) } : prev);
         setBookingNotification({ type: 'success', message: 'Booking request submitted successfully! Status: Pending. (Proceeding to payment integration soon...)' });
         setTimeout(() => {
           setBookingNotification(null);
@@ -617,7 +641,7 @@ export default function TourDisplay({ token, user, onRequireAuth }) {
                                 <input 
                                   type="text" 
                                   className="booking-input" 
-                                  value={travelDate ? new Date(travelDate + "T00:00:00").toLocaleDateString('en-GB') : ''}
+                                  value={travelDate ? parseDateInput(travelDate).toLocaleDateString('en-GB') : ''}
                                   placeholder="DD/MM/YYYY"
                                   readOnly
                                   style={{ backgroundColor: '#132f38', color: '#fff', cursor: 'pointer' }}
@@ -651,7 +675,7 @@ export default function TourDisplay({ token, user, onRequireAuth }) {
                                 <div style={{ position: 'relative' }}>
                                   <input 
                                     type="text" className="booking-input" 
-                                    value={checkIn ? new Date(checkIn + "T00:00:00").toLocaleDateString('en-GB') : ''} placeholder="DD/MM/YYYY" readOnly
+                                    value={checkIn ? parseDateInput(checkIn).toLocaleDateString('en-GB') : ''} placeholder="DD/MM/YYYY" readOnly
                                     style={{ backgroundColor: '#132f38', color: '#fff', cursor: 'pointer' }}
                                     onClick={(e) => { const next = e.target.nextElementSibling; if (next && next.showPicker) next.showPicker(); }}
                                   />
@@ -675,7 +699,7 @@ export default function TourDisplay({ token, user, onRequireAuth }) {
                                 <div style={{ position: 'relative' }}>
                                   <input 
                                     type="text" className="booking-input" 
-                                    value={checkOut ? new Date(checkOut + "T00:00:00").toLocaleDateString('en-GB') : ''} placeholder="DD/MM/YYYY" readOnly
+                                    value={checkOut ? parseDateInput(checkOut).toLocaleDateString('en-GB') : ''} placeholder="DD/MM/YYYY" readOnly
                                     style={{ backgroundColor: '#132f38', color: '#fff', cursor: 'pointer' }}
                                     onClick={(e) => { const next = e.target.nextElementSibling; if (next && next.showPicker) next.showPicker(); }}
                                   />
@@ -702,7 +726,7 @@ export default function TourDisplay({ token, user, onRequireAuth }) {
                         <div className="booking-summary">
                           {activeTab === 'tours' ? (
                             <>
-                              {travelDate && <div className="booking-summary-row"><span>Travel Date</span><span>{new Date(travelDate + "T00:00:00").toLocaleDateString("en-GB")}</span></div>}
+                              {travelDate && <div className="booking-summary-row"><span>Travel Date</span><span>{parseDateInput(travelDate).toLocaleDateString("en-GB")}</span></div>}
                               <div className="booking-summary-row booking-summary-total">
                                 <span>{bookingQty} x ${((selectedItem?.price || 0) || 0).toLocaleString()}</span>
                                 <strong>${((bookingQty || 0) * (selectedItem?.price || 0)).toLocaleString()}</strong>
@@ -710,10 +734,10 @@ export default function TourDisplay({ token, user, onRequireAuth }) {
                             </>
                           ) : (
                             (() => {
-                              const nights = checkIn && checkOut ? Math.max(1, Math.ceil((new Date(checkOut) - new Date(checkIn)) / 86400000)) : 1;
+                              const nights = checkIn && checkOut ? Math.max(1, Math.ceil((parseDateInput(checkOut) - parseDateInput(checkIn)) / 86400000)) : 1;
                               return (
                                 <>
-                                  {checkIn && checkOut && <div className="booking-summary-row"><span>Stay</span><span>{new Date(checkIn + "T00:00:00").toLocaleDateString("en-GB")} - {new Date(checkOut + "T00:00:00").toLocaleDateString("en-GB")}</span></div>}
+                                  {checkIn && checkOut && <div className="booking-summary-row"><span>Stay</span><span>{parseDateInput(checkIn).toLocaleDateString("en-GB")} - {parseDateInput(checkOut).toLocaleDateString("en-GB")}</span></div>}
                                   <div className="booking-summary-row booking-summary-total">
                                     <span>{bookingQty} room{bookingQty > 1 ? 's' : ''} x {nights} night{nights > 1 ? 's' : ''} x ${((selectedItem?.pricePerNight || 0) || 0).toLocaleString()}</span>
                                     <strong>${((bookingQty || 0) * (nights || 1) * (selectedItem?.pricePerNight || 0)).toLocaleString()}</strong>
@@ -732,7 +756,7 @@ export default function TourDisplay({ token, user, onRequireAuth }) {
               </div>
             </div>
           ) : (
-            <button type="button" className="btn-book-now" onClick={handleBookNowClick}>Book Now</button>
+            <button type="button" className="btn-book-now" onClick={handleBookNowClick} disabled={isSoldOut} style={isSoldOut ? {opacity: 0.5, cursor: "not-allowed"} : {}}>{isSoldOut ? "Sold Out" : "Book Now"}</button>
           )
         ) : (
           <div className="admin-controls" style={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end', gap: '1rem', marginTop: '1.5rem', padding: '1rem', backgroundColor: '#132f38', borderRadius: '0.5rem', border: '1px solid rgba(255,255,255,0.1)', position: 'relative', zIndex: 9998, pointerEvents: 'auto' }}>
@@ -781,6 +805,13 @@ export default function TourDisplay({ token, user, onRequireAuth }) {
 </div>
 );
 }
+
+
+
+
+
+
+
 
 
 

@@ -1,5 +1,13 @@
-using System.ComponentModel.DataAnnotations;
+﻿using System.ComponentModel.DataAnnotations;
 namespace Tripora.DestinationService.Models;
+
+
+public enum ItemStatus
+{
+    Available = 0,
+    Full = 1,
+    Unavailable = 2
+}
 
 public class Tour
 {
@@ -21,6 +29,11 @@ public class Tour
     public int AvailableSlots { get; set; }
     
     public bool IsActive { get; set; } = true;
+    
+    public ItemStatus Status { get; set; } = ItemStatus.Available;
+    
+    [Timestamp]
+    public byte[]? RowVersion { get; set; }
     
     public string? ImageUrl { get; set; }
     

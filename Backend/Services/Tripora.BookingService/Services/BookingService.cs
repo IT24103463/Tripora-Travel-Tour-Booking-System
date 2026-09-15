@@ -3,6 +3,8 @@ using Tripora.BookingService.Clients;
 using Tripora.BookingService.Data;
 using Tripora.BookingService.DTOs;
 using Tripora.BookingService.Models;
+using MassTransit;
+using Tripora.Shared.Events;
 
 namespace Tripora.BookingService.Services;
 
@@ -11,12 +13,14 @@ public class BookingService : IBookingService
     private readonly BookingDbContext _db;
     private readonly IDestinationClient _destinationClient;
     private readonly ILogger<BookingService> _logger;
+    private readonly IPublishEndpoint _publishEndpoint;
 
-    public BookingService(BookingDbContext db, IDestinationClient destinationClient, ILogger<BookingService> logger)
+    public BookingService(BookingDbContext db, IDestinationClient destinationClient, ILogger<BookingService> logger, IPublishEndpoint publishEndpoint)
     {
         _db = db;
         _destinationClient = destinationClient;
         _logger = logger;
+        _publishEndpoint = publishEndpoint;
     }
 
     public async Task<(bool Success, BookingResponseDto? Booking, string Error)> CreateBookingAsync(string userId, CreateBookingDto dto)
@@ -44,11 +48,19 @@ public class BookingService : IBookingService
                 return (false, null, "Check-out date must be after check-in date.");
         }
 
-        // Reserve inventory via DestinationService
-        bool reserved;
+                // Check availability via DestinationService
+        bool isAvailable;
         try
         {
-            reserved = await _destinationClient.ReserveInventoryAsync(itemId.Value, dto.BookingType, dto.Quantity);
+            isAvailable = await _destinationClient.BookItemAsync(itemId.Value, dto.BookingType, dto.Quantity);
+        }
+        catch (Polly.CircuitBreaker.BrokenCircuitException)
+        {
+            throw; // Let Controller handle 503
+        }
+        catch (HttpRequestException)
+        {
+            throw; // Let Controller handle 503
         }
         catch (Exception ex)
         {
@@ -56,8 +68,8 @@ public class BookingService : IBookingService
             return (false, null, "Destination service is currently unavailable. Please try again later.");
         }
 
-        if (!reserved)
-            return (false, null, $"No availability: the selected {dto.BookingType} is full or no longer active.");
+        if (!isAvailable)
+            return (false, null, "Tour/Room is fully booked");
 
         var booking = new Booking
         {
@@ -77,7 +89,18 @@ public class BookingService : IBookingService
         };
 
         _db.Bookings.Add(booking);
-        await _db.SaveChangesAsync();
+                        await _db.SaveChangesAsync();
+
+
+
+        // Keep MassTransit publish for future use
+        await _publishEndpoint.Publish<BookingConfirmedEvent>(new {
+            BookingId = booking.Id,
+            ItemId = itemId.Value,
+            ItemType = booking.BookingType.ToString(),
+            Quantity = booking.Quantity,
+            Timestamp = DateTime.UtcNow
+        });
 
         return (true, MapToDto(booking), string.Empty);
     }
@@ -97,7 +120,7 @@ public class BookingService : IBookingService
         return bookings.Select(MapToDto);
     }
 
-    public async Task<(bool Success, string Error)> CancelBookingAsync(Guid id, string userId, bool isAdmin)
+        public async Task<(bool Success, string Error)> CancelBookingAsync(Guid id, string userId, bool isAdmin)
     {
         var booking = await _db.Bookings.FindAsync(id);
         if (booking == null) return (false, "Booking not found.");
@@ -105,19 +128,23 @@ public class BookingService : IBookingService
         if (booking.Status == BookingStatus.Cancelled) return (false, "Booking is already cancelled.");
         if (booking.Status == BookingStatus.Completed) return (false, "Completed bookings cannot be cancelled.");
 
-        // Release inventory
-        var itemId = booking.BookingType == BookingType.Tour ? booking.TourId : booking.HotelId;
+                var itemId = booking.BookingType == BookingType.Tour ? booking.TourId : booking.HotelId;
         if (itemId.HasValue)
         {
-            try
-            {
+            // Bypass MassTransit for local dev: make synchronous HTTP call to release inventory
+            try {
                 await _destinationClient.ReleaseInventoryAsync(itemId.Value, booking.BookingType.ToString(), booking.Quantity);
+            } catch (Exception ex) {
+                _logger.LogError(ex, "Failed to release inventory via HTTP during booking cancellation.");
             }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Failed to release inventory on cancellation for booking {BookingId}", id);
-                // Continue with cancellation even if release fails â€” log for manual reconciliation
-            }
+
+            await _publishEndpoint.Publish<BookingCancelledEvent>(new {
+                BookingId = booking.Id,
+                ItemId = itemId.Value,
+                ItemType = booking.BookingType.ToString(),
+                Quantity = booking.Quantity,
+                Timestamp = DateTime.UtcNow
+            });
         }
 
         booking.Status = BookingStatus.Cancelled;
@@ -131,7 +158,7 @@ public class BookingService : IBookingService
         if (!isAdmin) return (false, "Only admins can update booking status.");
 
         if (!Enum.TryParse<BookingStatus>(newStatus, true, out var status))
-            return (false, $"Invalid status '{newStatus}'.");
+            return (false, "Invalid status '{newStatus}'.");
 
         var booking = await _db.Bookings.FindAsync(id);
         if (booking == null) return (false, "Booking not found.");
@@ -141,7 +168,6 @@ public class BookingService : IBookingService
         await _db.SaveChangesAsync();
         return (true, string.Empty);
     }
-
     private static BookingResponseDto MapToDto(Booking b) => new()
     {
         Id = b.Id,
@@ -159,4 +185,9 @@ public class BookingService : IBookingService
         CreatedAt = b.CreatedAt
     };
 }
+
+
+
+
+
 

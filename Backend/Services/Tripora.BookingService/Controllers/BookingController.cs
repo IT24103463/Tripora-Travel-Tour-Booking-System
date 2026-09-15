@@ -88,7 +88,7 @@ public class BookingController : ControllerBase
 
     // --- TRIP-53 Endpoints ---
 
-    [HttpPost]
+        [HttpPost]
     [Authorize]
     public async Task<IActionResult> CreateBooking([FromBody] CreateBookingDto dto)
     {
@@ -99,15 +99,21 @@ public class BookingController : ControllerBase
         if (string.IsNullOrEmpty(userId))
             return Unauthorized(new { Message = "User identity could not be determined." });
 
-        var (success, booking, error) = await _bookingService.CreateBookingAsync(userId, dto);
+        try
+        {
+            var (success, booking, error) = await _bookingService.CreateBookingAsync(userId, dto);
 
-        if (!success)
-            return BadRequest(new { Message = error });
+            if (!success)
+                return BadRequest(new { Message = error });
 
-        return CreatedAtAction(nameof(GetBooking), new { id = booking!.Id },
-            new { Message = "Booking confirmed.", Data = booking });
+            return CreatedAtAction(nameof(GetBooking), new { id = booking!.Id },
+                new { Message = "Booking confirmed.", Data = booking });
+        }
+        catch (Exception ex) when (ex is Polly.CircuitBreaker.BrokenCircuitException || ex is System.Net.Http.HttpRequestException)
+        {
+            return StatusCode(503, new { Message = "Destination service is currently unavailable. Please try again later." });
+        }
     }
-
     [HttpGet("{id:guid}")]
     [Authorize]
     public async Task<IActionResult> GetBooking(Guid id)
@@ -166,4 +172,5 @@ public class BookingController : ControllerBase
         return Ok(new { Message = $"Booking status updated to '{dto.Status}'." });
     }
 }
+
 

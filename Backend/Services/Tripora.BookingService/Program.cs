@@ -1,4 +1,5 @@
-﻿using System.Text;
+﻿using MassTransit;
+using System.Text;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
@@ -53,6 +54,8 @@ builder.Services.AddAuthorization();
 
 var destinationServiceUrl = builder.Configuration["Services:DestinationServiceUrl"]
     ?? "http://localhost:5003/";
+var destinationServiceApiKey = builder.Configuration["Services:DestinationServiceApiKey"]
+    ?? throw new InvalidOperationException("Services:DestinationServiceApiKey must be configured.");
 
 static IAsyncPolicy<HttpResponseMessage> GetRetryPolicy() =>
     HttpPolicyExtensions
@@ -67,6 +70,7 @@ static IAsyncPolicy<HttpResponseMessage> GetCircuitBreakerPolicy() =>
 builder.Services.AddHttpClient<IDestinationClient, DestinationClient>(client =>
 {
     client.BaseAddress = new Uri(destinationServiceUrl);
+    client.DefaultRequestHeaders.Add("X-Internal-Service-Key", destinationServiceApiKey);
     client.Timeout = TimeSpan.FromSeconds(15);
 })
 .AddPolicyHandler(GetRetryPolicy())
@@ -90,6 +94,14 @@ builder.Services.AddCors(options =>
 
 builder.Services.AddOpenApi();
 
+builder.Services.AddMassTransit(x =>
+{
+    x.UsingInMemory((context, cfg) =>
+    {
+        cfg.ConfigureEndpoints(context);
+    });
+});
+
 var app = builder.Build();
 
 using (var scope = app.Services.CreateScope())
@@ -109,3 +121,5 @@ app.MapControllers();
 app.Run();
 
 public partial class Program { }
+
+

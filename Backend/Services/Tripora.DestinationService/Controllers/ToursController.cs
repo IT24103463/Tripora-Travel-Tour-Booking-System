@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Mvc;
 using Tripora.DestinationService.DTOs;
 using Tripora.DestinationService.Services;
 using static Tripora.DestinationService.Services.TourOperationStatus;
+using Microsoft.Extensions.Configuration;
 
 namespace Tripora.DestinationService.Controllers;
 
@@ -11,13 +12,27 @@ namespace Tripora.DestinationService.Controllers;
 [Produces("application/json")]
 public class ToursController : ControllerBase
 {
+    [HttpPatch("{id}/book")]
+    [AllowAnonymous]
+    public async Task<IActionResult> BookTour(Guid id, [FromBody] Tripora.DestinationService.DTOs.BookRequestDto req, CancellationToken cancellationToken)
+    {
+        var result = await _tourService.ReserveSlotsAsync(id, req.Quantity, cancellationToken);
+        if (result.Status == TourOperationStatus.ValidationError)
+            return BadRequest("Not enough capacity");
+        if (result.Status == TourOperationStatus.NotFound)
+            return NotFound();
+            
+        return Ok(result.Data);
+    }
     private readonly ITourService _tourService;
     private readonly ILogger<ToursController> _logger;
+    private readonly IConfiguration _configuration;
 
-    public ToursController(ITourService tourService, ILogger<ToursController> logger)
+    public ToursController(ITourService tourService, ILogger<ToursController> logger, IConfiguration? configuration = null)
     {
         _tourService = tourService;
         _logger = logger;
+        _configuration = configuration ?? new ConfigurationBuilder().Build();
     }
 
     /// <summary>
@@ -206,13 +221,14 @@ public class ToursController : ControllerBase
     }
 
     [HttpPost("{id}/reserve")]
-    [Authorize]
+    [AllowAnonymous]
     [ProducesResponseType(typeof(ApiResponse<TourResponseDto>), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ApiResponse<TourResponseDto>), StatusCodes.Status400BadRequest)]
     [ProducesResponseType(typeof(ApiResponse<TourResponseDto>), StatusCodes.Status404NotFound)]
     [ProducesResponseType(typeof(ApiResponse<TourResponseDto>), StatusCodes.Status409Conflict)]
     public async Task<IActionResult> ReserveSlots(Guid id, [FromQuery] int count, CancellationToken cancellationToken)
     {
+        if (!HasInternalServiceKey()) return Unauthorized();
         var result = await _tourService.ReserveSlotsAsync(id, count, cancellationToken);
         return result.Status switch
         {
@@ -223,14 +239,24 @@ public class ToursController : ControllerBase
         };
     }
 
+    [HttpPatch("{id}/decrement-inventory")]
+    [AllowAnonymous]
+    public Task<IActionResult> DecrementInventory(Guid id, [FromQuery] int count, CancellationToken cancellationToken) =>
+        ReserveSlots(id, count, cancellationToken);
+
+    private bool HasInternalServiceKey() =>
+        Request.Headers.TryGetValue("X-Internal-Service-Key", out var key) &&
+        key == _configuration["InternalServiceApiKey"];
+
     [HttpPost("{id}/release")]
-    [Authorize]
+    [AllowAnonymous]
     [ProducesResponseType(typeof(ApiResponse<TourResponseDto>), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ApiResponse<TourResponseDto>), StatusCodes.Status400BadRequest)]
     [ProducesResponseType(typeof(ApiResponse<TourResponseDto>), StatusCodes.Status404NotFound)]
     [ProducesResponseType(typeof(ApiResponse<TourResponseDto>), StatusCodes.Status409Conflict)]
     public async Task<IActionResult> ReleaseSlots(Guid id, [FromQuery] int count, CancellationToken cancellationToken)
     {
+        if (!HasInternalServiceKey()) return Unauthorized();
         var result = await _tourService.ReleaseSlotsAsync(id, count, cancellationToken);
         return result.Status switch
         {
@@ -240,6 +266,19 @@ public class ToursController : ControllerBase
             _ => StatusCode(StatusCodes.Status500InternalServerError, ApiResponse<TourResponseDto>.FailureResponse(result.Message, result.Errors))
         };
     }
+        [HttpPut("{id}/availability")]
+    [Authorize(Roles = "Admin")]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> UpdateAvailability(Guid id, [FromBody] UpdateAvailabilityRequestDto request, CancellationToken cancellationToken)
+    {
+        var result = await _tourService.UpdateAvailabilityAsync(id, request, cancellationToken);
+        if (result.Status == TourOperationStatus.NotFound) return NotFound(result.Message);
+        if (result.Status == TourOperationStatus.ValidationError) return BadRequest(result.Errors);
+        return Ok(result.Data);
+    }
+
     [HttpPost("{id}/reserve-tour")]
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
@@ -277,4 +316,7 @@ public class ToursController : ControllerBase
         return Ok(result.Data);
     }
 }
+
+
+
 

@@ -1,4 +1,6 @@
-﻿using System.Text;
+﻿using MassTransit;
+using Tripora.DestinationService.Consumers;
+using System.Text;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
@@ -83,6 +85,17 @@ builder.Services.AddCors(options =>
 // 7. Configure OpenAPI
 builder.Services.AddOpenApi();
 
+builder.Services.AddMassTransit(x =>
+{
+    x.AddConsumer<BookingConfirmedConsumer>();
+    x.AddConsumer<BookingCancelledConsumer>();
+
+    x.UsingInMemory((context, cfg) =>
+    {
+        cfg.ConfigureEndpoints(context);
+    });
+});
+
 var app = builder.Build();
 
 // Ensure the MySQL database schema is created on startup
@@ -104,3 +117,5 @@ app.UseAuthorization();
 app.MapControllers();
 
 app.Run();
+
+

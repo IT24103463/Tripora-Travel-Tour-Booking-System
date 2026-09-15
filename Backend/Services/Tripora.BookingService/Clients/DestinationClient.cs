@@ -17,6 +17,69 @@ public class DestinationClient : IDestinationClient
         _logger = logger;
     }
 
+        public async Task<bool> BookItemAsync(Guid itemId, string itemType, int count)
+    {
+        try
+        {
+            var segment = itemType.ToLower() == "hotel" ? "hotels" : "tours";
+            var endpoint = $"api/{segment}/{itemId}/book";
+            var body = new System.Net.Http.StringContent(System.Text.Json.JsonSerializer.Serialize(new { Quantity = count }), System.Text.Encoding.UTF8, "application/json");
+            
+            var response = await _httpClient.PatchAsync(endpoint, body);
+            
+            if (response.StatusCode == HttpStatusCode.BadRequest || response.StatusCode == HttpStatusCode.Conflict)
+            {
+                var respBody = await response.Content.ReadAsStringAsync();
+                _logger.LogWarning("Booking rejected for {ItemType} {ItemId}: {Body}", itemType, itemId, respBody);
+                return false;
+            }
+            
+            return response.IsSuccessStatusCode;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Failed to book {Count} slots for {ItemType} {ItemId}", count, itemType, itemId);
+            throw; 
+        }
+    }
+
+    public async Task<bool> CheckAvailabilityAsync(Guid itemId, string itemType, int count)
+    {
+        try
+        {
+            var segment = itemType.ToLower() == "hotel" ? "hotels" : "tours";
+            var response = await _httpClient.GetAsync($"api/{segment}/{itemId}");
+            if (!response.IsSuccessStatusCode) return false;
+            
+            var content = await response.Content.ReadAsStringAsync();
+            var json = System.Text.Json.JsonDocument.Parse(content);
+            var root = json.RootElement;
+            
+            // Check status: 0 = Available, 1 = Full, 2 = Unavailable
+            if (root.TryGetProperty("status", out var statusProp))
+            {
+                var status = statusProp.GetInt32();
+                if (status == 2) return false; // Unavailable
+            }
+
+            if (itemType.ToLower() == "hotel") {
+                if (root.TryGetProperty("availableRooms", out var avail)) {
+                    return avail.GetInt32() >= count;
+                }
+            } else {
+                if (root.TryGetProperty("availableSlots", out var avail)) {
+                    return avail.GetInt32() >= count;
+                }
+            }
+            return false;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Failed to check availability for {ItemType} {ItemId}", itemType, itemId);
+            throw;
+        }
+    }
+
     public async Task<bool> CheckItemExistsAsync(Guid itemId, string itemType)
     {
         try
@@ -37,7 +100,6 @@ public class DestinationClient : IDestinationClient
         try
         {
             var segment = itemType.ToLower() == "hotel" ? "hotels" : "tours";
-            // Use the legacy endpoint route from HEAD since we kept it
             var endpoint = $"api/{segment}/{itemId}/reserve?count={count}";
             var response = await _httpClient.PostAsync(endpoint, null);
 
@@ -74,3 +136,5 @@ public class DestinationClient : IDestinationClient
         }
     }
 }
+
+

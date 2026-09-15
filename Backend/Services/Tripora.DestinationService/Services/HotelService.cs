@@ -9,6 +9,28 @@ namespace Tripora.DestinationService.Services;
 
 public class HotelService : IHotelService
 {
+    public async Task<(bool IsSuccess, Hotel? Hotel, string ErrorMessage)> UpdateAvailabilityAsync(Guid id, UpdateAvailabilityRequestDto dto)
+    {
+        var hotel = await _context.Hotels.FindAsync(id);
+        if (hotel == null) return (false, null, "Hotel not found.");
+
+        if (dto.Capacity.HasValue) hotel.TotalRooms = dto.Capacity.Value;
+        if (dto.Available.HasValue) hotel.AvailableRooms = dto.Available.Value;
+        if (dto.Status.HasValue) hotel.Status = dto.Status.Value;
+
+        hotel.UpdatedAt = DateTime.UtcNow;
+
+        try
+        {
+            await _context.SaveChangesAsync();
+            return (true, hotel, string.Empty);
+        }
+        catch (DbUpdateConcurrencyException)
+        {
+            return (false, null, "Concurrency conflict occurred.");
+        }
+    }
+
     private readonly DestinationDbContext _context;
 
     public HotelService(DestinationDbContext context)
@@ -52,3 +74,4 @@ public class HotelService : IHotelService
         }
     }
 }
+
