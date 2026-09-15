@@ -1,0 +1,91 @@
+name: CD
+
+on:
+  pull_request:
+    branches:
+      - dev
+    types: [closed]
+
+jobs:
+  deploy-backend:
+    name: Deploy Microservices & Gateway
+    if: github.event.pull_request.merged == true
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '10.0.x'
+
+      # 1. Booking Service
+      - name: Publish Booking Service
+        run: dotnet publish Backend/Services/Tripora.BookingService/Tripora.BookingService.csproj -c Release -o ./booking-app
+
+      - name: Deploy Booking Service
+        uses: azure/webapps-deploy@v3
+        with:
+          app-name: 'tripora-booking'
+          publish-profile: ${{ secrets.AZURE_WEBAPP_BOOKING_PROFILE }}
+          package: ./booking-app
+
+      # 2. Destination Service
+      - name: Publish Destination Service
+        run: dotnet publish Backend/Services/Tripora.DestinationService/Tripora.DestinationService.csproj -c Release -o ./dest-app
+
+      - name: Deploy Destination Service
+        uses: azure/webapps-deploy@v3
+        with:
+          app-name: 'tripora-destination'
+          publish-profile: ${{ secrets.AZURE_WEBAPP_DESTINATION_PROFILE }}
+          package: ./dest-app
+
+      # 3. User Service
+      - name: Publish User Service
+        run: dotnet publish Backend/Services/Tripora.UserService/Tripora.UserService.csproj -c Release -o ./user-app
+
+      - name: Deploy User Service
+        uses: azure/webapps-deploy@v3
+        with:
+          app-name: 'tripora-user-auth'
+          publish-profile: ${{ secrets.AZURE_WEBAPP_USER_PROFILE }}
+          package: ./user-app
+
+      # 4. API Gateway
+      - name: Publish API Gateway
+        run: dotnet publish Backend/Services/Tripora.ApiGateway/Tripora.ApiGateway.csproj -c Release -o ./gateway-app
+
+      - name: Deploy API Gateway
+        uses: azure/webapps-deploy@v3
+        with:
+          app-name: 'tripora-APIgateway'
+          publish-profile: ${{ secrets.AZURE_WEBAPP_API_GATEWAY }}
+          package: ./gateway-app
+
+  deploy-frontend:
+    name: Deploy React Frontend
+    if: github.event.pull_request.merged == true
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Build React App
+        run: |
+          cd Frontend
+          npm install
+          npm run build
+
+      - name: Deploy Frontend
+        uses: azure/webapps-deploy@v3
+        with:
+          app-name: '<your-frontend-app-name>'
+          publish-profile: ${{ secrets.AZURE_WEBAPP_FRONTEND_PROFILE }}
+          package: ./Frontend/dist
