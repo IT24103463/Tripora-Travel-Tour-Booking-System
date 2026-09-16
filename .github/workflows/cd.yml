@@ -1,15 +1,19 @@
 name: CD
 
 on:
+  push:
+    branches:
+      - dev
   pull_request:
     branches:
       - dev
     types: [closed]
+  workflow_dispatch:
 
 jobs:
   deploy-backend:
     name: Deploy Microservices & Gateway
-    if: github.event.pull_request.merged == true
+    if: github.event_name == 'push' || github.event_name == 'workflow_dispatch' || github.event.pull_request.merged == true
     runs-on: ubuntu-latest
     steps:
       - name: Checkout Code
@@ -66,7 +70,7 @@ jobs:
 
   deploy-frontend:
     name: Deploy React Frontend
-    if: github.event.pull_request.merged == true
+    if: github.event_name == 'push' || github.event_name == 'workflow_dispatch' || github.event.pull_request.merged == true
     runs-on: ubuntu-latest
     steps:
       - name: Checkout Code
@@ -86,6 +90,6 @@ jobs:
       - name: Deploy Frontend
         uses: azure/webapps-deploy@v3
         with:
-          app-name: '<your-frontend-app-name>'
+          app-name: 'tripora-frontend'
           publish-profile: ${{ secrets.AZURE_WEBAPP_FRONTEND_PROFILE }}
           package: ./Frontend/dist
