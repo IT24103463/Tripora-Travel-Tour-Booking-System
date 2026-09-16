@@ -26,7 +26,6 @@ jobs:
 
       # 1. Booking Service
       - name: Publish Booking Service
-        run: dotnet publish Backend/Services/Tripora.BookingService/Tripora.BookingService.csproj -c Release -o ./booking-app
         run: dotnet publish Backend/Services/Tripora.BookingService/Tripora.BookingService.csproj -c Release -r linux-x64 --self-contained true -o ./booking-app
 
       - name: Deploy Booking Service
@@ -39,7 +38,6 @@ jobs:
 
       # 2. Destination Service
       - name: Publish Destination Service
-        run: dotnet publish Backend/Services/Tripora.DestinationService/Tripora.DestinationService.csproj -c Release -o ./dest-app
         run: dotnet publish Backend/Services/Tripora.DestinationService/Tripora.DestinationService.csproj -c Release -r linux-x64 --self-contained true -o ./dest-app
 
       - name: Deploy Destination Service
@@ -52,7 +50,6 @@ jobs:
 
       # 3. User Service
       - name: Publish User Service
-        run: dotnet publish Backend/Services/Tripora.UserService/Tripora.UserService.csproj -c Release -o ./user-app
         run: dotnet publish Backend/Services/Tripora.UserService/Tripora.UserService.csproj -c Release -r linux-x64 --self-contained true -o ./user-app
 
       - name: Deploy User Service
@@ -65,7 +62,6 @@ jobs:
 
       # 4. API Gateway
       - name: Publish API Gateway
-        run: dotnet publish Backend/ApiGateway/Tripora.ApiGateway.csproj -c Release -o ./gateway-app
         run: dotnet publish Backend/ApiGateway/Tripora.ApiGateway.csproj -c Release -r linux-x64 --self-contained true -o ./gateway-app
 
       - name: Deploy API Gateway
