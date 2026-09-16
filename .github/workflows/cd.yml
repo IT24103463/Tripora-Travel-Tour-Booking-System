@@ -55,7 +55,7 @@ jobs:
 
       # 4. API Gateway
       - name: Publish API Gateway
-        run: dotnet publish Backend/Services/Tripora.ApiGateway/Tripora.ApiGateway.csproj -c Release -o ./gateway-app
+        run: dotnet publish Backend/ApiGateway/Tripora.ApiGateway.csproj -c Release -o ./gateway-app
 
       - name: Deploy API Gateway
         uses: azure/webapps-deploy@v3
