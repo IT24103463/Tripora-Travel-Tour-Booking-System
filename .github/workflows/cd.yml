@@ -27,6 +27,7 @@ jobs:
       # 1. Booking Service
       - name: Publish Booking Service
         run: dotnet publish Backend/Services/Tripora.BookingService/Tripora.BookingService.csproj -c Release -o ./booking-app
+        run: dotnet publish Backend/Services/Tripora.BookingService/Tripora.BookingService.csproj -c Release -r linux-x64 --self-contained true -o ./booking-app
 
       - name: Deploy Booking Service
         uses: azure/webapps-deploy@v3
@@ -34,10 +35,12 @@ jobs:
           app-name: 'tripora-booking'
           publish-profile: ${{ secrets.AZURE_WEBAPP_BOOKING_PROFILE }}
           package: ./booking-app
+          startup-command: 'dotnet Tripora.BookingService.dll --urls "http://0.0.0.0:8080"'
 
       # 2. Destination Service
       - name: Publish Destination Service
         run: dotnet publish Backend/Services/Tripora.DestinationService/Tripora.DestinationService.csproj -c Release -o ./dest-app
+        run: dotnet publish Backend/Services/Tripora.DestinationService/Tripora.DestinationService.csproj -c Release -r linux-x64 --self-contained true -o ./dest-app
 
       - name: Deploy Destination Service
         uses: azure/webapps-deploy@v3
@@ -45,10 +48,12 @@ jobs:
           app-name: 'tripora-destination'
           publish-profile: ${{ secrets.AZURE_WEBAPP_DESTINATION_PROFILE }}
           package: ./dest-app
+          startup-command: 'dotnet Tripora.DestinationService.dll --urls "http://0.0.0.0:8080"'
 
       # 3. User Service
       - name: Publish User Service
         run: dotnet publish Backend/Services/Tripora.UserService/Tripora.UserService.csproj -c Release -o ./user-app
+        run: dotnet publish Backend/Services/Tripora.UserService/Tripora.UserService.csproj -c Release -r linux-x64 --self-contained true -o ./user-app
 
       - name: Deploy User Service
         uses: azure/webapps-deploy@v3
@@ -56,10 +61,12 @@ jobs:
           app-name: 'tripora-user-auth'
           publish-profile: ${{ secrets.AZURE_WEBAPP_USER_PROFILE }}
           package: ./user-app
+          startup-command: 'dotnet Tripora.UserService.dll --urls "http://0.0.0.0:8080"'
 
       # 4. API Gateway
       - name: Publish API Gateway
         run: dotnet publish Backend/ApiGateway/Tripora.ApiGateway.csproj -c Release -o ./gateway-app
+        run: dotnet publish Backend/ApiGateway/Tripora.ApiGateway.csproj -c Release -r linux-x64 --self-contained true -o ./gateway-app
 
       - name: Deploy API Gateway
         uses: azure/webapps-deploy@v3
@@ -67,6 +74,7 @@ jobs:
           app-name: 'tripora-APIgateway'
           publish-profile: ${{ secrets.AZURE_WEBAPP_API_GATEWAY }}
           package: ./gateway-app
+          startup-command: 'dotnet Tripora.ApiGateway.dll --urls "http://0.0.0.0:8080"'
 
   deploy-frontend:
     name: Deploy React Frontend
