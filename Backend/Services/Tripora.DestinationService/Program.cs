@@ -44,15 +44,13 @@ builder.Services.AddDbContext<DestinationDbContext>(options =>
     });
 });
 
-// 3. Register Repositories and Services
+// 3. Register Services and Repositories (Only what exists in DestinationService)
 builder.Services.AddScoped<ITourRepository, TourRepository>();
-builder.Services.AddScoped<IHotelRepository, HotelRepository>();
 builder.Services.AddScoped<ITourService, TourService>();
 builder.Services.AddScoped<IHotelService, HotelService>();
 
 builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
-builder.Services.AddSwaggerGen();
 
 // 4. Configure CORS
 builder.Services.AddCors(options =>
@@ -94,18 +92,12 @@ using (var scope = app.Services.CreateScope())
     }
 }
 
-// 6. Health & Pipeline
+// 6. Health & Middleware Pipeline
 app.MapGet("/health", () => Results.Ok(new
 {
     service = "Tripora Destination Service",
     status = "Healthy"
 }));
-
-if (app.Environment.IsDevelopment())
-{
-    app.UseSwagger();
-    app.UseSwaggerUI();
-}
 
 app.UseCors("AllowFrontend");
 app.UseAuthorization();
