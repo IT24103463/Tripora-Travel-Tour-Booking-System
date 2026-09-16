@@ -1,56 +1,58 @@
-name: Tripora CI
+﻿name: CI
 
 on:
   push:
     branches:
+      - main
       - dev
+      - 'feature/**'
+      - 'TRIP-**'
   pull_request:
     branches:
-      - dev
       - main
+      - dev
 
 jobs:
-  backend:
-    name: Backend Build and Test
+  build-and-test-backend:
+    name: Build and Test .NET Backend
     runs-on: ubuntu-latest
-
     steps:
-      - name: Checkout Repository
+      - name: Checkout Code
         uses: actions/checkout@v4
 
-      - name: Setup .NET 10
+      - name: Setup .NET
         uses: actions/setup-dotnet@v4
         with:
           dotnet-version: '10.0.x'
 
-      - name: Restore Dependencies
-        run: dotnet restore Backend/Tripora.slnx
+      - name: Restore dependencies
+        run: dotnet restore
+        working-directory: ./Backend
 
-      - name: Build Backend
-        run: dotnet build Backend/Tripora.slnx --configuration Release --no-restore
+      - name: Build
+        run: dotnet build --no-restore
+        working-directory: ./Backend
 
-      - name: Run Backend Tests
-        run: dotnet test Backend/Tripora.slnx --configuration Release --no-build
+      - name: Test
+        run: dotnet test --no-build --verbosity normal
+        working-directory: ./Backend
 
-  frontend:
-    name: Frontend Build
-    runs-on: ubuntu-latest
-
+  build-frontend:
+    name: Build React Frontend
+    runs-on: windows-latest
     steps:
-      - name: Checkout Repository
+      - name: Checkout Code
         uses: actions/checkout@v4
 
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: 22
-          cache: npm
-          cache-dependency-path: Frontend/package-lock.json
+          node-version: '20'
 
-      - name: Install Dependencies
-        working-directory: Frontend
+      - name: Install dependencies
         run: npm ci
+        working-directory: ./Frontend
 
-      - name: Build Frontend
-        working-directory: Frontend
+      - name: Build
         run: npm run build
+        working-directory: ./Frontend
