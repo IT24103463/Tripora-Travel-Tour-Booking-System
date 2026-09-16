@@ -1,5 +1,6 @@
 using Microsoft.EntityFrameworkCore;
 using Tripora.DestinationService.Data;
+using Tripora.DestinationService.Services;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -12,6 +13,9 @@ builder.WebHost.UseUrls($"http://0.0.0.0:{port}");
 // Add controllers and endpoints
 builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
+
+// Register application business services (Dependency Injection)
+builder.Services.AddScoped<ITourService, TourService>();
 
 // Configure CORS
 builder.Services.AddCors(options =>
