@@ -1,5 +1,9 @@
 var builder = WebApplication.CreateBuilder(args);
 
+// Ensure Kestrel binds to all interfaces and checks Azure Linux's dynamic PORT variable
+var port = Environment.GetEnvironmentVariable("PORT") ?? "8080";
+builder.WebHost.UseUrls($"http://0.0.0.0:{port}");
+
 builder.Services.AddCors(options =>
 {
     options.AddPolicy("AllowFrontend", policy =>
@@ -18,9 +22,15 @@ builder.Services.AddCors(options =>
     });
 });
 
+// Configure YARP with custom HTTP timeout to prevent premature 504s during downstream cold starts
 builder.Services
     .AddReverseProxy()
-    .LoadFromConfig(builder.Configuration.GetSection("ReverseProxy"));
+    .LoadFromConfig(builder.Configuration.GetSection("ReverseProxy"))
+    .ConfigureHttpClient((context, handler) =>
+    {
+        handler.PooledConnectionIdleTimeout = TimeSpan.FromMinutes(2);
+        handler.ResponseHeaderTimeout = TimeSpan.FromSeconds(60);
+    });
 
 var app = builder.Build();
 
@@ -30,6 +40,7 @@ app.MapGet("/health", () => Results.Ok(new
     status = "Healthy"
 }));
 
+// Apply CORS before routing to downstream reverse proxy endpoints
 app.UseCors("AllowFrontend");
 app.MapReverseProxy();
 
