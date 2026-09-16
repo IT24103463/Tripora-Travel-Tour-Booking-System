@@ -64,28 +64,28 @@ jobs:
           publish-profile: ${{ secrets.AZURE_WEBAPP_API_GATEWAY }}
           package: ./gateway-app
 
-  deploy-frontend:
-    name: Deploy React Frontend
-    if: github.event.pull_request.merged == true
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout Code
-        uses: actions/checkout@v4
+  # deploy-frontend:
+  #   name: Deploy React Frontend
+  #   if: github.event.pull_request.merged == true
+  #   runs-on: ubuntu-latest
+  #   steps:
+  #     - name: Checkout Code
+  #       uses: actions/checkout@v4
 
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: '20'
+  #     - name: Setup Node.js
+  #       uses: actions/setup-node@v4
+  #       with:
+  #         node-version: '20'
 
-      - name: Build React App
-        run: |
-          cd Frontend
-          npm install
-          npm run build
+  #     - name: Build React App
+  #       run: |
+  #         cd Frontend
+  #         npm install
+  #         npm run build
 
-      - name: Deploy Frontend
-        uses: azure/webapps-deploy@v3
-        with:
-          app-name: '<your-frontend-app-name>'
-          publish-profile: ${{ secrets.AZURE_WEBAPP_FRONTEND_PROFILE }}
-          package: ./Frontend/dist
+  #     - name: Deploy Frontend
+  #       uses: azure/webapps-deploy@v3
+  #       with:
+  #         app-name: '<your-frontend-app-name>'
+  #         publish-profile: ${{ secrets.AZURE_WEBAPP_FRONTEND_PROFILE }}
+  #         package: ./Frontend/dist
