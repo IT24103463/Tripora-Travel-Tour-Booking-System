@@ -1,4 +1,4 @@
-﻿using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore;
 using Tripora.DestinationService.Data;
 using Tripora.DestinationService.Repositories;
 using Tripora.DestinationService.Services;
@@ -11,7 +11,10 @@ builder.WebHost.UseUrls($"http://0.0.0.0:{port}");
 
 // 1. Build Connection String with environment fallback
 var defaultConnection = builder.Configuration.GetConnectionString("DefaultConnection");
+var mySqlConnection = builder.Configuration.GetConnectionString("MySqlConnection")
+    ?? builder.Configuration.GetConnectionString("DefaultConnection");
 var dbHost = Environment.GetEnvironmentVariable("TRIPORA_DB_HOST");
+var dbPort = Environment.GetEnvironmentVariable("TRIPORA_DB_PORT") ?? "3306";
 var dbName = Environment.GetEnvironmentVariable("TRIPORA_DB_NAME") ?? "tripora_db";
 var dbUser = Environment.GetEnvironmentVariable("TRIPORA_DB_USER");
 var dbPass = Environment.GetEnvironmentVariable("TRIPORA_DB_PASSWORD");
@@ -19,16 +22,21 @@ var dbPass = Environment.GetEnvironmentVariable("TRIPORA_DB_PASSWORD");
 string connectionString;
 
 if (!string.IsNullOrWhiteSpace(defaultConnection) && !defaultConnection.Contains("localhost"))
+if (!string.IsNullOrWhiteSpace(mySqlConnection) && !mySqlConnection.Contains("localhost"))
 {
     connectionString = defaultConnection;
+    connectionString = mySqlConnection;
 }
 else if (!string.IsNullOrWhiteSpace(dbHost) && !string.IsNullOrWhiteSpace(dbUser))
+else if (!string.IsNullOrWhiteSpace(dbHost))
 {
     connectionString = $"Server={dbHost};Port=3306;Database={dbName};Uid={dbUser};Pwd={dbPass};SslMode=Preferred;";
+    connectionString = $"Server={dbHost};Port={dbPort};Database={dbName};User={dbUser ?? "root"};Password={dbPass ?? ""};SslMode=Preferred;";
 }
 else
 {
     connectionString = defaultConnection ?? "Server=localhost;Port=3306;Database=tripora_db;Uid=root;Pwd=root;";
+    connectionString = mySqlConnection ?? "Server=localhost;Port=3306;Database=tripora_db;User=root;Password=;";
 }
 
 // 2. Configure MySQL DbContext with Retries
