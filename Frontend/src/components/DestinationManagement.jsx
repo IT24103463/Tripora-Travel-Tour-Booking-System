@@ -1,10 +1,11 @@
 ﻿import { useState, useEffect } from 'react';
 import { isTokenExpired } from '../App.jsx';
+import { API_BASE_URL } from '../apiConfig';
 import './DestinationManagement.css';
 import { RefreshCw, AlertTriangle, X, Compass, Hotel, Edit, Trash2, Plus, Settings } from 'lucide-react';
 
-const API_TOURS_ENDPOINT = 'http://localhost:5120/api/tours';
-const API_HOTELS_ENDPOINT = 'http://localhost:5120/api/hotels';
+const API_TOURS_ENDPOINT = `${API_BASE_URL}/api/tours`;
+const API_HOTELS_ENDPOINT = `${API_BASE_URL}/api/hotels`;
 
 export default function DestinationManagement({ token, user, onSessionExpired }) {
   const [activeTab, setActiveTab] = useState('tours'); // 'tours' | 'hotels'

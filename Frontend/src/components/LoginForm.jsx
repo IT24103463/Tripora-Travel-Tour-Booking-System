@@ -1,11 +1,10 @@
 import { useState } from 'react';
 import { isTokenExpired } from '../App.jsx';
+import { API_BASE_URL } from '../apiConfig';
 import './LoginForm.css';
 import { AlertTriangle, RefreshCw } from 'lucide-react';
 
-const API_LOGIN_ENDPOINT = import.meta.env.VITE_API_URL 
-  ? import.meta.env.VITE_API_URL.replace('/register', '/login')
-  : 'http://localhost:5001/api/users/login';
+const API_LOGIN_ENDPOINT = `${API_BASE_URL}/api/users/login`;
 
 export default function LoginForm({ onLoginSuccess, onSwitchToRegister }) {
   const [formData, setFormData] = useState({

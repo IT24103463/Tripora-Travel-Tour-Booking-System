@@ -1,8 +1,9 @@
 import { useState, useMemo } from 'react';
+import { API_BASE_URL } from '../apiConfig';
 import './RegisterForm.css';
 import { AlertTriangle, Check, Circle, RefreshCw } from 'lucide-react';
 
-const API_ENDPOINT = import.meta.env.VITE_API_URL || 'http://localhost:5001/api/users/register';
+const API_ENDPOINT = `${API_BASE_URL}/api/users/register`;
 
 export default function RegisterForm({ onSwitchToLogin }) {
   const [formData, setFormData] = useState({

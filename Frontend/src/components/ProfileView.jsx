@@ -1,9 +1,10 @@
 import { useState, useEffect } from 'react';
 import { isTokenExpired } from '../App.jsx';
+import { API_BASE_URL } from '../apiConfig';
 import './ProfileView.css';
 import { AlertTriangle, User, RefreshCw, LogOut } from 'lucide-react';
 
-const API_PROFILE_ENDPOINT = 'http://localhost:5001/api/users/me';
+const API_PROFILE_ENDPOINT = `${API_BASE_URL}/api/users/me`;
 
 export default function ProfileView({ token, onSessionExpired, onLogout }) {
   const [profile, setProfile] = useState(null);

@@ -1,4 +1,5 @@
 ﻿import React, { useState } from 'react';
+import { API_BASE_URL } from '../apiConfig';
 
 export default function EditDestinationModal({ item, activeTab, onClose, onUpdate, token }) {
   const [editFormData, setEditFormData] = useState({
@@ -9,8 +10,8 @@ export default function EditDestinationModal({ item, activeTab, onClose, onUpdat
     imageUrl: item?.imageUrl || ''
   });
 
-  const API_ACTIVE_TOURS = 'http://localhost:5120/api/tours';
-  const API_HOTELS = 'http://localhost:5120/api/hotels';
+  const API_ACTIVE_TOURS = `${API_BASE_URL}/api/tours`;
+  const API_HOTELS = `${API_BASE_URL}/api/hotels`;
 
   const handleUpdate = async (e) => {
     e.preventDefault();

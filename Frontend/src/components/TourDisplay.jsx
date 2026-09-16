@@ -1,13 +1,14 @@
 ﻿import { useState, useEffect, useCallback, useRef } from 'react';
 import './TourDisplay.css';
 import EditDestinationModal from './EditDestinationModal';
+import { API_BASE_URL } from '../apiConfig';
 import {
   Search, MapPin, DollarSign, X, Clock, Users, Ticket, Tag,
   Sparkles, BedSingle, Star, AlertTriangle, Briefcase,
   Hotel as HotelIcon, RefreshCw, CalendarDays, CheckCircle, Loader
 } from 'lucide-react';
 
-const API_BASE             = 'http://localhost:5120';
+const API_BASE             = API_BASE_URL;
 const API_ACTIVE_TOURS     = `${API_BASE}/api/tours/active`;
 const API_HOTELS           = `${API_BASE}/api/hotels`;
 const API_BOOKINGS         = `${API_BASE}/api/bookings`;
