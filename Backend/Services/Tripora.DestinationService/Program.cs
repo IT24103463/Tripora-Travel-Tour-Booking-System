@@ -1,121 +1,114 @@
-﻿using MassTransit;
-using Tripora.DestinationService.Consumers;
-using System.Text;
-using Microsoft.AspNetCore.Authentication.JwtBearer;
-using Microsoft.EntityFrameworkCore;
-using Microsoft.IdentityModel.Tokens;
-using MySql.Data.MySqlClient;
+﻿using Microsoft.EntityFrameworkCore;
 using Tripora.DestinationService.Data;
 using Tripora.DestinationService.Repositories;
 using Tripora.DestinationService.Services;
 
 var builder = WebApplication.CreateBuilder(args);
 
-// 1. Add database context (MySQL)
-var connectionString = builder.Configuration.GetConnectionString("MySqlConnection") 
-    ?? "Server=localhost;Port=3306;Database=tripora_db;User=root;Password=;";
-var databasePassword = Environment.GetEnvironmentVariable("TRIPORA_DB_PASSWORD");
-if (databasePassword is not null)
+// Dynamic port binding for Azure App Service Linux
+var port = Environment.GetEnvironmentVariable("PORT") ?? "8080";
+builder.WebHost.UseUrls($"http://0.0.0.0:{port}");
+
+// 1. Build Connection String with environment fallback
+var defaultConnection = builder.Configuration.GetConnectionString("DefaultConnection");
+var dbHost = Environment.GetEnvironmentVariable("TRIPORA_DB_HOST");
+var dbName = Environment.GetEnvironmentVariable("TRIPORA_DB_NAME") ?? "tripora_db";
+var dbUser = Environment.GetEnvironmentVariable("TRIPORA_DB_USER");
+var dbPass = Environment.GetEnvironmentVariable("TRIPORA_DB_PASSWORD");
+
+string connectionString;
+
+if (!string.IsNullOrWhiteSpace(defaultConnection) && !defaultConnection.Contains("localhost"))
 {
-    var connectionStringBuilder = new MySqlConnectionStringBuilder(connectionString)
-    {
-        Password = databasePassword
-    };
-    connectionString = connectionStringBuilder.ConnectionString;
+    connectionString = defaultConnection;
 }
+else if (!string.IsNullOrWhiteSpace(dbHost) && !string.IsNullOrWhiteSpace(dbUser))
+{
+    connectionString = $"Server={dbHost};Port=3306;Database={dbName};Uid={dbUser};Pwd={dbPass};SslMode=Preferred;";
+}
+else
+{
+    connectionString = defaultConnection ?? "Server=localhost;Port=3306;Database=tripora_db;Uid=root;Pwd=root;";
+}
+
+// 2. Configure MySQL DbContext with Retries
 builder.Services.AddDbContext<DestinationDbContext>(options =>
-    options.UseMySQL(connectionString, x => x.MigrationsHistoryTable("__EFMigrationsHistory_Tours")));
-
-// 2. Configure JWT options (same as User Service for token validation)
-var jwtSection = builder.Configuration.GetSection("JwtSettings");
-var secretKey = jwtSection.GetValue<string>("SecretKey") 
-    ?? "Tripora_Super_Secret_Jwt_Security_Key_2026_Secure_Travel_System_!";
-var issuer = jwtSection.GetValue<string>("Issuer") ?? "Tripora.UserService";
-var audience = jwtSection.GetValue<string>("Audience") ?? "Tripora.Client";
-
-// 3. Configure Authentication & JWT Bearer
-builder.Services.AddAuthentication(options =>
 {
-    options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
-    options.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
-})
-.AddJwtBearer(options =>
-{
-    options.RequireHttpsMetadata = false;
-    options.SaveToken = true;
-    options.TokenValidationParameters = new TokenValidationParameters
+    options.UseMySQL(connectionString, mysqlOptions =>
     {
-        ValidateIssuerSigningKey = true,
-        IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(secretKey)),
-        ValidateIssuer = true,
-        ValidIssuer = issuer,
-        ValidateAudience = true,
-        ValidAudience = audience,
-        ValidateLifetime = true,
-        ClockSkew = TimeSpan.Zero
-    };
+        mysqlOptions.EnableRetryOnFailure(
+            maxRetryCount: 5,
+            maxRetryDelay: TimeSpan.FromSeconds(10),
+            errorNumbersToAdd: null
+        );
+    });
 });
 
-builder.Services.AddAuthorization();
-
-// 4. Register application services and repositories
+// 3. Register Repositories and Services
 builder.Services.AddScoped<ITourRepository, TourRepository>();
-builder.Services.AddSingleton<IValidationService, ValidationService>();
+builder.Services.AddScoped<IHotelRepository, HotelRepository>();
 builder.Services.AddScoped<ITourService, TourService>();
 builder.Services.AddScoped<IHotelService, HotelService>();
 
-// 5. Register controllers
 builder.Services.AddControllers();
+builder.Services.AddEndpointsApiExplorer();
+builder.Services.AddSwaggerGen();
 
-// 6. Configure CORS for frontend access
+// 4. Configure CORS
 builder.Services.AddCors(options =>
 {
     options.AddPolicy("AllowFrontend", policy =>
     {
         policy.WithOrigins(
-                "http://localhost:5173", 
-                "http://localhost:3000", 
-                "http://localhost:5000",
-                "http://localhost:5292")
+                "http://localhost:5173",
+                "http://localhost:5174",
+                "http://localhost:3000",
+                "http://127.0.0.1:5173",
+                "http://127.0.0.1:5174",
+                "https://tripora-frontend-fbfbencjhpgvd9bx.eastasia-01.azurewebsites.net",
+                "https://tripora-apigateway-dcg6cwa6f8gkg5hy.eastasia-01.azurewebsites.net"
+            )
             .AllowAnyHeader()
-            .AllowAnyMethod().AllowCredentials();
-    });
-});
-
-// 7. Configure OpenAPI
-builder.Services.AddOpenApi();
-
-builder.Services.AddMassTransit(x =>
-{
-    x.AddConsumer<BookingConfirmedConsumer>();
-    x.AddConsumer<BookingCancelledConsumer>();
-
-    x.UsingInMemory((context, cfg) =>
-    {
-        cfg.ConfigureEndpoints(context);
+            .AllowAnyMethod()
+            .AllowCredentials();
     });
 });
 
 var app = builder.Build();
 
-// Ensure the MySQL database schema is created on startup
+// 5. Safe Startup Migration (Will not crash the process if DB connection is delayed)
 using (var scope = app.Services.CreateScope())
 {
-    var dbContext = scope.ServiceProvider.GetRequiredService<DestinationDbContext>();
-    dbContext.Database.Migrate();
+    var services = scope.ServiceProvider;
+    var logger = services.GetRequiredService<ILogger<Program>>();
+    try
+    {
+        var context = services.GetRequiredService<DestinationDbContext>();
+        logger.LogInformation("Applying migrations to Destination DB...");
+        context.Database.Migrate();
+        logger.LogInformation("Destination DB migrations completed successfully.");
+    }
+    catch (Exception ex)
+    {
+        logger.LogError(ex, "Database migration failed during startup. Service will keep running.");
+    }
 }
 
-// Configure HTTP request pipeline
+// 6. Health & Pipeline
+app.MapGet("/health", () => Results.Ok(new
+{
+    service = "Tripora Destination Service",
+    status = "Healthy"
+}));
+
 if (app.Environment.IsDevelopment())
 {
-    app.MapOpenApi();
+    app.UseSwagger();
+    app.UseSwaggerUI();
 }
 
 app.UseCors("AllowFrontend");
-app.UseAuthentication();
 app.UseAuthorization();
 app.MapControllers();
 
 app.Run();
-
-
