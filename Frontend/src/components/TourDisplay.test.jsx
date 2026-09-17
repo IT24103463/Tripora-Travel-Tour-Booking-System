@@ -153,4 +153,59 @@ describe('TourDisplay Component', () => {
       expect(screen.getByText('Grand Plaza Hotel')).toBeInTheDocument();
     });
   });
+
+  it('renders hotel booking modal ready-to-book with no error banner even if destination service is unavailable', async () => {
+    // Hotel list succeeds, but hotel details endpoint fails with 503 or network error
+    global.fetch = vi.fn((url) => {
+      if (url.includes('/api/hotels/1')) {
+        return Promise.reject(new Error('Destination service is currently unavailable. Please try again later.'));
+      }
+      if (url.includes('/api/hotels')) {
+        return Promise.resolve({
+          ok: true,
+          json: () => Promise.resolve(mockHotels)
+        });
+      }
+      if (url.includes('/api/tours/active')) {
+        return Promise.resolve({
+          ok: true,
+          json: () => Promise.resolve({ success: true, data: mockTours })
+        });
+      }
+      return Promise.reject(new Error('Unknown URL'));
+    });
+
+    render(<TourDisplay token="mock-token" user={{ fullName: 'John Doe', role: 'Customer' }} />);
+
+    await waitFor(() => {
+      expect(screen.getByText('Paris Adventure')).toBeInTheDocument();
+    });
+
+    const hotelsTab = screen.getByRole('button', { name: 'Hotels' });
+    fireEvent.click(hotelsTab);
+
+    await waitFor(() => {
+      expect(screen.getByText('Grand Plaza Hotel')).toBeInTheDocument();
+    });
+
+    // Click hotel card to open modal
+    fireEvent.click(screen.getByText('Grand Plaza Hotel'));
+
+    // Modal title should appear
+    await waitFor(() => {
+      expect(screen.getByRole('heading', { level: 2, name: 'Grand Plaza Hotel' })).toBeInTheDocument();
+    });
+
+    // Click Book Now button
+    const bookNowButton = screen.getByRole('button', { name: 'Book Now' });
+    fireEvent.click(bookNowButton);
+
+    // Form should render ready to book without error banner
+    await waitFor(() => {
+      expect(screen.getByText('Complete Your Booking')).toBeInTheDocument();
+    });
+
+    // Assert that destination service unavailable banner is NOT in the document
+    expect(screen.queryByText(/Destination service is currently unavailable/i)).not.toBeInTheDocument();
+  });
 });

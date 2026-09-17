@@ -1,4 +1,4 @@
-﻿import { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { isTokenExpired } from '../App.jsx';
 import { API_BASE_URL } from '../apiConfig';
 import './DestinationManagement.css';
@@ -16,6 +16,7 @@ export default function DestinationManagement({ token, user, onSessionExpired })
   const [loading, setLoading] = useState(true);
   const [togglingId, setTogglingId] = useState(null);
   const [error, setError] = useState(null);
+  const [actionError, setActionError] = useState(null);
   
   const [showCreateForm, setShowCreateForm] = useState(false);
   const [editingItem, setEditingItem] = useState(null);
@@ -25,7 +26,7 @@ export default function DestinationManagement({ token, user, onSessionExpired })
   const handleEditAvailability = (item) => {
     setEditingAvailabilityItem(item);
     setAvailabilityData({
-      capacity: activeTab === 'tours' ? item.capacity : item.totalRooms,
+      capacity: activeTab === 'tours' ? item.capacity : (item.totalRooms ?? item.availableRooms ?? 0),
       available: activeTab === 'tours' ? item.availableSlots : item.availableRooms,
       status: item.status || 0
     });
@@ -39,7 +40,7 @@ export default function DestinationManagement({ token, user, onSessionExpired })
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': Bearer 
+          'Authorization': `Bearer ${token}`
         },
         body: JSON.stringify({
           capacity: parseInt(availabilityData.capacity, 10),
@@ -51,9 +52,13 @@ export default function DestinationManagement({ token, user, onSessionExpired })
         setEditingAvailabilityItem(null);
         if (activeTab === 'tours') await fetchTours();
         else await fetchHotels();
+      } else {
+        const data = await response.json().catch(() => ({}));
+        setActionError(data.message || 'Failed to update availability.');
       }
     } catch (err) {
       console.error(err);
+      setActionError(`Failed to update availability: ${err.message}`);
     }
   };
   
@@ -73,6 +78,7 @@ export default function DestinationManagement({ token, user, onSessionExpired })
     // Hotels
     location: '',
     pricePerNight: '',
+    totalRooms: '',
     availableRooms: '',
     rating: '',
     amenities: ''
@@ -156,9 +162,10 @@ export default function DestinationManagement({ token, user, onSessionExpired })
   const handleToggleStatus = async (item, type) => {
     if (togglingId) return; // Prevent concurrent toggles
     setTogglingId(item.id);
+    setActionError(null);
 
     // Optimistic update
-    const prevItems = type === 'tour' ? tours : hotels;
+    const prevItems = type === 'tour' ? [...tours] : [...hotels];
     
     // Update local state immediately
     if (type === 'tour') {
@@ -175,7 +182,7 @@ export default function DestinationManagement({ token, user, onSessionExpired })
         payload = {
           name: item.name,
           description: item.description,
-          destination: item.destination,
+          destination: item.destination || item.location || '',
           price: item.price,
           durationDays: item.durationDays,
           capacity: item.capacity,
@@ -188,9 +195,10 @@ export default function DestinationManagement({ token, user, onSessionExpired })
           description: item.description,
           location: item.location,
           pricePerNight: item.pricePerNight,
+          totalRooms: item.totalRooms ?? item.availableRooms ?? 0,
           availableRooms: item.availableRooms,
           rating: item.rating,
-          amenities: item.amenities,
+          amenities: item.amenities || '',
           imageUrl: item.imageUrl,
           isActive: !item.isActive
         };
@@ -205,12 +213,29 @@ export default function DestinationManagement({ token, user, onSessionExpired })
         body: JSON.stringify(payload)
       });
 
+      if (response.status === 401) {
+        if (onSessionExpired) onSessionExpired();
+        setActionError('Session expired. Please log in again.');
+        if (type === 'tour') setTours(prevItems);
+        else setHotels(prevItems);
+        return;
+      }
+
+      if (response.status === 403) {
+        setActionError('Access denied: Administrator privileges required.');
+        if (type === 'tour') setTours(prevItems);
+        else setHotels(prevItems);
+        return;
+      }
+
       if (!response.ok) {
-        throw new Error('Failed to toggle status');
+        const errorData = await response.json().catch(() => ({}));
+        const msg = errorData.message || errorData.title || (errorData.errors ? Object.values(errorData.errors).flat().join(', ') : 'Failed to toggle status');
+        throw new Error(msg);
       }
     } catch (err) {
       console.error('Toggle status error:', err);
-      setError(`Failed to toggle status: ${err.message}`);
+      setActionError(`Failed to toggle status: ${err.message}`);
       // Revert on failure
       if (type === 'tour') {
         setTours(prevItems);
@@ -248,6 +273,7 @@ export default function DestinationManagement({ token, user, onSessionExpired })
           description: item?.description ?? '',
           location: item?.location ?? '',
           pricePerNight: item?.pricePerNight ?? 0,
+          totalRooms: item?.totalRooms ?? item?.availableRooms ?? 0,
           availableRooms: item?.availableRooms ?? 0,
           rating: item?.rating ?? 0,
           amenities: item?.amenities ?? '',
@@ -260,12 +286,13 @@ export default function DestinationManagement({ token, user, onSessionExpired })
     } catch (err) {
       console.error("Crash before render:", err);
     }
-  };;
+  };
 
-    const handleDelete = async (id) => {
+  const handleDelete = async (id) => {
     if (!confirm(`Are you sure you want to delete this ${activeTab === 'tours' ? 'tour' : 'hotel'}? This action cannot be undone.`)) {
       return;
     }
+    setActionError(null);
     try {
       const endpoint = `${activeTab === 'tours' ? API_TOURS_ENDPOINT : API_HOTELS_ENDPOINT}/${id}`;
       const response = await fetch(endpoint, {
@@ -274,23 +301,23 @@ export default function DestinationManagement({ token, user, onSessionExpired })
       });
       if (response.status === 401) {
         if (onSessionExpired) onSessionExpired();
-        setError('Authentication failed.');
+        setActionError('Session expired. Please log in again.');
         return;
       }
       if (response.status === 403) {
-        setError('Access denied.');
+        setActionError('Access denied: Administrator privileges required.');
         return;
       }
       if (response.ok) {
         if (activeTab === 'tours') await fetchTours();
         else await fetchHotels();
       } else {
-        const data = await response.json();
-        setError(data.message || 'Failed to delete.');
+        const data = await response.json().catch(() => ({}));
+        setActionError(data.message || 'Failed to delete.');
       }
     } catch (err) {
       console.error('Delete error:', err);
-      setError(`Failed to delete: ${err.message}`);
+      setActionError(`Failed to delete: ${err.message}`);
     }
   };
 
@@ -298,6 +325,7 @@ export default function DestinationManagement({ token, user, onSessionExpired })
     e.preventDefault();
     setIsSubmitting(true);
     setFormErrors([]);
+    setActionError(null);
 
     let payload;
     if (activeTab === 'tours') {
@@ -317,6 +345,7 @@ export default function DestinationManagement({ token, user, onSessionExpired })
         description: formData.description,
         location: formData.location,
         pricePerNight: parseFloat(formData.pricePerNight),
+        totalRooms: parseInt(formData.totalRooms || formData.availableRooms || 0, 10),
         availableRooms: parseInt(formData.availableRooms, 10),
         rating: parseFloat(formData.rating),
         amenities: formData.amenities,
@@ -344,7 +373,7 @@ export default function DestinationManagement({ token, user, onSessionExpired })
         else await fetchHotels();
         handleCancel();
       } else {
-        const data = await response.json();
+        const data = await response.json().catch(() => ({}));
         if (data.errors) {
           const msgs = [];
           Object.values(data.errors).forEach(errArr => {
@@ -363,7 +392,7 @@ export default function DestinationManagement({ token, user, onSessionExpired })
     }
   };
 
-    const handleInputChange = (e) => {
+  const handleInputChange = (e) => {
     const { name, value, type, checked } = e.target;
     setFormData(prev => ({
       ...prev,
@@ -375,7 +404,7 @@ export default function DestinationManagement({ token, user, onSessionExpired })
     setFormData({
       name: '', description: '', imageUrl: '', isActive: true,
       destination: '', price: '', durationDays: '', capacity: '',
-      location: '', pricePerNight: '', availableRooms: '', rating: '', amenities: ''
+      location: '', pricePerNight: '', totalRooms: '', availableRooms: '', rating: '', amenities: ''
     });
     setFormErrors([]);
     setEditingItem(null);
@@ -402,7 +431,7 @@ export default function DestinationManagement({ token, user, onSessionExpired })
       <div className="tour-management-container">
         <div className="error-state">
           <div className="error-icon"><AlertTriangle size={24} /></div>
-          <h3>Access Error</h3>
+          <h3>Unable to Load Destinations</h3>
           <p>{error}</p>
           <button type="button" className="btn-retry" onClick={activeTab === 'tours' ? fetchTours : fetchHotels}>
             <RefreshCw size={16} className="button-icon" style={{marginRight: "4px"}} /> Try Again
@@ -448,6 +477,32 @@ export default function DestinationManagement({ token, user, onSessionExpired })
           </button>
         </div>
       </div>
+
+      {actionError && (
+        <div className="action-alert action-alert-error" style={{
+          backgroundColor: 'rgba(239, 68, 68, 0.15)',
+          border: '1px solid #ef4444',
+          color: '#fca5a5',
+          padding: '12px 16px',
+          borderRadius: '8px',
+          marginBottom: '20px',
+          display: 'flex',
+          justifyContent: 'space-between',
+          alignItems: 'center'
+        }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <AlertTriangle size={18} />
+            <span>{actionError}</span>
+          </div>
+          <button
+            type="button"
+            onClick={() => setActionError(null)}
+            style={{ background: 'transparent', border: 'none', color: '#fca5a5', cursor: 'pointer', padding: '4px' }}
+          >
+            <X size={18} />
+          </button>
+        </div>
+      )}
 
             {editingAvailabilityItem && (
         <div className="tour-form-container" style={{position: 'fixed', top: '50%', left: '50%', transform: 'translate(-50%, -50%)', zIndex: 1000, background: '#1e293b', padding: '20px', borderRadius: '8px', boxShadow: '0 4px 6px rgba(0,0,0,0.3)', width: '400px'}}>
@@ -661,7 +716,7 @@ export default function DestinationManagement({ token, user, onSessionExpired })
                     <td>{hotel.location}</td>
                     <td>${hotel.pricePerNight?.toLocaleString() ?? 0}</td>
                     <td>{hotel.availableRooms}</td>
-                    <td>{hotel.rating} â­</td>
+                    <td><span>{hotel.rating} <span aria-label="star">&#9733;</span></span></td>
                     <td>
                         <button 
                           type="button"

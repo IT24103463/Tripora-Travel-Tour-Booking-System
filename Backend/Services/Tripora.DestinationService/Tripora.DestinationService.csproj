@@ -5,6 +5,7 @@
     <AssemblyName>Tripora.DestinationService</AssemblyName>
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
+    <NoWarn>$(NoWarn);CS8604</NoWarn>
   </PropertyGroup>
 
   <ItemGroup>

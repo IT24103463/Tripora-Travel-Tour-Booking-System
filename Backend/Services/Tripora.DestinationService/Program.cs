@@ -1,4 +1,8 @@
+using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.IdentityModel.Tokens;
+using System.Security.Claims;
+using System.Text;
 using Tripora.DestinationService.Data;
 using Tripora.DestinationService.Repositories;
 using Tripora.DestinationService.Services;
@@ -6,8 +10,12 @@ using Tripora.DestinationService.Services;
 var builder = WebApplication.CreateBuilder(args);
 
 // Dynamic port binding for Azure App Service Linux
-var port = Environment.GetEnvironmentVariable("PORT") ?? "8080";
-builder.WebHost.UseUrls($"http://0.0.0.0:{port}");
+var port = Environment.GetEnvironmentVariable("PORT")
+    ?? Environment.GetEnvironmentVariable("WEBSITES_PORT");
+if (!string.IsNullOrWhiteSpace(port))
+{
+    builder.WebHost.UseUrls($"http://0.0.0.0:{port}");
+}
 
 // 1. Build Connection String with environment fallback
 var mySqlConnection = builder.Configuration.GetConnectionString("MySqlConnection")
@@ -48,6 +56,7 @@ builder.Services.AddDbContext<DestinationDbContext>(options =>
 
 // 3. Register Services and Repositories (Only what exists in DestinationService)
 builder.Services.AddScoped<ITourRepository, TourRepository>();
+builder.Services.AddScoped<IValidationService, ValidationService>();
 builder.Services.AddScoped<ITourService, TourService>();
 builder.Services.AddScoped<IHotelService, HotelService>();
 
@@ -55,6 +64,39 @@ builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
 
 // 4. Configure CORS
+// 4. Configure JWT Authentication & Authorization
+var jwtSection = builder.Configuration.GetSection("JwtSettings");
+var secretKey = jwtSection.GetValue<string>("SecretKey")
+    ?? "Tripora_Super_Secret_Jwt_Security_Key_2026_Secure_Travel_System_!";
+var issuer = jwtSection.GetValue<string>("Issuer") ?? "Tripora.UserService";
+var audience = jwtSection.GetValue<string>("Audience") ?? "Tripora.Client";
+
+builder.Services.AddAuthentication(options =>
+{
+    options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
+    options.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
+})
+.AddJwtBearer(options =>
+{
+    options.RequireHttpsMetadata = false;
+    options.SaveToken = true;
+    options.TokenValidationParameters = new TokenValidationParameters
+    {
+        ValidateIssuerSigningKey = true,
+        IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(secretKey)),
+        ValidateIssuer = true,
+        ValidIssuer = issuer,
+        ValidateAudience = true,
+        ValidAudience = audience,
+        ValidateLifetime = true,
+        ClockSkew = TimeSpan.Zero,
+        RoleClaimType = ClaimTypes.Role
+    };
+});
+
+builder.Services.AddAuthorization();
+
+// 5. Configure CORS
 builder.Services.AddCors(options =>
 {
     options.AddPolicy("AllowFrontend", policy =>
@@ -90,7 +132,7 @@ using (var scope = app.Services.CreateScope())
     }
     catch (Exception ex)
     {
-        logger.LogError(ex, "Database migration failed during startup. Service will keep running.");
+        logger.LogWarning(ex, "Database migration failed during startup. The service will continue without applying migrations.");
     }
 }
 
@@ -102,6 +144,7 @@ app.MapGet("/health", () => Results.Ok(new
 }));
 
 app.UseCors("AllowFrontend");
+app.UseAuthentication();
 app.UseAuthorization();
 app.MapControllers();
 

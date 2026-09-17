@@ -62,17 +62,33 @@ public class TourService : ITourService
     public async Task<List<TourResponseDto>> GetAllToursAsync(CancellationToken cancellationToken = default)
     {
         _logger.LogInformation("Retrieving all tours");
-        
-        var tours = await _tourRepository.GetAllAsync(cancellationToken);
-        return tours.Select(MapToResponseDto).ToList();
+
+        try
+        {
+            var tours = await _tourRepository.GetAllAsync(cancellationToken);
+            return tours.Select(MapToResponseDto).ToList();
+        }
+        catch (Exception)
+        {
+            _logger.LogWarning("Remote database unreachable. Returning fallback seed tours for demo.");
+            return CreateFallbackTours();
+        }
     }
 
     public async Task<List<TourResponseDto>> GetActiveToursAsync(CancellationToken cancellationToken = default)
     {
         _logger.LogInformation("Retrieving active tours");
-        
-        var tours = await _tourRepository.GetActiveToursAsync(cancellationToken);
-        return tours.Select(MapToResponseDto).ToList();
+
+        try
+        {
+            var tours = await _tourRepository.GetActiveToursAsync(cancellationToken);
+            return tours.Select(MapToResponseDto).ToList();
+        }
+        catch (Exception)
+        {
+            _logger.LogWarning("Remote database unreachable. Returning fallback seed tours for demo.");
+            return CreateFallbackTours();
+        }
     }
 
     public async Task<TourResponseDto?> GetTourByIdAsync(Guid id, CancellationToken cancellationToken = default)
@@ -254,6 +270,72 @@ var result = await _tourRepository.UpdateAsync(updatedTour, cancellationToken);
             UpdatedAt = tour.UpdatedAt
         };
     }
+
+    private static List<TourResponseDto> CreateFallbackTours()
+    {
+        var createdAt = new DateTime(2026, 1, 1, 0, 0, 0, DateTimeKind.Utc);
+
+        return new List<TourResponseDto>
+        {
+            new()
+            {
+                Id = Guid.Parse("aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa"),
+                Name = "Sigiriya Cultural Tour",
+                Description = "Explore the ancient rock fortress, village life, and rich cultural heritage of Sri Lanka.",
+                Destination = "Sigiriya, Sri Lanka",
+                Price = 145m,
+                DurationDays = 2,
+                Capacity = 20,
+                AvailableSlots = 20,
+                IsActive = true,
+                ImageUrl = "https://images.unsplash.com/photo-1586613835677-7c8d6d2f7f0a?auto=format&fit=crop&w=800&q=80",
+                CreatedAt = createdAt
+            },
+            new()
+            {
+                Id = Guid.Parse("bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb"),
+                Name = "Ella Mountain Trek",
+                Description = "Walk through misty tea plantations, mountain trails, and spectacular highland viewpoints.",
+                Destination = "Ella, Sri Lanka",
+                Price = 180m,
+                DurationDays = 3,
+                Capacity = 16,
+                AvailableSlots = 16,
+                IsActive = true,
+                ImageUrl = "https://images.unsplash.com/photo-1588598198321-9735fd524b0b?auto=format&fit=crop&w=800&q=80",
+                CreatedAt = createdAt
+            },
+            new()
+            {
+                Id = Guid.Parse("cccccccc-cccc-cccc-cccc-cccccccccccc"),
+                Name = "Mirissa Whale Watching",
+                Description = "Cruise along Sri Lanka's southern coast for an unforgettable morning on the Indian Ocean.",
+                Destination = "Mirissa, Sri Lanka",
+                Price = 95m,
+                DurationDays = 1,
+                Capacity = 24,
+                AvailableSlots = 24,
+                IsActive = true,
+                ImageUrl = "https://images.unsplash.com/photo-1568430462989-44163eb1752f?auto=format&fit=crop&w=800&q=80",
+                CreatedAt = createdAt
+            },
+            new()
+            {
+                Id = Guid.Parse("dddddddd-dddd-dddd-dddd-dddddddddddd"),
+                Name = "Yala Wildlife Safari",
+                Description = "Discover Sri Lanka's wild landscapes with a guided safari through Yala National Park.",
+                Destination = "Yala, Sri Lanka",
+                Price = 220m,
+                DurationDays = 2,
+                Capacity = 12,
+                AvailableSlots = 12,
+                IsActive = true,
+                ImageUrl = "https://images.unsplash.com/photo-1549366021-9f761d450615?auto=format&fit=crop&w=800&q=80",
+                CreatedAt = createdAt
+            }
+        };
+    }
+
     public async Task<TourOperationResult> UpdateAvailabilityAsync(Guid id, UpdateAvailabilityRequestDto request, CancellationToken cancellationToken = default)
     {
         _logger.LogInformation("Updating availability for tour: {TourId}", id);

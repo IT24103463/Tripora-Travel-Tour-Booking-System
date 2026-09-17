@@ -1,4 +1,4 @@
-﻿using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Tripora.DestinationService.DTOs;
 using Tripora.DestinationService.Services;
@@ -267,6 +267,8 @@ public class ToursController : ControllerBase
         };
     }
         [HttpPut("{id}/availability")]
+
+    [HttpPut("{id}/availability")]
     [Authorize(Roles = "Admin")]
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]

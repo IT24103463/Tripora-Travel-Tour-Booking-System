@@ -1,8 +1,13 @@
 var builder = WebApplication.CreateBuilder(args);
 
 // Dynamic port binding for Azure App Service Linux
-var port = Environment.GetEnvironmentVariable("PORT") ?? "8080";
-builder.WebHost.UseUrls($"http://0.0.0.0:{port}");
+var azurePort = Environment.GetEnvironmentVariable("PORT")
+                ?? Environment.GetEnvironmentVariable("WEBSITES_PORT");
+
+if (!string.IsNullOrEmpty(azurePort))
+{
+    builder.WebHost.UseUrls($"http://0.0.0.0:{azurePort}");
+}
 
 builder.Services.AddCors(options =>
 {

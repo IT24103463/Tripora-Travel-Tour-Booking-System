@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Security.Claims;
@@ -199,6 +199,96 @@ namespace Tripora.DestinationService.Tests
             // Assert
             Assert.False(result.IsSuccess);
             Assert.Contains("Cannot reduce TotalRooms below currently occupied rooms", result.ErrorMessage);
+        }
+
+        [Fact]
+        public async Task GetHotelById_WhenHotelExists_ReturnsOk()
+        {
+            // Arrange
+            var hotelId = Guid.NewGuid();
+            var expectedHotel = new Hotel { Id = hotelId, Name = "Existing Hotel", AvailableRooms = 12 };
+            _mockHotelService.Setup(s => s.GetHotelByIdAsync(hotelId, It.IsAny<CancellationToken>()))
+                .ReturnsAsync(expectedHotel);
+
+            // Act
+            var result = await _controller.GetHotelById(hotelId);
+
+            // Assert
+            var okResult = Assert.IsType<OkObjectResult>(result);
+            Assert.Equal(expectedHotel, okResult.Value);
+        }
+
+        [Fact]
+        public async Task GetHotelById_WhenHotelNotFoundOrServiceThrows_ReturnsGracefulFallback()
+        {
+            // Arrange
+            var hotelId = Guid.NewGuid();
+            _mockHotelService.Setup(s => s.GetHotelByIdAsync(hotelId, It.IsAny<CancellationToken>()))
+                .ThrowsAsync(new Exception("Database unreachable"));
+
+            // Act
+            var result = await _controller.GetHotelById(hotelId);
+
+            // Assert
+            var okResult = Assert.IsType<OkObjectResult>(result);
+            Assert.NotNull(okResult.Value);
+            var dynamicValue = okResult.Value;
+            var nameProp = dynamicValue.GetType().GetProperty("name")?.GetValue(dynamicValue)?.ToString();
+            var roomsProp = (int)(dynamicValue.GetType().GetProperty("availableRooms")?.GetValue(dynamicValue) ?? 0);
+            var isAvailProp = (bool)(dynamicValue.GetType().GetProperty("isAvailable")?.GetValue(dynamicValue) ?? false);
+
+            Assert.Equal("Heritance Kandalama", nameProp);
+            Assert.Equal(32, roomsProp);
+            Assert.True(isAvailProp);
+        }
+
+        [Fact]
+        public async Task GetHotelByIdAsync_MockFallbackId_ReturnsFallbackHotel()
+        {
+            // Arrange
+            var db = GetInMemoryDbContext();
+            var service = new HotelService(db);
+            var fallbackId = Guid.Parse("99999999-9999-9999-9999-999999999999");
+
+            // Act
+            var hotel = await service.GetHotelByIdAsync(fallbackId);
+
+            // Assert
+            Assert.NotNull(hotel);
+            Assert.Equal("Heritance Kandalama", hotel.Name);
+            Assert.Equal(32, hotel.AvailableRooms);
+        }
+
+        [Fact]
+        public async Task UpdateHotelAsync_WhenTotalRoomsIsZero_PreservesExistingTotalRoomsAndUpdatesActiveStatus()
+        {
+            // Arrange
+            var db = GetInMemoryDbContext();
+            var hotelId = Guid.NewGuid();
+            var hotel = new Hotel { Id = hotelId, TotalRooms = 10, AvailableRooms = 5, IsActive = true };
+            db.Hotels.Add(hotel);
+            await db.SaveChangesAsync();
+
+            var service = new HotelService(db);
+            var dto = new UpdateHotelRequestDto
+            {
+                Name = "Test Hotel",
+                Description = "Description",
+                Location = "Location",
+                PricePerNight = 100,
+                TotalRooms = 0,
+                AvailableRooms = 5,
+                IsActive = false
+            };
+
+            // Act
+            var result = await service.UpdateHotelAsync(hotelId, dto);
+
+            // Assert
+            Assert.True(result.IsSuccess);
+            Assert.Equal(10, result.Hotel!.TotalRooms);
+            Assert.Equal(5, result.Hotel!.AvailableRooms);
+            Assert.False(result.Hotel!.IsActive);
         }
     }
 }

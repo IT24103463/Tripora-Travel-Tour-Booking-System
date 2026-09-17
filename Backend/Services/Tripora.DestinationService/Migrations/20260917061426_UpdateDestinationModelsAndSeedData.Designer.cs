@@ -2,6 +2,7 @@
 using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Tripora.DestinationService.Data;
 
@@ -10,9 +11,11 @@ using Tripora.DestinationService.Data;
 namespace Tripora.DestinationService.Migrations
 {
     [DbContext(typeof(DestinationDbContext))]
-    partial class DestinationDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260917061426_UpdateDestinationModelsAndSeedData")]
+    partial class UpdateDestinationModelsAndSeedData
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -96,67 +99,67 @@ namespace Tripora.DestinationService.Migrations
                     b.HasData(
                         new
                         {
-                            Id = new Guid("99999999-9999-9999-9999-999999999999"),
-                            Amenities = "Infinity Pool, Free WiFi, Spa, Breakfast Included, Restaurant, Airport Shuttle",
-                            AvailableRooms = 32,
+                            Id = new Guid("55555555-5555-5555-5555-555555555555"),
+                            Amenities = "Ocean View, Private Pool, Free WiFi, Spa, Breakfast Included, Airport Shuttle",
+                            AvailableRooms = 15,
                             CreatedAt = new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
-                            Description = "A luxury eco-resort immersed in forested hills overlooking the ancient landscapes of Sigiriya and Dambulla.",
-                            ImageUrl = "https://images.unsplash.com/photo-1540541338287-41700207dee6?auto=format&fit=crop&w=800&q=80",
+                            Description = "Overwater luxury villas featuring direct lagoon access, sunset infinity pools, and world-class fine dining.",
+                            ImageUrl = "https://images.unsplash.com/photo-1571896349842-33c89424de2d?auto=format&fit=crop&w=800&q=80",
                             IsActive = true,
-                            Location = "Sigiriya / Dambulla, Sri Lanka",
-                            Name = "Heritance Kandalama",
-                            PricePerNight = 180.00m,
-                            Rating = 4.7999999999999998,
+                            Location = "South Malé Atoll, Maldives",
+                            Name = "The Azure Horizon Resort",
+                            PricePerNight = 420.00m,
+                            Rating = 5.0,
                             Status = 0,
-                            TotalRooms = 32
+                            TotalRooms = 0
                         },
                         new
                         {
-                            Id = new Guid("aaaaaaaa-1111-1111-1111-111111111111"),
-                            Amenities = "Mountain View, Spa, Free WiFi, Breakfast Included, Restaurant, Hiking Trails",
-                            AvailableRooms = 24,
+                            Id = new Guid("66666666-6666-6666-6666-666666666666"),
+                            Amenities = "Ski-in/Ski-out, Spa & Sauna, Free WiFi, Mountain View, Restaurant, Bar",
+                            AvailableRooms = 25,
                             CreatedAt = new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
-                            Description = "A boutique mountain retreat surrounded by tea plantations with sweeping views of Ella's green valleys.",
-                            ImageUrl = "https://images.unsplash.com/photo-1582610116397-edb318620f90?auto=format&fit=crop&w=800&q=80",
+                            Description = "Cozy alpine chalet-style architecture offering panoramic Matterhorn views, heated thermal baths, and fireside lounges.",
+                            ImageUrl = "https://images.unsplash.com/photo-1582719478250-c89cae4dc85b?auto=format&fit=crop&w=800&q=80",
                             IsActive = true,
-                            Location = "Ella, Sri Lanka",
-                            Name = "98 Acres Resort & Spa",
-                            PricePerNight = 220.00m,
-                            Rating = 4.9000000000000004,
+                            Location = "Zermatt, Switzerland",
+                            Name = "Grand Alpine Sanctuary",
+                            PricePerNight = 290.00m,
+                            Rating = 4.0,
                             Status = 0,
-                            TotalRooms = 24
+                            TotalRooms = 0
                         },
                         new
                         {
-                            Id = new Guid("bbbbbbbb-2222-2222-2222-222222222222"),
-                            Amenities = "Beach Access, Swimming Pool, Free WiFi, Spa, Breakfast Included, Water Sports",
-                            AvailableRooms = 48,
+                            Id = new Guid("77777777-7777-7777-7777-777777777777"),
+                            Amenities = "Metro Access, Fitness Center, High-Speed WiFi, Room Service, Business Lounge",
+                            AvailableRooms = 50,
                             CreatedAt = new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
-                            Description = "A beachfront luxury resort offering tropical gardens, calm ocean views, and effortless coastal living.",
-                            ImageUrl = "https://images.unsplash.com/photo-1564501049412-61c2a3083791?auto=format&fit=crop&w=800&q=80",
-                            IsActive = true,
-                            Location = "Bentota, Sri Lanka",
-                            Name = "Cinnamon Bentota Beach",
-                            PricePerNight = 160.00m,
-                            Rating = 4.7000000000000002,
-                            Status = 0,
-                            TotalRooms = 48
-                        },
-                        new
-                        {
-                            Id = new Guid("cccccccc-3333-3333-3333-333333333333"),
-                            Amenities = "Heritage Architecture, Courtyard Pool, Free WiFi, Breakfast Included, Restaurant, Concierge",
-                            AvailableRooms = 14,
-                            CreatedAt = new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
-                            Description = "An intimate heritage boutique hotel inside historic Galle Fort, blending colonial character with modern comfort.",
+                            Description = "Sleek contemporary rooms right in the vibrant heart of the city, steps away from transit lines and premier dining.",
                             ImageUrl = "https://images.unsplash.com/photo-1566073771259-6a8506099945?auto=format&fit=crop&w=800&q=80",
                             IsActive = true,
-                            Location = "Galle, Sri Lanka",
-                            Name = "Galle Fort Hotel",
-                            PricePerNight = 140.00m,
-                            Rating = 4.5999999999999996,
+                            Location = "Tokyo, Japan",
+                            Name = "The Imperial Palace Hotel",
+                            PricePerNight = 195.00m,
+                            Rating = 4.0,
                             Status = 0,
-                            TotalRooms = 14
+                            TotalRooms = 0
+                        },
+                        new
+                        {
+                            Id = new Guid("88888888-8888-8888-8888-888888888888"),
+                            Amenities = "Sea Balcony, Complimentary Breakfast, Free WiFi, Concierge, Valet Parking",
+                            AvailableRooms = 8,
+                            CreatedAt = new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
+                            Description = "Elegant cliff-perched boutique accommodation featuring terraced lemon gardens and panoramic Mediterranean seascapes.",
+                            ImageUrl = "https://images.unsplash.com/photo-1520250497591-112f2f40a3f4?auto=format&fit=crop&w=800&q=80",
+                            IsActive = true,
+                            Location = "Amalfi Coast, Italy",
+                            Name = "Villa Positano Cliffside",
+                            PricePerNight = 360.00m,
+                            Rating = 5.0,
+                            Status = 0,
+                            TotalRooms = 0
                         });
                 });
 
