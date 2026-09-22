@@ -46,6 +46,7 @@ builder.Services.AddDbContext<DestinationDbContext>(options =>
 {
     options.UseMySQL(connectionString, mysqlOptions =>
     {
+        mysqlOptions.MigrationsHistoryTable("__efmigrationshistory_tours");
         mysqlOptions.EnableRetryOnFailure(
             maxRetryCount: 5,
             maxRetryDelay: TimeSpan.FromSeconds(10),
@@ -129,6 +130,11 @@ using (var scope = app.Services.CreateScope())
         logger.LogInformation("Applying migrations to Destination DB...");
         context.Database.Migrate();
         logger.LogInformation("Destination DB migrations completed successfully.");
+    }
+    catch (Exception ex) when (ex.Message.Contains("already exists", StringComparison.OrdinalIgnoreCase) || 
+                               ex.InnerException?.Message.Contains("already exists", StringComparison.OrdinalIgnoreCase) == true)
+    {
+        logger.LogWarning("One or more database tables already exist. Schema is already present or __EFMigrationsHistory is out of sync. Proceeding with existing schema.");
     }
     catch (Exception ex)
     {

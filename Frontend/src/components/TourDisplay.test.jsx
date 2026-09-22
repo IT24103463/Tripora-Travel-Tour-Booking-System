@@ -3,6 +3,15 @@ import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import '@testing-library/jest-dom/vitest';
 import TourDisplay from './TourDisplay';
 
+const mockNavigate = vi.fn();
+vi.mock('react-router-dom', async () => {
+  const actual = await vi.importActual('react-router-dom');
+  return {
+    ...actual,
+    useNavigate: () => mockNavigate
+  };
+});
+
 // Mock the global fetch
 const mockTours = [
   {
@@ -207,5 +216,211 @@ describe('TourDisplay Component', () => {
 
     // Assert that destination service unavailable banner is NOT in the document
     expect(screen.queryByText(/Destination service is currently unavailable/i)).not.toBeInTheDocument();
+  });
+
+  it('submits booking with guest details and authorization header, redirecting to payment page', async () => {
+    let bookingRequestBody = null;
+    let bookingRequestHeaders = null;
+
+    global.fetch = vi.fn((url, options) => {
+      if (url.includes('/api/tours/active')) {
+        return Promise.resolve({
+          ok: true,
+          json: () => Promise.resolve({ success: true, data: mockTours })
+        });
+      }
+      if (url.includes('/api/booking')) {
+        bookingRequestBody = JSON.parse(options.body);
+        bookingRequestHeaders = options.headers;
+        return Promise.resolve({
+          ok: true,
+          json: () => Promise.resolve({ message: 'Booking confirmed.', bookingId: 'b-123' })
+        });
+      }
+      return Promise.reject(new Error('Unknown URL'));
+    });
+
+    render(<TourDisplay token="test-jwt-token" user={{ fullName: 'Alice Smith', phoneNumber: '+94771234567', address: '789 Pine Rd, Seattle', role: 'Customer' }} />);
+
+    await waitFor(() => {
+      expect(screen.getByText('Paris Adventure')).toBeInTheDocument();
+    });
+
+    // Open Paris Adventure modal
+    fireEvent.click(screen.getByText('Paris Adventure'));
+
+    await waitFor(() => {
+      expect(screen.getByRole('heading', { level: 2, name: 'Paris Adventure' })).toBeInTheDocument();
+    });
+
+    // Click Book Now
+    fireEvent.click(screen.getByRole('button', { name: 'Book Now' }));
+
+    await waitFor(() => {
+      expect(screen.getByText('Complete Your Booking')).toBeInTheDocument();
+    });
+
+    // Verify guest fields exist and are pre-filled with user info
+    const guestInput = screen.getByPlaceholderText('e.g. John Doe');
+    const phoneInput = screen.getByPlaceholderText('+94 771234567');
+    const billingInput = screen.getByPlaceholderText('e.g. 123 Main St, City, Country');
+
+    expect(guestInput.value).toBe('Alice Smith');
+    expect(phoneInput.value).toBe('+94771234567');
+    expect(billingInput.value).toBe('789 Pine Rd, Seattle');
+
+    // Select travel date
+    const futureDate = new Date();
+    futureDate.setDate(futureDate.getDate() + 10);
+    const futureDateStr = futureDate.toLocaleDateString('en-CA');
+
+    const dateInputs = document.querySelectorAll('input[type="date"]');
+    expect(dateInputs.length).toBeGreaterThan(0);
+    fireEvent.change(dateInputs[0], { target: { value: futureDateStr } });
+
+    // Click Confirm Booking
+    const confirmButton = screen.getByRole('button', { name: /Confirm Booking/i });
+    fireEvent.click(confirmButton);
+
+    await waitFor(() => {
+      expect(bookingRequestBody).not.toBeNull();
+    });
+
+    expect(bookingRequestHeaders['Authorization']).toBe('Bearer test-jwt-token');
+    expect(bookingRequestHeaders['Content-Type']).toBe('application/json');
+    expect(bookingRequestBody.guestName).toBe('Alice Smith');
+    expect(bookingRequestBody.phoneNumber).toBe('+94771234567');
+    expect(bookingRequestBody.billingAddress).toBe('789 Pine Rd, Seattle');
+    expect(bookingRequestBody.tourId).toBe('1');
+    expect(bookingRequestBody.quantity).toBe(1);
+    expect(bookingRequestBody.totalAmount).toBe(1500);
+    expect(bookingRequestBody.travelDate).toMatch(/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}/);
+
+    // Verify redirected to payment interface with bookingId and state
+    expect(mockNavigate).toHaveBeenCalledWith('/payment/b-123', expect.objectContaining({
+      state: expect.objectContaining({
+        bookingId: 'b-123',
+        totalAmount: 1500,
+        tourName: 'Paris Adventure'
+      })
+    }));
+  });
+
+  it('displays backend validation error message and logs error when booking fails', async () => {
+    const consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+
+    global.fetch = vi.fn((url) => {
+      if (url.includes('/api/tours/active')) {
+        return Promise.resolve({
+          ok: true,
+          json: () => Promise.resolve({ success: true, data: mockTours })
+        });
+      }
+      if (url.includes('/api/booking')) {
+        return Promise.resolve({
+          ok: false,
+          status: 400,
+          json: () => Promise.resolve({
+            title: 'One or more validation errors occurred.',
+            errors: {
+              GuestName: ['The GuestName field is required.']
+            }
+          })
+        });
+      }
+      return Promise.reject(new Error('Unknown URL'));
+    });
+
+    render(<TourDisplay token="test-jwt-token" user={{ fullName: '', phoneNumber: '+94771234567', role: 'Customer' }} />);
+
+    await waitFor(() => {
+      expect(screen.getByText('Paris Adventure')).toBeInTheDocument();
+    });
+
+    fireEvent.click(screen.getByText('Paris Adventure'));
+
+    await waitFor(() => {
+      expect(screen.getByRole('heading', { level: 2, name: 'Paris Adventure' })).toBeInTheDocument();
+    });
+
+    fireEvent.click(screen.getByRole('button', { name: 'Book Now' }));
+
+    await waitFor(() => {
+      expect(screen.getByText('Complete Your Booking')).toBeInTheDocument();
+    });
+
+    // Select travel date
+    const futureDate = new Date();
+    futureDate.setDate(futureDate.getDate() + 5);
+    const dateInputs = document.querySelectorAll('input[type="date"]');
+    fireEvent.change(dateInputs[0], { target: { value: futureDate.toLocaleDateString('en-CA') } });
+
+    // Confirm booking
+    fireEvent.click(screen.getByRole('button', { name: /Confirm Booking/i }));
+
+    await waitFor(() => {
+      expect(consoleErrorSpy).toHaveBeenCalledWith(
+        'Booking API error response:',
+        400,
+        expect.objectContaining({ title: 'One or more validation errors occurred.' })
+      );
+      expect(screen.getByText(/The GuestName field is required/i)).toBeInTheDocument();
+    });
+
+    consoleErrorSpy.mockRestore();
+  });
+
+  it('displays inline error "Enter valid phone number" when submitting with invalid phone', async () => {
+    let bookingCalled = false;
+    global.fetch = vi.fn((url) => {
+      if (url.includes('/api/tours/active')) {
+        return Promise.resolve({
+          ok: true,
+          json: () => Promise.resolve({ success: true, data: mockTours })
+        });
+      }
+      if (url.includes('/api/booking')) {
+        bookingCalled = true;
+        return Promise.resolve({ ok: true, json: () => Promise.resolve({}) });
+      }
+      return Promise.reject(new Error('Unknown URL'));
+    });
+
+    render(<TourDisplay token="test-jwt-token" user={{ fullName: 'Bob Tester', phoneNumber: '', role: 'Customer' }} />);
+
+    await waitFor(() => {
+      expect(screen.getByText('Paris Adventure')).toBeInTheDocument();
+    });
+
+    fireEvent.click(screen.getByText('Paris Adventure'));
+    await waitFor(() => {
+      expect(screen.getByRole('heading', { level: 2, name: 'Paris Adventure' })).toBeInTheDocument();
+    });
+
+    fireEvent.click(screen.getByRole('button', { name: 'Book Now' }));
+    await waitFor(() => {
+      expect(screen.getByText('Complete Your Booking')).toBeInTheDocument();
+    });
+
+    // Select valid travel date
+    const futureDate = new Date();
+    futureDate.setDate(futureDate.getDate() + 5);
+    const dateInputs = document.querySelectorAll('input[type="date"]');
+    fireEvent.change(dateInputs[0], { target: { value: futureDate.toLocaleDateString('en-CA') } });
+
+    // Enter incomplete phone number
+    const phoneInput = screen.getByPlaceholderText('+94 771234567');
+    fireEvent.change(phoneInput, { target: { value: '+94712' } });
+
+    // Submit booking
+    fireEvent.click(screen.getByRole('button', { name: /Confirm Booking/i }));
+
+    // Assert inline error message
+    expect(screen.getByText('Enter valid phone number')).toBeInTheDocument();
+    expect(bookingCalled).toBe(false);
+
+    // Enter valid phone number
+    fireEvent.change(phoneInput, { target: { value: '+94771234567' } });
+    expect(screen.queryByText('Enter valid phone number')).not.toBeInTheDocument();
   });
 });

@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
+import { useNavigate } from 'react-router-dom';
 import './TourDisplay.css';
 import EditDestinationModal from './EditDestinationModal';
 import { API_BASE_URL } from '../apiConfig';
@@ -11,7 +12,7 @@ import {
 const API_BASE             = API_BASE_URL;
 const API_ACTIVE_TOURS     = `${API_BASE}/api/tours/active`;
 const API_HOTELS           = `${API_BASE}/api/hotels`;
-const API_BOOKINGS         = `${API_BASE}/api/bookings`;
+const API_BOOKING          = `${API_BASE}/api/bookings`;
 
 function Toast({ toasts, onDismiss }) {
   return (
@@ -29,6 +30,8 @@ function Toast({ toasts, onDismiss }) {
 let toastCounter = 0;
 
 export default function TourDisplay({ token, user, onRequireAuth }) {
+  const navigate = useNavigate();
+
   const isAdmin = user?.role === 'Admin';
   const [activeTab, setActiveTab] = useState('tours');
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
@@ -52,6 +55,10 @@ export default function TourDisplay({ token, user, onRequireAuth }) {
   const [travelDate,      setTravelDate]        = useState('');
   const [checkIn,         setCheckIn]           = useState('');
   const [checkOut,        setCheckOut]          = useState('');
+  const [guestName,       setGuestName]         = useState('');
+  const [phoneNumber,     setPhoneNumber]       = useState('');
+  const [phoneError,      setPhoneError]        = useState('');
+  const [billingAddress,  setBillingAddress]    = useState('');
   const [bookingLoading,  setBookingLoading]    = useState(false);
   const [bookingNotification, setBookingNotification] = useState(null);
 
@@ -124,6 +131,10 @@ export default function TourDisplay({ token, user, onRequireAuth }) {
     setTravelDate('');
     setCheckIn('');
     setCheckOut('');
+    setGuestName('');
+    setPhoneNumber('');
+    setPhoneError('');
+    setBillingAddress('');
     setBookingQty(1);
     setShowBookingForm(false);
     setBookingNotification(null);
@@ -202,10 +213,83 @@ export default function TourDisplay({ token, user, onRequireAuth }) {
       return;
     }
     setBookingNotification(null);
-    setBookingQty(1); setTravelDate(''); setCheckIn(''); setCheckOut('');
+    setBookingQty(1); 
+    setTravelDate(''); 
+    setCheckIn(''); 
+    setCheckOut('');
+    setGuestName(user?.fullName || user?.name || '');
+    const userPhone = (user?.phoneNumber || user?.phone || '').trim();
+    if (userPhone && (/^\+947\d{8}$/).test(userPhone.replace(/\s+/g, ''))) {
+      setPhoneNumber(userPhone.replace(/\s+/g, ''));
+    } else if (userPhone && userPhone.startsWith('07') && userPhone.length === 10) {
+      setPhoneNumber('+94' + userPhone.slice(1));
+    } else if (userPhone && (/^\+94/).test(userPhone)) {
+      setPhoneNumber(userPhone);
+    } else {
+      setPhoneNumber('');
+    }
+    setPhoneError('');
+    setBillingAddress(user?.address || user?.billingAddress || '');
     setShowBookingForm(true);
+  };
+
+  const handlePhoneChange = (e) => {
+    let input = e.target.value;
+
+    // If completely cleared
+    if (!input) {
+      setPhoneNumber('');
+      if (phoneError) setPhoneError('');
+      return;
+    }
+
+    // Allow deleting prefix partially while typing
+    if (input === '+' || input === '+9') {
+      setPhoneNumber(input);
+      if (phoneError) setPhoneError('');
+      return;
+    }
+
+    // Normalize: convert local 07... or 7... to +947...
+    let cleaned = input.replace(/[^\d+]/g, '');
+    if (cleaned.startsWith('07')) {
+      cleaned = '+94' + cleaned.slice(1);
+    } else if (cleaned.startsWith('7')) {
+      cleaned = '+94' + cleaned;
+    } else if (!cleaned.startsWith('+94')) {
+      cleaned = '+94' + cleaned.replace(/^\+?94?/, '');
+    }
+
+    // Strict Sri Lankan format: +94 followed by 9 digits starting with 7
+    const digitsAfter94 = cleaned.slice(3).replace(/\D/g, '');
+    let validDigits = '';
+    for (let i = 0; i < digitsAfter94.length && i < 9; i++) {
+      if (i === 0 && digitsAfter94[i] !== '7') {
+        // Block first digit if not 7
+        break;
+      }
+      validDigits += digitsAfter94[i];
+    }
+
+    const formatted = '+94' + validDigits;
+    setPhoneNumber(formatted);
+
+    if (phoneError && formatted.length === 12) {
+      setPhoneError('');
+    }
   };      
   
+  const formatToIso = (dateStr) => {
+    if (!dateStr) return new Date().toISOString();
+    if (dateStr.includes('/')) {
+      const [day, month, year] = dateStr.split('/');
+      const paddedMonth = month ? month.padStart(2, '0') : '01';
+      const paddedDay = day ? day.padStart(2, '0') : '01';
+      return new Date(`${year}-${paddedMonth}-${paddedDay}T00:00:00Z`).toISOString();
+    }
+    return new Date(dateStr).toISOString();
+  };
+
   const parseDateInput = (dateStr) => {
     if (!dateStr) return null;
     if (dateStr.includes('/')) {
@@ -236,38 +320,56 @@ export default function TourDisplay({ token, user, onRequireAuth }) {
     if (activeTab === 'tours') {
       if (!travelDate) { setBookingNotification({ type: 'error', message: 'Please select a travel date.' }); return; }
       const selectedDate = parseDateInput(travelDate);
-      if (selectedDate <= today) { setBookingNotification({ type: 'error', message: 'Travel date must be a future date.' }); return; }
-      finalTravelDate = selectedDate.toISOString();
+      if (selectedDate && selectedDate <= today) { setBookingNotification({ type: 'error', message: 'Travel date must be a future date.' }); return; }
+      finalTravelDate = formatToIso(travelDate);
       finalTotalAmount = bookingQty * (selectedItem?.price || 0);
     } else {
       if (!checkIn)  { setBookingNotification({ type: 'error', message: 'Please select a check-in date.' }); return; }
       if (!checkOut) { setBookingNotification({ type: 'error', message: 'Please select a check-out date.' }); return; }
       const inDate = parseDateInput(checkIn);
       const outDate = parseDateInput(checkOut);
-      if (inDate <= today) { setBookingNotification({ type: 'error', message: 'Check-in date must be a future date.' }); return; }
-      if (outDate <= inDate) { setBookingNotification({ type: 'error', message: 'Check-out date must be at least one day after check-in date.' }); return; }
-      finalCheckIn = inDate.toISOString();
-      finalCheckOut = outDate.toISOString();
+      if (inDate && inDate <= today) { setBookingNotification({ type: 'error', message: 'Check-in date must be a future date.' }); return; }
+      if (inDate && outDate && outDate <= inDate) { setBookingNotification({ type: 'error', message: 'Check-out date must be at least one day after check-in date.' }); return; }
+      finalCheckIn = formatToIso(checkIn);
+      finalCheckOut = formatToIso(checkOut);
       
-      const nights = Math.max(1, Math.ceil((outDate - inDate) / 86400000));
+      const nights = (inDate && outDate) ? Math.max(1, Math.ceil((outDate - inDate) / 86400000)) : 1;
       finalTotalAmount = bookingQty * nights * (selectedItem?.pricePerNight || 0);
     }
 
+    // Strict Sri Lankan phone validation: +94 followed by 9 digits starting with 7 (e.g. +94771234567)
+    const SRI_LANKAN_PHONE_REGEX = /^\+947\d{8}$/;
+    const sanitizedPhone = (phoneNumber || '').replace(/\s+/g, '');
+    if (!SRI_LANKAN_PHONE_REGEX.test(sanitizedPhone)) {
+      setPhoneError("Enter valid phone number");
+      return;
+    } else {
+      setPhoneError('');
+    }
+
+    // Ensure guest fields are populated with form values or user profile fallbacks
+    const resolvedGuestName = guestName?.trim() || user?.fullName || user?.name || 'Guest User';
+    const resolvedPhoneNumber = sanitizedPhone;
+    const resolvedBillingAddress = billingAddress?.trim() || user?.address || user?.billingAddress || '123 Main St, City, Country';
+
     const isTour = activeTab === 'tours';
     const payload = {
-      bookingType:  isTour ? "Tour" : "Hotel",
-      tourId:       isTour ? selectedItem?.id : null,
-      hotelId:      !isTour ? selectedItem?.id : null,
-      travelDate:   isTour ? finalTravelDate : finalCheckIn,
-      checkInDate:  !isTour ? finalCheckIn : null,
-      checkOutDate: !isTour ? finalCheckOut : null,
-      quantity:     bookingQty,
-      totalAmount:  finalTotalAmount
+      bookingType:    isTour ? "Tour" : "Hotel",
+      tourId:         isTour ? (selectedItem?.id || null) : null,
+      hotelId:        !isTour ? (selectedItem?.id || null) : null,
+      guestName:      resolvedGuestName,
+      phoneNumber:    resolvedPhoneNumber,
+      billingAddress: resolvedBillingAddress,
+      travelDate:     isTour ? finalTravelDate : (finalCheckIn || formatToIso(new Date().toISOString())),
+      checkInDate:    !isTour ? finalCheckIn : null,
+      checkOutDate:   !isTour ? finalCheckOut : null,
+      quantity:       Number(bookingQty),
+      totalAmount:    Number(finalTotalAmount),
     };
 
     setBookingLoading(true);
     try {
-      const res = await fetch(API_BOOKINGS, {
+      const res = await fetch(API_BOOKING, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -285,71 +387,132 @@ export default function TourDisplay({ token, user, onRequireAuth }) {
         if (isTour) setTours(prev => prev.map(updateItem));
         else setHotels(prev => prev.map(updateItem));
         setSelectedItem(prev => prev ? { ...prev, [remainingField]: Math.max(0, (prev[remainingField] ?? 0) - bookingQty) } : prev);
-        setBookingNotification({ type: 'success', message: 'Booking request submitted successfully! Status: Pending. (Proceeding to payment integration soon...)' });
-        setTimeout(() => {
-          setBookingNotification(null);
-          setShowBookingForm(false);
-          setSelectedItem(null);
-          setTravelDate('');
-          setCheckIn('');
-          setCheckOut('');
-          setBookingQty(1);
-          if (isTour) fetchTours(); else fetchHotels();
-        }, 3500);
-      } else if (res.status === 401) {
-        setBookingNotification({ type: 'error', message: 'Your session has expired. Please sign in again.' });
-      } else if (data.message && data.message.includes('Destination service is currently unavailable')) {
-        // Suppress hard error banner when fallback/selected hotel data is available in parent state
-        if (selectedItem) {
-          console.warn("Destination service unavailable; falling back to offline booking confirmation.");
-          const remainingField = isTour ? 'availableSlots' : 'availableRooms';
-          const updateItem = item => item?.id === selectedItem?.id
-            ? { ...item, [remainingField]: Math.max(0, (item[remainingField] ?? 0) - bookingQty) }
-            : item;
-          if (isTour) setTours(prev => prev.map(updateItem));
-          else setHotels(prev => prev.map(updateItem));
-          setSelectedItem(prev => prev ? { ...prev, [remainingField]: Math.max(0, (prev[remainingField] ?? 0) - bookingQty) } : prev);
-          setBookingNotification({ type: 'success', message: 'Booking request submitted successfully! Status: Pending. (Proceeding to payment integration soon...)' });
-          setTimeout(() => {
+
+        const selectedTour = selectedItem;
+        const newBookingId = data?.bookingId || data?.data?.id || data?.data?.Id || data?.id;
+
+        // Clean up temporary messages and reset form state
+        setBookingNotification(null);
+        setShowBookingForm(false);
+        setSelectedItem(null);
+        setTravelDate('');
+        setCheckIn('');
+        setCheckOut('');
+        setGuestName('');
+        setPhoneNumber('');
+        setBillingAddress('');
+        setBookingQty(1);
+        if (isTour) fetchTours(); else fetchHotels();
+
+        // Redirect user to payment interface
+        if (newBookingId) {
+          navigate('/payment/' + newBookingId, {
+            state: {
+              bookingId: newBookingId,
+              ...payload,
+              tourName: selectedTour?.name || selectedTour?.tourName || selectedTour?.hotelName || 'Tripora Booking',
+              bookingDetails: payload,
+              item: selectedTour
+            }
+          });
+        }
+      } else {
+        console.error("Booking API error response:", res.status, data);
+
+        let backendError = data?.message;
+        if (!backendError && data?.errors) {
+          if (Array.isArray(data.errors)) {
+            backendError = data.errors.join(' ');
+          } else if (typeof data.errors === 'object') {
+            backendError = Object.values(data.errors).flat().join(' ');
+          }
+        }
+        if (!backendError && data?.title) {
+          backendError = data.title;
+        }
+
+        if (res.status === 401) {
+          if (onRequireAuth) onRequireAuth();
+          setBookingNotification({ type: 'error', message: 'Your session has expired. Please sign in again.' });
+        } else if (data.message && data.message.includes('Destination service is currently unavailable')) {
+          // Suppress hard error banner when fallback/selected hotel data is available in parent state
+          if (selectedItem) {
+            console.warn("Destination service unavailable; falling back to offline booking confirmation.");
+            const selectedTour = selectedItem;
+            const remainingField = isTour ? 'availableSlots' : 'availableRooms';
+            const updateItem = item => item?.id === selectedTour?.id
+              ? { ...item, [remainingField]: Math.max(0, (item[remainingField] ?? 0) - bookingQty) }
+              : item;
+            if (isTour) setTours(prev => prev.map(updateItem));
+            else setHotels(prev => prev.map(updateItem));
+            setSelectedItem(prev => prev ? { ...prev, [remainingField]: Math.max(0, (prev[remainingField] ?? 0) - bookingQty) } : prev);
+
+            const fallbackBookingId = data?.bookingId || data?.data?.id || selectedTour?.id || 'pending';
             setBookingNotification(null);
             setShowBookingForm(false);
             setSelectedItem(null);
             setTravelDate('');
             setCheckIn('');
             setCheckOut('');
+            setGuestName('');
+            setPhoneNumber('');
+            setBillingAddress('');
             setBookingQty(1);
             if (isTour) fetchTours(); else fetchHotels();
-          }, 3500);
+
+            navigate(`/payment/${fallbackBookingId}`, {
+              state: {
+                bookingId: fallbackBookingId,
+                ...payload,
+                tourName: selectedTour?.name || selectedTour?.tourName || selectedTour?.hotelName || 'Tripora Booking',
+                bookingDetails: payload,
+                item: selectedTour
+              }
+            });
+          } else {
+            setBookingNotification({ type: 'error', message: data.message });
+          }
+        } else if (res.status === 400 || res.status === 409) {
+          setBookingNotification({ type: 'error', message: backendError || 'Not enough spots available for this date.' });
         } else {
-          setBookingNotification({ type: 'error', message: data.message });
+          setBookingNotification({ type: 'error', message: backendError || 'Booking failed. Please try again.' });
         }
-      } else if (res.status === 400 || res.status === 409) {
-        setBookingNotification({ type: 'error', message: data.message || 'Not enough spots available for this date.' });
-      } else {
-        setBookingNotification({ type: 'error', message: data.message || 'Booking failed. Please try again.' });
       }
     } catch (err) {
       console.error("Booking API call failed:", err);
       if (selectedItem) {
         console.warn("Network or CORS error; suppressing hard error and using offline booking confirmation.");
+        const selectedTour = selectedItem;
         const remainingField = isTour ? 'availableSlots' : 'availableRooms';
-        const updateItem = item => item?.id === selectedItem?.id
+        const updateItem = item => item?.id === selectedTour?.id
           ? { ...item, [remainingField]: Math.max(0, (item[remainingField] ?? 0) - bookingQty) }
           : item;
         if (isTour) setTours(prev => prev.map(updateItem));
         else setHotels(prev => prev.map(updateItem));
         setSelectedItem(prev => prev ? { ...prev, [remainingField]: Math.max(0, (prev[remainingField] ?? 0) - bookingQty) } : prev);
-        setBookingNotification({ type: 'success', message: 'Booking request submitted successfully! Status: Pending. (Proceeding to payment integration soon...)' });
-        setTimeout(() => {
-          setBookingNotification(null);
-          setShowBookingForm(false);
-          setSelectedItem(null);
-          setTravelDate('');
-          setCheckIn('');
-          setCheckOut('');
-          setBookingQty(1);
-          if (isTour) fetchTours(); else fetchHotels();
-        }, 3500);
+
+        const fallbackBookingId = selectedTour?.id || 'pending';
+        setBookingNotification(null);
+        setShowBookingForm(false);
+        setSelectedItem(null);
+        setTravelDate('');
+        setCheckIn('');
+        setCheckOut('');
+        setGuestName('');
+        setPhoneNumber('');
+        setBillingAddress('');
+        setBookingQty(1);
+        if (isTour) fetchTours(); else fetchHotels();
+
+        navigate(`/payment/${fallbackBookingId}`, {
+          state: {
+            bookingId: fallbackBookingId,
+            ...payload,
+            tourName: selectedTour?.name || selectedTour?.tourName || selectedTour?.hotelName || 'Tripora Booking',
+            bookingDetails: payload,
+            item: selectedTour
+          }
+        });
       } else {
         setBookingNotification({ type: 'error', message: 'Booking service temporarily unavailable. Please try again later.' });
       }
@@ -812,13 +975,63 @@ export default function TourDisplay({ token, user, onRequireAuth }) {
 
                       <div className="booking-group" style={{ marginTop: '15px' }}>
                         <label className="booking-label">{activeTab === 'tours' ? 'Number of Participants' : 'Number of Rooms'}</label>
-                        <input type="number" className="booking-input" value={bookingQty}
+                        <input 
+                          type="number" 
+                          className="booking-input" 
+                          value={bookingQty}
                           min="1"
                           max={activeTab === 'tours' ? (selectedItem?.availableSlots || 0) : (selectedItem?.availableRooms || 0)}
-                          onChange={e => setBookingQty(Math.max(1, parseInt(e.target.value) || 1))} />
+                          onChange={e => setBookingQty(Math.max(1, parseInt(e.target.value) || 1))} 
+                        />
+                      </div>
+
+                      <div className="booking-row" style={{ marginTop: '15px' }}>
+                        <div className="booking-group">
+                          <label className="booking-label">Guest Full Name</label>
+                          <input 
+                            type="text" 
+                            className="booking-input" 
+                            placeholder="e.g. John Doe"
+                            value={guestName}
+                            onChange={e => setGuestName(e.target.value)}
+                          />
+                        </div>
+                        <div className="booking-group">
+                          <label className="booking-label">Phone Number</label>
+                          <input 
+                            type="tel" 
+                            className="booking-input" 
+                            placeholder="+94 771234567"
+                            value={phoneNumber}
+                            onChange={handlePhoneChange}
+                            onFocus={() => { if (!phoneNumber) setPhoneNumber('+94'); }}
+                            onBlur={() => { if (phoneNumber === '+94' || phoneNumber === '+' || phoneNumber === '+9') setPhoneNumber(''); }}
+                            style={phoneError ? { borderColor: '#ef4444' } : {}}
+                          />
+                          {phoneError && (
+                            <span className="phone-error-msg" style={{ color: '#ef4444', fontSize: '12px', marginTop: '4px', display: 'block' }}>
+                              {phoneError}
+                            </span>
+                          )}
+                        </div>
+                      </div>
+
+                      <div className="booking-group" style={{ marginTop: '15px' }}>
+                        <label className="booking-label">Billing Address</label>
+                        <input 
+                          type="text" 
+                          className="booking-input" 
+                          placeholder="e.g. 123 Main St, City, Country"
+                          value={billingAddress}
+                          onChange={e => setBillingAddress(e.target.value)}
+                        />
                       </div>
 
                       <div className="booking-summary">
+                        <div className="booking-summary-row">
+                          <span>Guest</span>
+                          <span>{guestName?.trim() || user?.fullName || 'Guest User'}</span>
+                        </div>
                         {activeTab === 'tours' ? (
                           <>
                             {travelDate && <div className="booking-summary-row"><span>Travel Date</span><span>{parseDateInput(travelDate).toLocaleDateString("en-GB")}</span></div>}

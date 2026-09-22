@@ -106,10 +106,6 @@
   }
 }
 
-@keyframes spin {
-  to { transform: rotate(360deg); }
-}
-
 .loading-state p {
   color: #64748b;
   margin: 0;
@@ -823,26 +819,6 @@
   .btn-delete {
     background: rgba(220, 38, 38, 0.2);
     color: #f87171;
-  }
-}
-
-@keyframes fadeIn {
-  from {
-    opacity: 0;
-  }
-  to {
-    opacity: 1;
-  }
-}
-
-@keyframes slideDown {
-  from {
-    opacity: 0;
-    transform: translateY(-10px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
   }
 }
 

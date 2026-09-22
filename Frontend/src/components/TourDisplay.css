@@ -1,4 +1,4 @@
-﻿/* Tour Display Styling */
+/* Tour Display Styling */
 
 /* The authenticated shell uses the same destination atmosphere as landing and auth. */
 
@@ -127,10 +127,6 @@
     border-color: #334155;
     border-top-color: #38bdf8;
   }
-}
-
-@keyframes spin {
-  to { transform: rotate(360deg); }
 }
 
 .loading-state p {
@@ -873,26 +869,6 @@
   }
 }
 
-@keyframes fadeIn {
-  from {
-    opacity: 0;
-  }
-  to {
-    opacity: 1;
-  }
-}
-
-@keyframes slideUp {
-  from {
-    opacity: 0;
-    transform: translateY(20px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
-}
-
 .authenticated-mode .tour-title { color: #fff; }
 .authenticated-mode .tour-subtitle,
 .authenticated-mode .tour-description,
@@ -1036,10 +1012,30 @@
   }
 }
 
-@keyframes spin { to { transform: rotate(360deg); } }
-.spin-icon { animation: spin 1s linear infinite; display: inline-block; }
+.spin-icon { animation: none; display: inline-block; }
 
 /* Form Inputs styling */
+.booking-row {
+  display: flex;
+  gap: 12px;
+  width: 100%;
+}
+
+@media (max-width: 600px) {
+  .booking-row {
+    flex-direction: column;
+    gap: 0;
+  }
+}
+
+.booking-group {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  margin-bottom: 16px;
+  min-width: 0;
+}
+
 .booking-field {
   display: flex;
   flex-direction: column;
