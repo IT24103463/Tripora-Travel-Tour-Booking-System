@@ -1,4 +1,5 @@
-﻿using System;
+using Microsoft.Extensions.Logging.Abstractions;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Security.Claims;
@@ -28,23 +29,32 @@ public class PaymentController : ControllerBase
     private readonly IPublishEndpoint _publishEndpoint;
     private readonly IKafkaProducerService _kafkaProducer;
     private readonly IConfiguration _configuration;
-    private readonly ILogger<PaymentController> _logger;
+    private readonly ILogger<PaymentController>? _logger = null ?? Microsoft.Extensions.Logging.Abstractions.NullLogger<PaymentController>.Instance;
 
     public PaymentController(
         PaymentDbContext context,
         IBookingServiceClient bookingServiceClient,
         IPublishEndpoint publishEndpoint,
         IKafkaProducerService? kafkaProducer,
-        IConfiguration? configuration,
-        ILogger<PaymentController> logger)
+        ILogger<PaymentController>? logger = null, IConfiguration? configuration = null)
     {
         _context = context;
         _bookingServiceClient = bookingServiceClient;
         _publishEndpoint = publishEndpoint;
         _kafkaProducer = kafkaProducer ?? new NoOpKafkaProducer();
         _configuration = configuration ?? new ConfigurationManager();
-        _logger = logger;
+        _logger = logger ?? Microsoft.Extensions.Logging.Abstractions.NullLogger<PaymentController>.Instance;
     }
+
+    public PaymentController(
+        PaymentDbContext context,
+        IBookingServiceClient bookingClient,
+        IPublishEndpoint publishEndpoint,
+        ILogger<PaymentController> logger)
+        : this(context, bookingClient, publishEndpoint, null, logger, null)
+    {
+    }
+
 
     private sealed class NoOpKafkaProducer : IKafkaProducerService
     {

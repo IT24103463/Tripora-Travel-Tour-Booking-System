@@ -1,4 +1,6 @@
-﻿using System;
+using Microsoft.EntityFrameworkCore;
+using Tripora.BookingService.Data;
+using System;
 using System.Security.Claims;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Http;
@@ -23,7 +25,11 @@ public class BookingIntegrationTests
 
     private BookingController CreateControllerWithUser(string userId = "test-user-id")
     {
-        var controller = new BookingController(_mockBookingService.Object);
+        var dbOptions = new DbContextOptionsBuilder<BookingDbContext>()
+            .UseInMemoryDatabase(Guid.NewGuid().ToString())
+            .Options;
+        var dbContext = new BookingDbContext(dbOptions);
+        var controller = new BookingController(_mockBookingService.Object, dbContext);
         var user = new ClaimsPrincipal(new ClaimsIdentity(new[]
         {
             new Claim(ClaimTypes.NameIdentifier, userId),
