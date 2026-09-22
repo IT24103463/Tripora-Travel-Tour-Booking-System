@@ -1,39 +1,46 @@
-﻿using MassTransit;
+using System;
+using System.Net.Http;
 using System.Text;
+using MassTransit;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.AspNetCore.Builder;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Hosting;
 using Microsoft.IdentityModel.Tokens;
+using MySql.EntityFrameworkCore.Extensions;
 using Polly;
 using Polly.Extensions.Http;
 using Tripora.BookingService.Clients;
 using Tripora.BookingService.Data;
 using Tripora.BookingService.Services;
-using System;
-using System.Net.Http;
-using Microsoft.AspNetCore.Builder;
-using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.Hosting;
-using Microsoft.Extensions.Configuration;
 
 var builder = WebApplication.CreateBuilder(args);
 
+// Database configuration (MySQL)
 var connectionString = builder.Configuration.GetConnectionString("BookingDb")
-    ?? "Data Source=tripora_booking.db";
+    ?? builder.Configuration.GetConnectionString("MySqlConnection")
+    ?? "Server=localhost;Port=3306;Database=tripora_db;User=root;Password=12345;";
 
 builder.Services.AddDbContext<BookingDbContext>(options =>
-    options.UseSqlite(connectionString));
+    options.UseMySQL(connectionString, mysqlOptions =>
+    {
+        mysqlOptions.MigrationsHistoryTable("__efmigrationshistory_bookings");
+    }));
 
+// JWT Authentication
 var jwtSection = builder.Configuration.GetSection("JwtSettings");
 var secretKey = jwtSection.GetValue<string>("SecretKey")
     ?? Environment.GetEnvironmentVariable("TRIPORA_JWT_SECRET")
     ?? "Tripora_Super_Secret_Jwt_Security_Key_2026_Secure_Travel_System_!";
-var issuer  = jwtSection.GetValue<string>("Issuer")  ?? "Tripora.UserService";
+var issuer = jwtSection.GetValue<string>("Issuer") ?? "Tripora.UserService";
 var audience = jwtSection.GetValue<string>("Audience") ?? "Tripora.Client";
 
 builder.Services.AddAuthentication(options =>
 {
     options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
-    options.DefaultChallengeScheme    = JwtBearerDefaults.AuthenticationScheme;
+    options.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
 })
 .AddJwtBearer(options =>
 {
@@ -43,15 +50,18 @@ builder.Services.AddAuthentication(options =>
     {
         ValidateIssuerSigningKey = true,
         IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(secretKey)),
-        ValidateIssuer   = true,  ValidIssuer   = issuer,
-        ValidateAudience = true,  ValidAudience = audience,
+        ValidateIssuer = true,
+        ValidIssuer = issuer,
+        ValidateAudience = true,
+        ValidAudience = audience,
         ValidateLifetime = true,
-        ClockSkew        = TimeSpan.Zero
+        ClockSkew = TimeSpan.Zero
     };
 });
 
 builder.Services.AddAuthorization();
 
+// DestinationService HTTP Client with Resilience Policies
 var destinationServiceUrl = builder.Configuration["Services:DestinationServiceUrl"]
     ?? "http://localhost:5003/";
 var destinationServiceApiKey = builder.Configuration["Services:DestinationServiceApiKey"]
@@ -77,6 +87,12 @@ builder.Services.AddHttpClient<IDestinationClient, DestinationClient>(client =>
 .AddPolicyHandler(GetCircuitBreakerPolicy());
 
 builder.Services.AddScoped<IBookingService, BookingService>();
+
+// Register Kafka Producer & Background Consumer Services
+builder.Services.AddSingleton<IKafkaProducerService, KafkaProducerService>();
+builder.Services.AddHostedService<KafkaBookingConsumerService>();
+builder.Services.AddHostedService<OutboxPublisherWorker>();
+
 builder.Services.AddControllers();
 
 builder.Services.AddCors(options =>
@@ -96,6 +112,9 @@ builder.Services.AddOpenApi();
 
 builder.Services.AddMassTransit(x =>
 {
+    x.AddConsumer<Tripora.BookingService.Consumers.PaymentSuccessfulConsumer>();
+    x.AddConsumer<Tripora.BookingService.Consumers.PaymentFailedConsumer>();
+
     x.UsingInMemory((context, cfg) =>
     {
         cfg.ConfigureEndpoints(context);
@@ -104,6 +123,7 @@ builder.Services.AddMassTransit(x =>
 
 var app = builder.Build();
 
+// Database migrations
 using (var scope = app.Services.CreateScope())
 {
     var db = scope.ServiceProvider.GetRequiredService<BookingDbContext>();
@@ -111,7 +131,9 @@ using (var scope = app.Services.CreateScope())
 }
 
 if (app.Environment.IsDevelopment())
+{
     app.MapOpenApi();
+}
 
 app.UseCors("AllowFrontend");
 app.UseAuthentication();
@@ -121,5 +143,3 @@ app.MapControllers();
 app.Run();
 
 public partial class Program { }
-
-

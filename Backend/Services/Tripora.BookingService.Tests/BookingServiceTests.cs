@@ -1,4 +1,4 @@
-﻿using Moq;
+using Moq;
 using Xunit;
 using System;
 using System.Threading.Tasks;
@@ -26,6 +26,7 @@ public class BookingServiceTests
 
     // ──────────────────────────────────────────────────────────────────────────
     // Scenario 1: Booking creation succeeds and inventory is decremented
+    // Scenario 1: Booking creation succeeds with guest details and persists
     // ──────────────────────────────────────────────────────────────────────────
     [Fact]
     public async Task CreateBooking_ValidTour_ReservesInventoryAndPersistsBooking()
@@ -40,6 +41,9 @@ public class BookingServiceTests
         {
             BookingType = "Tour",
             TourId = Guid.NewGuid(),
+            GuestName = "Jane Doe",
+            PhoneNumber = "+1-555-1234",
+            BillingAddress = "456 Palm Ave, Los Angeles, CA",
             TravelDate = DateTime.UtcNow.AddDays(10),
             Quantity = 2,
             TotalAmount = 500.00m
@@ -49,8 +53,11 @@ public class BookingServiceTests
 
         Assert.True(success);
         Assert.NotNull(booking);
-        Assert.Equal(BookingStatus.Pending, booking!.Status);
+        Assert.Equal("Pending", booking!.Status);
         Assert.Equal("user-123", booking.UserId);
+        Assert.Equal("Jane Doe", booking.GuestName);
+        Assert.Equal("+1-555-1234", booking.PhoneNumber);
+        Assert.Equal("456 Palm Ave, Los Angeles, CA", booking.BillingAddress);
         Assert.Equal(1, await db.Bookings.CountAsync());
 
         // Verify reserve was called exactly once
@@ -103,7 +110,7 @@ public class BookingServiceTests
             TravelDate = DateTime.UtcNow.AddDays(15),
             Quantity = 1,
             TotalAmount = 250.00m,
-            Status = BookingStatus.Pending
+            Status = "Pending"
         };
         db.Bookings.Add(booking);
         await db.SaveChangesAsync();
@@ -118,7 +125,7 @@ public class BookingServiceTests
         Assert.True(success);
 
         var updated = await db.Bookings.FindAsync(booking.Id);
-        Assert.Equal(BookingStatus.Cancelled, updated!.Status);
+        Assert.Equal("Cancelled", updated!.Status);
 
         mockClient.Verify(c => c.ReleaseInventoryAsync(tourId, "Tour", 1), Times.Once);
     }
@@ -139,7 +146,7 @@ public class BookingServiceTests
             TravelDate = DateTime.UtcNow.AddDays(20),
             Quantity = 1,
             TotalAmount = 300.00m,
-            Status = BookingStatus.Pending
+            Status = "Pending"
         };
         db.Bookings.Add(booking);
         await db.SaveChangesAsync();
@@ -155,7 +162,7 @@ public class BookingServiceTests
 
         // Booking still confirmed, no release triggered
         var unchanged = await db.Bookings.FindAsync(booking.Id);
-        Assert.Equal(BookingStatus.Pending, unchanged!.Status);
+        Assert.Equal("Pending", unchanged!.Status);
         mockClient.Verify(c => c.ReleaseInventoryAsync(It.IsAny<Guid>(), It.IsAny<string>(), It.IsAny<int>()), Times.Never);
     }
 }
