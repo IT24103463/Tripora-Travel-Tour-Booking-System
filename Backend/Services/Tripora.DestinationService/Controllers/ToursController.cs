@@ -1,9 +1,9 @@
-using Microsoft.AspNetCore.Authorization;
+﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.Configuration;
 using Tripora.DestinationService.DTOs;
 using Tripora.DestinationService.Services;
 using static Tripora.DestinationService.Services.TourOperationStatus;
-using Microsoft.Extensions.Configuration;
 
 namespace Tripora.DestinationService.Controllers;
 
@@ -12,18 +12,6 @@ namespace Tripora.DestinationService.Controllers;
 [Produces("application/json")]
 public class ToursController : ControllerBase
 {
-    [HttpPatch("{id}/book")]
-    [AllowAnonymous]
-    public async Task<IActionResult> BookTour(Guid id, [FromBody] Tripora.DestinationService.DTOs.BookRequestDto req, CancellationToken cancellationToken)
-    {
-        var result = await _tourService.ReserveSlotsAsync(id, req.Quantity, cancellationToken);
-        if (result.Status == TourOperationStatus.ValidationError)
-            return BadRequest("Not enough capacity");
-        if (result.Status == TourOperationStatus.NotFound)
-            return NotFound();
-            
-        return Ok(result.Data);
-    }
     private readonly ITourService _tourService;
     private readonly ILogger<ToursController> _logger;
     private readonly IConfiguration _configuration;
@@ -33,6 +21,19 @@ public class ToursController : ControllerBase
         _tourService = tourService;
         _logger = logger;
         _configuration = configuration ?? new ConfigurationBuilder().Build();
+    }
+
+    [HttpPatch("{id}/book")]
+    [AllowAnonymous]
+    public async Task<IActionResult> BookTour(Guid id, [FromBody] BookRequestDto req, CancellationToken cancellationToken)
+    {
+        var result = await _tourService.ReserveSlotsAsync(id, req.Quantity, cancellationToken);
+        if (result.Status == TourOperationStatus.ValidationError)
+            return BadRequest("Not enough capacity");
+        if (result.Status == TourOperationStatus.NotFound)
+            return NotFound();
+
+        return Ok(result.Data);
     }
 
     /// <summary>
@@ -244,10 +245,6 @@ public class ToursController : ControllerBase
     public Task<IActionResult> DecrementInventory(Guid id, [FromQuery] int count, CancellationToken cancellationToken) =>
         ReserveSlots(id, count, cancellationToken);
 
-    private bool HasInternalServiceKey() =>
-        Request.Headers.TryGetValue("X-Internal-Service-Key", out var key) &&
-        key == _configuration["InternalServiceApiKey"];
-
     [HttpPost("{id}/release")]
     [AllowAnonymous]
     [ProducesResponseType(typeof(ApiResponse<TourResponseDto>), StatusCodes.Status200OK)]
@@ -266,7 +263,6 @@ public class ToursController : ControllerBase
             _ => StatusCode(StatusCodes.Status500InternalServerError, ApiResponse<TourResponseDto>.FailureResponse(result.Message, result.Errors))
         };
     }
-        [HttpPut("{id}/availability")]
 
     [HttpPut("{id}/availability")]
     [Authorize(Roles = "Admin")]
@@ -291,7 +287,7 @@ public class ToursController : ControllerBase
         var result = await _tourService.ReserveTourAsync(id, count, cancellationToken);
         if (result.Status == TourOperationStatus.NotFound)
             return NotFound(result.Message);
-        
+
         if (result.Status == TourOperationStatus.ValidationError)
         {
             if (result.Errors.Contains("Concurrency conflict. Please try again."))
@@ -311,14 +307,14 @@ public class ToursController : ControllerBase
         var result = await _tourService.ReleaseTourAsync(id, count, cancellationToken);
         if (result.Status == TourOperationStatus.NotFound)
             return NotFound(result.Message);
-        
+
         if (result.Status == TourOperationStatus.ValidationError)
             return BadRequest(result.Errors);
 
         return Ok(result.Data);
     }
+
+    private bool HasInternalServiceKey() =>
+        Request.Headers.TryGetValue("X-Internal-Service-Key", out var key) &&
+        key == _configuration["InternalServiceApiKey"];
 }
-
-
-
-

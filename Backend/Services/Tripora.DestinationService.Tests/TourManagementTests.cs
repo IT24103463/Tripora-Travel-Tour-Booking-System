@@ -1,4 +1,4 @@
-using System.Security.Claims;
+﻿using System.Security.Claims;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
@@ -86,12 +86,12 @@ _dbContext.SaveChanges();
         Assert.True(result.IsSuccess);
         Assert.Equal(TourOperationStatus.Success, result.Status);
         Assert.NotNull(result.Data);
-        Assert.Equal("European Adventure", result.Data.Name);
+        Assert.Equal("European Adventure", result.Data!.Name);
         Assert.Equal("Paris, France", result.Data.Destination);
-        Assert.Equal(2499.99m, result.Data.Price);
+        Assert.Equal(2499.99m, result.Data!.Price);
         Assert.Equal(14, result.Data.DurationDays);
         Assert.Equal(30, result.Data.Capacity);
-        Assert.Equal(30, result.Data.AvailableSlots); // Initially equal to capacity
+        Assert.Equal(30, result.Data!.AvailableSlots); // Initially equal to capacity
         Assert.True(result.Data.IsActive);
     }
 
@@ -200,7 +200,6 @@ _dbContext.SaveChanges();
         // Assert
         Assert.NotNull(tours);
         Assert.Equal(3, tours.Count);
-        Assert.All(tours, tour => Assert.NotNull(tour.Id));
         Assert.All(tours, tour => Assert.NotEqual(Guid.Empty, tour.Id));
         Assert.All(tours, tour => Assert.NotEmpty(tour.Name));
     }
@@ -253,7 +252,7 @@ _dbContext.SaveChanges();
         var principal = new ClaimsPrincipal(identity);
         // Arrange & Act
         var methodInfo = typeof(ToursController).GetMethod(nameof(ToursController.CreateTour));
-        var authorizeAttribute = methodInfo.GetCustomAttributes(typeof(Microsoft.AspNetCore.Authorization.AuthorizeAttribute), false)
+        var authorizeAttribute = methodInfo!.GetCustomAttributes(typeof(Microsoft.AspNetCore.Authorization.AuthorizeAttribute), false)
             .OfType<Microsoft.AspNetCore.Authorization.AuthorizeAttribute>()
             .FirstOrDefault();
 
@@ -288,7 +287,7 @@ _dbContext.SaveChanges();
         var principal = new ClaimsPrincipal(identity);
         // Arrange & Act
         var methodInfo = typeof(ToursController).GetMethod(nameof(ToursController.UpdateTour));
-        var authorizeAttribute = methodInfo.GetCustomAttributes(typeof(Microsoft.AspNetCore.Authorization.AuthorizeAttribute), false)
+        var authorizeAttribute = methodInfo!.GetCustomAttributes(typeof(Microsoft.AspNetCore.Authorization.AuthorizeAttribute), false)
             .OfType<Microsoft.AspNetCore.Authorization.AuthorizeAttribute>()
             .FirstOrDefault();
 
@@ -323,7 +322,7 @@ _dbContext.SaveChanges();
         var principal = new ClaimsPrincipal(identity);
         // Arrange & Act
         var methodInfo = typeof(ToursController).GetMethod(nameof(ToursController.DeleteTour));
-        var authorizeAttribute = methodInfo.GetCustomAttributes(typeof(Microsoft.AspNetCore.Authorization.AuthorizeAttribute), false)
+        var authorizeAttribute = methodInfo!.GetCustomAttributes(typeof(Microsoft.AspNetCore.Authorization.AuthorizeAttribute), false)
             .OfType<Microsoft.AspNetCore.Authorization.AuthorizeAttribute>()
             .FirstOrDefault();
 
@@ -413,9 +412,9 @@ _dbContext.SaveChanges();
 
         // Assert
         Assert.True(result.IsSuccess);
-        Assert.Equal("Updated Name", result.Data.Name);
-        Assert.Equal("Updated description", result.Data.Description);
-        Assert.Equal(1500m, result.Data.Price);
+        Assert.Equal("Updated Name", result.Data!.Name);
+        Assert.Equal("Updated description", result.Data!.Description);
+        Assert.Equal(1500m, result.Data!.Price);
     }
 
     [Fact]
@@ -458,7 +457,7 @@ _dbContext.SaveChanges();
 
         // Assert
         Assert.True(result.IsSuccess);
-        Assert.Equal(15, result.Data.AvailableSlots); // Should preserve existing availability
+        Assert.Equal(15, result.Data!.AvailableSlots); // Should preserve existing availability
     }
 
     [Fact]

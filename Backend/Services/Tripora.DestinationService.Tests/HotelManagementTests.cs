@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Security.Claims;
@@ -116,7 +116,7 @@ namespace Tripora.DestinationService.Tests
 
             // Assert
             Assert.False(isValid);
-            Assert.Contains(results, r => r.ErrorMessage.Contains("Price must be greater than zero"));
+            Assert.Contains(results, r => r.ErrorMessage != null && r.ErrorMessage.Contains("Price must be greater than zero"));
         }
 
         [Fact]
@@ -147,7 +147,8 @@ namespace Tripora.DestinationService.Tests
         {
             // Arrange & Act
             var methodInfo = typeof(HotelController).GetMethod(nameof(HotelController.CreateHotel));
-            var authorizeAttribute = methodInfo.GetCustomAttributes(typeof(Microsoft.AspNetCore.Authorization.AuthorizeAttribute), false)
+            Assert.NotNull(methodInfo);
+            var authorizeAttribute = methodInfo!.GetCustomAttributes(typeof(Microsoft.AspNetCore.Authorization.AuthorizeAttribute), false)
                 .OfType<Microsoft.AspNetCore.Authorization.AuthorizeAttribute>()
                 .FirstOrDefault();
 
