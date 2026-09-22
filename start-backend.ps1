@@ -1,16 +1,16 @@
-<#
-
-Command: .\start-backend.ps1 -Mode NewWindow
-
+﻿<#
 .SYNOPSIS
-    Starts all Tripora backend microservices and API Gateway.
+    Starts Docker (Kafka, Kafka-UI), all Tripora backend microservices, and API Gateway.
     Press Ctrl+C to stop all services.
 
 .DESCRIPTION
-    This PowerShell script builds and launches the Tripora backend services:
+    This PowerShell script ensures Docker Desktop and Kafka are up, then builds and launches
+    the Tripora backend services:
+    - Kafka Broker         (localhost:9092)
+    - Kafka UI             (http://localhost:8080)
     - ApiGateway           (http://localhost:5120)
     - UserService          (http://localhost:5001)
-    - TourService          (http://localhost:5003)
+    - DestinationService   (http://localhost:5003)
     - BookingService       (http://localhost:5004)
     - PaymentService       (http://localhost:5005)
 
@@ -30,26 +30,16 @@ Command: .\start-backend.ps1 -Mode NewWindow
 .PARAMETER Stop
     Stops any running dotnet processes associated with the backend services.
 
-.EXAMPLE
-    .\start-backend.ps1
-    Starts all services in the current terminal. Press Ctrl+C to stop all.
+.PARAMETER StopContainers
+    When used with -Stop, also stops the Kafka and Docker Compose containers.
 
-.EXAMPLE
-    .\start-backend.ps1 -Build
-    Builds solution first, then starts all services.
-
-.EXAMPLE
-    .\start-backend.ps1 -Mode NewWindow
-    Starts each service in its own console window.
-
-.EXAMPLE
-    .\start-backend.ps1 -Stop
-    Stops all running backend service processes.
+.PARAMETER SkipDocker
+    Skips checking and launching Docker/Kafka.
 #>
 
 [CmdletBinding()]
 param(
-    [Parameter(Position=0)]
+    [Parameter(Position = 0)]
     [string[]]$Services = @("All"),
 
     [ValidateSet("Inline", "NewWindow", "Background", "WT")]
@@ -57,6 +47,8 @@ param(
 
     [switch]$Build,
     [switch]$Stop,
+    [switch]$StopContainers,
+    [switch]$SkipDocker,
     [switch]$Help
 )
 
@@ -65,7 +57,7 @@ if ($Help) {
     exit 0
 }
 
-# Load the persisted database password for service processes started by this script.
+# Persisted database password
 if ([string]::IsNullOrWhiteSpace($env:TRIPORA_DB_PASSWORD)) {
     $savedDbPassword = [Environment]::GetEnvironmentVariable("TRIPORA_DB_PASSWORD", "User")
     if (-not [string]::IsNullOrWhiteSpace($savedDbPassword)) {
@@ -73,7 +65,7 @@ if ([string]::IsNullOrWhiteSpace($env:TRIPORA_DB_PASSWORD)) {
     }
 }
 
-# Determine script root directory
+# Determine directories
 $ScriptDir = Split-Path -Parent $MyInvocation.MyCommand.Path
 if ((Split-Path -Leaf $ScriptDir) -ieq "Backend") {
     $RootDir = Split-Path -Parent $ScriptDir
@@ -83,7 +75,13 @@ if ((Split-Path -Leaf $ScriptDir) -ieq "Backend") {
     $BackendDir = Join-Path $RootDir "Backend"
 }
 
-# Define all backend services
+# Locate docker-compose.yml
+$ComposeFile = Join-Path $RootDir "docker-compose.yml"
+if (-not (Test-Path $ComposeFile)) {
+    $ComposeFile = Join-Path $BackendDir "docker-compose.yml"
+}
+
+# Microservices list
 $AllServices = @(
     [PSCustomObject]@{ Id = "ApiGateway";     Name = "ApiGateway";          Path = "Backend\ApiGateway";                   Port = 5120; Route = "/api/*" },
     [PSCustomObject]@{ Id = "User";           Name = "UserService";         Path = "Backend\Services\Tripora.UserService"; Port = 5001; Route = "/api/users/*" },
@@ -92,7 +90,115 @@ $AllServices = @(
     [PSCustomObject]@{ Id = "Payment";        Name = "PaymentService";      Path = "Backend\Services\Tripora.PaymentService";Port = 5005; Route = "/api/payments/*" }
 )
 
-# Function to stop running backend services by port and PID
+# Test open port helper
+function Test-PortOpen ([string]$server, [int]$port) {
+    try {
+        $tcpClient = New-Object System.Net.Sockets.TcpClient
+        $asyncResult = $tcpClient.BeginConnect($server, $port, $null, $null)
+        $wait = $asyncResult.AsyncWaitHandle.WaitOne(1000, $false)
+        if ($wait -and $tcpClient.Connected) {
+            $tcpClient.EndConnect($asyncResult)
+            $tcpClient.Close()
+            return $true
+        }
+        $tcpClient.Close()
+        return $false
+    } catch {
+        return $false
+    }
+}
+
+# Ensure Docker and Kafka infrastructure is active
+function Ensure-DockerAndKafka {
+    if ($SkipDocker) {
+        Write-Host "`n[Docker] Skipped due to -SkipDocker switch." -ForegroundColor Gray
+        return
+    }
+
+    Write-Host "`n=======================================================" -ForegroundColor Cyan
+    Write-Host " Checking Docker & Kafka Infrastructure..." -ForegroundColor Cyan
+    Write-Host "=======================================================" -ForegroundColor Cyan
+
+    if (-not (Get-Command "docker" -ErrorAction SilentlyContinue)) {
+        Write-Host "Warning: Docker CLI is not installed or not in PATH. Skipping Kafka setup." -ForegroundColor Yellow
+        return
+    }
+
+    $dockerRunning = $false
+    try {
+        $null = docker info 2>&1
+        if ($LASTEXITCODE -eq 0) { $dockerRunning = $true }
+    } catch {}
+
+    if (-not $dockerRunning) {
+        Write-Host "Docker daemon is not running. Attempting to start Docker Desktop..." -ForegroundColor Yellow
+        $dockerExe = "C:\Program Files\Docker\Docker\Docker Desktop.exe"
+        if (Test-Path $dockerExe) {
+            Start-Process $dockerExe
+        } else {
+            $cmd = Get-Command "Docker Desktop.exe" -ErrorAction SilentlyContinue
+            if ($cmd) {
+                Start-Process $cmd.Source
+            } else {
+                Write-Host "Could not locate Docker Desktop.exe. Please start Docker manually." -ForegroundColor Red
+                return
+            }
+        }
+
+        Write-Host "Waiting for Docker daemon to become responsive..." -ForegroundColor Yellow -NoNewline
+        $maxAttempts = 30
+        $attempt = 0
+        while (-not $dockerRunning -and $attempt -lt $maxAttempts) {
+            Start-Sleep -Seconds 3
+            $attempt++
+            Write-Host -NoNewline "."
+            try {
+                $null = docker info 2>&1
+                if ($LASTEXITCODE -eq 0) { $dockerRunning = $true }
+            } catch {}
+        }
+        Write-Host ""
+
+        if (-not $dockerRunning) {
+            Write-Host "Docker daemon took too long to start. Microservices will run, but Kafka may be unavailable." -ForegroundColor Red
+            return
+        }
+    }
+
+    Write-Host "Docker daemon is active." -ForegroundColor Green
+
+    if (Test-Path $ComposeFile) {
+        Write-Host "Starting Kafka and Kafka-UI containers..." -ForegroundColor Cyan
+        docker compose -f $ComposeFile up -d
+    } else {
+        $kafkaContainer = docker ps -a --filter "name=tripora-kafka" --format "{{.Names}}"
+        if ($kafkaContainer) {
+            docker start tripora-kafka tripora-kafka-ui 2>$null
+        } else {
+            Write-Host "Warning: docker-compose.yml not found at $ComposeFile. Skipping container startup." -ForegroundColor Yellow
+        }
+    }
+
+    Write-Host "Verifying Kafka broker availability on port 9092..." -ForegroundColor Cyan -NoNewline
+    $kafkaReady = $false
+    for ($i = 0; $i -lt 25; $i++) {
+        if (Test-PortOpen "localhost" 9092) {
+            $kafkaReady = $true
+            break
+        }
+        Write-Host -NoNewline "." -ForegroundColor Yellow
+        Start-Sleep -Seconds 1
+    }
+    Write-Host ""
+
+    if ($kafkaReady) {
+        Write-Host "Kafka broker is online and ready (localhost:9092)." -ForegroundColor Green
+    } else {
+        Write-Host "Warning: Kafka broker did not respond on port 9092 within 25s. Services will retry automatically via Outbox." -ForegroundColor Yellow
+    }
+}
+
+# Stop backend services
 function Stop-BackendServices {
     Write-Host "`n=======================================================" -ForegroundColor Yellow
     Write-Host " Stopping Tripora Backend Services..." -ForegroundColor Yellow
@@ -108,7 +214,7 @@ function Stop-BackendServices {
                     try {
                         $proc = Get-Process -Id $processId -ErrorAction SilentlyContinue
                         if ($proc) {
-                            Write-Host "Stopping $($svc.Name) (PID: $processId, Port: $port)..." -ForegroundColor Magenta
+                            Write-Host "Stopping $($svc.Name) (PID: $processId, Port:$port)..." -ForegroundColor Magenta
                             Stop-Process -Id $processId -Force -ErrorAction SilentlyContinue
                         }
                     } catch {}
@@ -116,7 +222,17 @@ function Stop-BackendServices {
             }
         }
     }
-    Write-Host "All backend services stopped.`n" -ForegroundColor Green
+    Write-Host "All backend services stopped." -ForegroundColor Green
+
+    if ($StopContainers) {
+        Write-Host "`nStopping Docker infrastructure..." -ForegroundColor Yellow
+        if (Test-Path $ComposeFile) {
+            docker compose -f $ComposeFile stop
+        } else {
+            docker stop tripora-kafka tripora-kafka-ui 2>$null
+        }
+        Write-Host "Docker containers stopped.`n" -ForegroundColor Green
+    }
 }
 
 if ($Stop) {
@@ -129,7 +245,10 @@ Write-Host "`n=======================================================" -Foregrou
 Write-Host "      TRIPORA BACKEND SERVICES LAUNCHER                " -ForegroundColor Cyan
 Write-Host "=======================================================" -ForegroundColor Cyan
 
-# Filter target services
+# Step 0: Ensure Docker and Kafka are active
+Ensure-DockerAndKafka
+
+# Filter requested services
 $TargetServices = @()
 if ($Services -contains "All") {
     $TargetServices = $AllServices
@@ -153,6 +272,9 @@ if ($TargetServices.Count -eq 0) {
 if ($Build) {
     Write-Host "`n[1/2] Building Backend Solution..." -ForegroundColor Yellow
     $slnPath = Join-Path $BackendDir "Tripora.slnx"
+    if (-not (Test-Path $slnPath)) {
+        $slnPath = Join-Path $RootDir "Tripora.sln"
+    }
     if (Test-Path $slnPath) {
         dotnet build $slnPath --configuration Debug
         if ($LASTEXITCODE -ne 0) {
@@ -161,7 +283,7 @@ if ($Build) {
         }
         Write-Host "Build Succeeded!" -ForegroundColor Green
     } else {
-        Write-Host "Warning: Tripora.slnx not found at $slnPath. Skipping build." -ForegroundColor Yellow
+        Write-Host "Warning: Solution file not found. Skipping pre-build." -ForegroundColor Yellow
     }
 } else {
     Write-Host "`n[1/2] Skipping build (use -Build switch to enable pre-build check)." -ForegroundColor Gray
@@ -194,7 +316,6 @@ foreach ($svc in $TargetServices) {
     }
 }
 
-
 # Step 2: Launch Services
 Write-Host "`n[2/2] Launching $($TargetServices.Count) Service(s) in '$Mode' mode..." -ForegroundColor Yellow
 
@@ -210,9 +331,9 @@ foreach ($svc in $TargetServices) {
 
     $url = "http://localhost:$($svc.Port)"
     $launchedSummary += [PSCustomObject]@{
-        Name = $svc.Name
-        Port = $svc.Port
-        Url = $url
+        Name         = $svc.Name
+        Port         = $svc.Port
+        Url          = $url
         GatewayRoute = "http://localhost:5120$($svc.Route.TrimEnd('*'))"
     }
 
@@ -228,7 +349,6 @@ foreach ($svc in $TargetServices) {
     }
 
     if ($Mode -eq "Inline" -or $Mode -eq "Background") {
-        # Start dotnet process detached with output redirected to log
         $psi = New-Object System.Diagnostics.ProcessStartInfo
         $psi.FileName = "dotnet"
         $psi.Arguments = "run --project `"$csprojPath`" --urls `"$url`""
@@ -241,15 +361,14 @@ foreach ($svc in $TargetServices) {
         $proc = New-Object System.Diagnostics.Process
         $proc.StartInfo = $psi
 
-        # Redirect logs asynchronously to file
         $logStream = [System.IO.StreamWriter]::new($logFile, $false)
         $proc.add_OutputDataReceived({
-            param($sender, $e)
-            if ($e.Data) { $logStream.WriteLine($e.Data); $logStream.Flush() }
+            param($sender,$e)
+            if ($e.Data) {$logStream.WriteLine($e.Data);$logStream.Flush() }
         })
         $proc.add_ErrorDataReceived({
-            param($sender, $e)
-            if ($e.Data) { $logStream.WriteLine("[ERR] " + $e.Data); $logStream.Flush() }
+            param($sender,$e)
+            if ($e.Data) {$logStream.WriteLine("[ERR] " + $e.Data);$logStream.Flush() }
         })
 
         $null = $proc.Start()
@@ -259,7 +378,7 @@ foreach ($svc in $TargetServices) {
         $launchedProcesses += [PSCustomObject]@{ Process = $proc; StreamWriter = $logStream; Name = $svc.Name; Port = $svc.Port }
     }
     elseif ($Mode -eq "NewWindow") {
-        $cmd = "& { `$host.ui.RawUI.WindowTitle = 'Tripora - $($svc.Name) ($($svc.Port))'; `$env:ASPNETCORE_URLS='$url'; Set-Location '$svcPath'; Write-Host '==================================================' -ForegroundColor Cyan; Write-Host '  Tripora $($svc.Name) Running on $url' -ForegroundColor Green; Write-Host '==================================================' -ForegroundColor Cyan; dotnet run }"
+        $cmd = "& { `$host.ui.RawUI.WindowTitle = 'Tripora - $($svc.Name) ($($svc.Port))'; `$env:ASPNETCORE_URLS='$url'; Set-Location '$svcPath'; Write-Host '==================================================' -ForegroundColor Cyan; Write-Host '  Tripora$($svc.Name) Running on$url' -ForegroundColor Green; Write-Host '==================================================' -ForegroundColor Cyan; dotnet run }"
         $p = Start-Process powershell.exe -ArgumentList "-NoExit", "-Command", $cmd -WorkingDirectory $svcPath -PassThru
         $launchedProcesses += [PSCustomObject]@{ Process = $p; StreamWriter = $null; Name = $svc.Name; Port = $svc.Port }
     }
@@ -306,7 +425,6 @@ if ($Mode -eq "Inline") {
                 try { $item.StreamWriter.Close() } catch {}
             }
         }
-        # Backup cleanup by port
         Stop-BackendServices
         Write-Host "Shutdown complete." -ForegroundColor Green
     }
