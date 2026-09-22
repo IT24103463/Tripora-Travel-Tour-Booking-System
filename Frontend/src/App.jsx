@@ -1,4 +1,5 @@
-﻿import { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
+import { Routes, Route } from 'react-router-dom';
 import RegisterForm from './components/RegisterForm';
 import LoginForm from './components/LoginForm';
 import CustomerDashboard from './components/CustomerDashboard';
@@ -6,6 +7,7 @@ import ErrorBoundary from './components/ErrorBoundary';
 import ProfileView from './components/ProfileView';
 import TourDisplay from './components/TourDisplay';
 import DestinationManagement from './components/DestinationManagement';
+import PaymentPage from './pages/PaymentPage';
 import './App.css';
 
 // Helper function to decode JWT and check expiration
@@ -108,7 +110,12 @@ function App() {
   }, [authToken]);
 
   return (
-    <div className={`app-layout ${!authUser && !showAuth ? 'landing-mode' : ''} ${!authUser && showAuth ? 'auth-mode' : ''} ${authUser ? 'authenticated-mode' : ''}`}>
+    <Routes>
+      <Route path="/payment/:bookingId" element={<PaymentPage />} />
+      <Route
+        path="*"
+        element={
+          <div className={`app-layout ${!authUser && !showAuth ? 'landing-mode' : ''} ${!authUser && showAuth ? 'auth-mode' : ''} ${authUser ? 'authenticated-mode' : ''}`}>
       {/* Navigation Header */}
       <header className="navbar">
         <div className="nav-container">
@@ -297,6 +304,9 @@ function App() {
         <p>© 2026 Tripora Travel & Tour Booking System. All rights reserved.</p>
       </footer>
     </div>
+        }
+      />
+    </Routes>
   );
 }
 

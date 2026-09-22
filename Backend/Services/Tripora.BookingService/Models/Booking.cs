@@ -2,43 +2,61 @@
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 
-namespace Tripora.BookingService.Models;
-
-public class Booking
+namespace Tripora.BookingService.Models
 {
-    [Key]
-    public Guid Id { get; set; } = Guid.NewGuid();
+    public class Booking
+    {
+        [Key]
+        public Guid Id { get; set; } = Guid.NewGuid();
 
-    [Required]
-    public string UserId { get; set; } = string.Empty;
+        [Required]
+        [MaxLength(36)]
+        public string UserId { get; set; } = string.Empty;
 
-    // From TRIP-53
-    [Required]
-    public BookingType BookingType { get; set; }
+        public BookingType BookingType { get; set; }
 
-    public Guid? TourId { get; set; }
-    public Guid? HotelId { get; set; }
+        public Guid? TourId { get; set; }
 
-    public DateTime BookingDate { get; set; } = DateTime.UtcNow;
-    public DateTime TravelDate { get; set; }
-    public DateTime? CheckInDate { get; set; }
-    public DateTime? CheckOutDate { get; set; }
+        public Guid? HotelId { get; set; }
 
-    [Required]
-    [Range(1, 100)]
-    public int Quantity { get; set; }
+        public Guid ItemId { get; set; }
 
-    [Column(TypeName = "TEXT")]
-    public decimal TotalAmount { get; set; }
+        [MaxLength(50)]
+        public string? ItemType { get; set; }
 
-    public BookingStatus Status { get; set; } = BookingStatus.Pending;
+        [MaxLength(100)]
+        public string? GuestName { get; set; }
 
-    public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
-    public DateTime? UpdatedAt { get; set; }
+        [MaxLength(30)]
+        public string? PhoneNumber { get; set; }
 
-    // From HEAD (Legacy)
-    public Guid ItemId { get; set; }
-    public string ItemType { get; set; } = "Tour"; 
-    public int Count { get; set; }
-    public string LegacyStatus { get; set; } = "Confirmed";
+        [MaxLength(255)]
+        public string? BillingAddress { get; set; }
+
+        public DateTime BookingDate { get; set; } = DateTime.UtcNow;
+
+        public DateTime TravelDate { get; set; }
+
+        public DateTime? CheckInDate { get; set; }
+
+        public DateTime? CheckOutDate { get; set; }
+
+        public int Count { get; set; } = 1;
+
+        public int Quantity { get; set; } = 1;
+
+        [Column(TypeName = "decimal(18,2)")]
+        public decimal TotalAmount { get; set; }
+
+        [Required]
+        [MaxLength(50)]
+        public string Status { get; set; } = "Pending";
+
+        [MaxLength(50)]
+        public string? LegacyStatus { get; set; }
+
+        public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
+
+        public DateTime? UpdatedAt { get; set; }
+    }
 }
