@@ -35,8 +35,7 @@ public class PaymentController : ControllerBase
         PaymentDbContext context,
         IBookingServiceClient bookingServiceClient,
         IPublishEndpoint publishEndpoint,
-        IKafkaProducerService? kafkaProducer,
-        ILogger<PaymentController>? logger = null, IConfiguration? configuration = null)
+        ILogger<PaymentController>? logger = null, IKafkaProducerService? kafkaProducer = null, IConfiguration? configuration = null)
     {
         _context = context;
         _bookingServiceClient = bookingServiceClient;
@@ -347,3 +346,4 @@ public class PaymentController : ControllerBase
             Message = message
         };
 }
+
