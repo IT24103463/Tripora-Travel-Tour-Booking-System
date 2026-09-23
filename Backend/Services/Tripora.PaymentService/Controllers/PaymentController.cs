@@ -215,7 +215,7 @@ public class PaymentController : ControllerBase
         // Handle Failure Response
         if (!isSuccess)
         {
-            _logger.LogWarning("Payment rejected for booking {BookingId}", dto.BookingId);
+            _logger?.LogWarning("Payment rejected for booking {BookingId}", dto.BookingId);
 
             try
             {
@@ -231,7 +231,7 @@ public class PaymentController : ControllerBase
             }
             catch (Exception ex)
             {
-                _logger.LogWarning(ex, "Failed to publish internal MassTransit PaymentFailedEvent");
+                _logger?.LogWarning(ex, "Failed to publish internal MassTransit PaymentFailedEvent");
             }
 
             return BadRequest(MapToResponseDto(payment, "Payment declined by payment provider."));
@@ -252,14 +252,14 @@ public class PaymentController : ControllerBase
         }
         catch (Exception ex)
         {
-            _logger.LogWarning(ex, "Failed to publish internal MassTransit PaymentSuccessfulEvent");
+            _logger?.LogWarning(ex, "Failed to publish internal MassTransit PaymentSuccessfulEvent");
         }
 
         // Optional best-effort direct sync
         var (syncSuccess, syncError) = await _bookingServiceClient.UpdateBookingStatusAsync(dto.BookingId, "Confirmed");
         if (!syncSuccess)
         {
-            _logger.LogInformation("Booking sync handled asynchronously via Kafka event stream for {BookingId}", dto.BookingId);
+            _logger?.LogInformation("Booking sync handled asynchronously via Kafka event stream for {BookingId}", dto.BookingId);
         }
 
         var message = syncSuccess
