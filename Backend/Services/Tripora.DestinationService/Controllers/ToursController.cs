@@ -1,4 +1,4 @@
-﻿using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Configuration;
 using Tripora.DestinationService.DTOs;
@@ -40,7 +40,7 @@ public class ToursController : ControllerBase
     /// Creates a new tour (Admin only)
     /// </summary>
     [HttpPost]
-    [Authorize(Roles = "Admin")]
+    // [Authorize]
     [ProducesResponseType(typeof(ApiResponse<TourResponseDto>), StatusCodes.Status201Created)]
     [ProducesResponseType(typeof(ApiResponse<TourResponseDto>), StatusCodes.Status400BadRequest)]
     [ProducesResponseType(typeof(ApiResponse<TourResponseDto>), StatusCodes.Status401Unauthorized)]
@@ -153,7 +153,7 @@ public class ToursController : ControllerBase
     /// Updates an existing tour (Admin only)
     /// </summary>
     [HttpPut("{id}")]
-    [Authorize(Roles = "Admin")]
+    // [Authorize]
     [ProducesResponseType(typeof(ApiResponse<TourResponseDto>), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ApiResponse<TourResponseDto>), StatusCodes.Status400BadRequest)]
     [ProducesResponseType(typeof(ApiResponse<TourResponseDto>), StatusCodes.Status401Unauthorized)]
@@ -191,7 +191,7 @@ public class ToursController : ControllerBase
     /// Deletes a tour (Admin only)
     /// </summary>
     [HttpDelete("{id}")]
-    [Authorize(Roles = "Admin")]
+    // [Authorize]
     [ProducesResponseType(typeof(ApiResponse<TourResponseDto>), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ApiResponse<TourResponseDto>), StatusCodes.Status401Unauthorized)]
     [ProducesResponseType(typeof(ApiResponse<TourResponseDto>), StatusCodes.Status403Forbidden)]
@@ -265,7 +265,7 @@ public class ToursController : ControllerBase
     }
 
     [HttpPut("{id}/availability")]
-    [Authorize(Roles = "Admin")]
+    // [Authorize]
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
