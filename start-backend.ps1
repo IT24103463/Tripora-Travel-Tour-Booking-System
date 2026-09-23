@@ -1,4 +1,4 @@
-﻿<#
+﻿<# .\start-backend.ps1 -Mode NewWindow  
 .SYNOPSIS
     Starts Docker (Kafka, Kafka-UI), all Tripora backend microservices, and API Gateway.
     Press Ctrl+C to stop all services.

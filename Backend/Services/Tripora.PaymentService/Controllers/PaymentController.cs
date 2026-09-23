@@ -31,6 +31,7 @@ public class PaymentController : ControllerBase
     private readonly IConfiguration _configuration;
     private readonly ILogger<PaymentController>? _logger = null ?? Microsoft.Extensions.Logging.Abstractions.NullLogger<PaymentController>.Instance;
 
+    [Microsoft.Extensions.DependencyInjection.ActivatorUtilitiesConstructor]
     public PaymentController(
         PaymentDbContext context,
         IBookingServiceClient bookingServiceClient,

@@ -6,6 +6,7 @@
     <Project Path="Services/Tripora.BookingService/Tripora.BookingService.csproj" />
     <Project Path="Services/Tripora.BookingService.Tests/Tripora.BookingService.Tests.csproj" />
     <Project Path="Services/Tripora.PaymentService/Tripora.PaymentService.csproj" />
+    <Project Path="Services/Tripora.E2E.Tests/Tripora.E2E.Tests.csproj" />
     <Project Path="Services/Tripora.PaymentService.Tests/Tripora.PaymentService.Tests.csproj" />
     <Project Path="Services/Tripora.DestinationService/Tripora.DestinationService.csproj" />
     <Project Path="Services/Tripora.DestinationService.Tests/Tripora.DestinationService.Tests.csproj" />

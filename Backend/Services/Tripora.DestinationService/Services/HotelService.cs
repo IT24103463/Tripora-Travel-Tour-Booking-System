@@ -1,10 +1,6 @@
 using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.Logging;
 using Tripora.DestinationService.Data;
 using Tripora.DestinationService.DTOs;
 using Tripora.DestinationService.Models;
@@ -16,10 +12,10 @@ public class HotelService : IHotelService
     private readonly DestinationDbContext _context;
     private readonly ILogger<HotelService> _logger;
 
-    public HotelService(DestinationDbContext context, ILogger<HotelService>? logger = null)
+    public HotelService(DestinationDbContext context, ILogger<HotelService> logger)
     {
         _context = context;
-        _logger = logger ?? Microsoft.Extensions.Logging.Abstractions.NullLogger<HotelService>.Instance;
+        _logger = logger;
     }
 
     public async Task<List<Hotel>> GetAllHotelsAsync(bool includeInactive = false, CancellationToken cancellationToken = default)
@@ -41,22 +37,7 @@ public class HotelService : IHotelService
         }
     }
 
-    public async Task<Hotel?> GetHotelByIdAsync(Guid id, CancellationToken cancellationToken = default)
-    {
-        try
-        {
-            var hotel = await _context.Hotels.FindAsync(new object?[] { id }, cancellationToken);
-            if (hotel != null) return hotel;
-        }
-        catch (Exception ex)
-        {
-            _logger.LogWarning(ex, "Failed to query hotel {Id} from database. Searching fallback hotels.", id);
-        }
-
-        return CreateFallbackHotels(true).FirstOrDefault(h => h.Id == id);
-    }
-
-    public static List<Hotel> CreateFallbackHotels(bool includeInactive = false)
+    private static List<Hotel> CreateFallbackHotels(bool includeInactive)
     {
         var createdAt = new DateTime(2026, 1, 1, 0, 0, 0, DateTimeKind.Utc);
         return new List<Hotel>
@@ -151,14 +132,13 @@ public class HotelService : IHotelService
         var hotel = await _context.Hotels.FindAsync(id);
         if (hotel == null) return (false, null, "Hotel not found.");
 
-        int targetTotalRooms = dto.TotalRooms > 0 ? dto.TotalRooms : (dto.AvailableRooms > 0 ? Math.Max(dto.AvailableRooms, hotel.TotalRooms) : hotel.TotalRooms);
-        int occupiedRooms = Math.Max(0, hotel.TotalRooms - hotel.AvailableRooms);
-        if (targetTotalRooms < occupiedRooms)
+        int occupiedRooms = hotel.TotalRooms - hotel.AvailableRooms;
+        if (dto.TotalRooms < occupiedRooms)
         {
             return (false, null, $"Cannot reduce TotalRooms below currently occupied rooms ({occupiedRooms}).");
         }
 
-        int netVariance = targetTotalRooms - hotel.TotalRooms;
+        int netVariance = dto.TotalRooms - hotel.TotalRooms;
         
         hotel.Name = dto.Name;
         hotel.Location = dto.Location;
@@ -168,8 +148,8 @@ public class HotelService : IHotelService
         hotel.Rating = dto.Rating;
         hotel.Amenities = dto.Amenities;
         hotel.UpdatedAt = DateTime.UtcNow;
-        hotel.TotalRooms = targetTotalRooms;
-        hotel.AvailableRooms = Math.Max(0, hotel.AvailableRooms + netVariance);
+        hotel.TotalRooms = dto.TotalRooms;
+        hotel.AvailableRooms = hotel.AvailableRooms + netVariance;
         hotel.IsActive = dto.IsActive;
 
         try
@@ -183,3 +163,4 @@ public class HotelService : IHotelService
         }
     }
 }
+

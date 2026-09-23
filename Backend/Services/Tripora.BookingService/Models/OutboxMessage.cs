@@ -17,6 +17,7 @@ public class OutboxMessage
     [Required]
     public string Payload { get; set; } = string.Empty;
 
+    [Required]
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
 
     public DateTime? ProcessedAt { get; set; }
