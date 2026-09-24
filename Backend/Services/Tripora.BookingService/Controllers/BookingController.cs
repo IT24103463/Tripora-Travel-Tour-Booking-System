@@ -33,55 +33,60 @@ public class BookingController : ControllerBase
     // // // // // [Authorize]
     public async Task<IActionResult> CreateBooking([FromBody] CreateBookingRequestDto dto)
     {
-        if (!ModelState.IsValid)
-        {
-            return BadRequest(ModelState);
-        }
-
-        var userId = User.FindFirstValue(ClaimTypes.NameIdentifier) ?? User.FindFirstValue("sub");
-        if (string.IsNullOrEmpty(userId))
-        {
-            userId = "11111111-1111-1111-1111-111111111111";
-        }
-
-        var serviceDto = new CreateBookingDto
-        {
-            TourId = dto.TourId,
-            HotelId = dto.HotelId,
-            GuestName = dto.GuestName,
-            PhoneNumber = dto.PhoneNumber,
-            BillingAddress = dto.BillingAddress,
-            Quantity = dto.Quantity,
-            TotalAmount = dto.TotalAmount,
-            TravelDate = dto.TravelDate
-        };
-
-        var result = await _bookingService.CreateBookingAsync(userId, serviceDto);
-        if (!result.Success || result.Booking == null)
-        {
-            return BadRequest(new { message = result.Error });
-        }
-
-        // Scenario 1: Atomically stage Booking_Created event in OutboxMessages
-        var createdEvent = new BookingCreatedEvent
-        {
-            BookingId = result.Booking.Id,
-            CustomerId = result.Booking.UserId,
-            TourId = result.Booking.TourId?.ToString() ?? string.Empty,
-            TotalAmount = result.Booking.TotalAmount,
-            Status = result.Booking.Status?.ToString() ?? "Pending",
-            Timestamp = DateTime.UtcNow
-        };
-
-        var outboxMessage = new OutboxMessage
-        {
-            Id = Guid.NewGuid(),
-            EventType = "Booking_Created",
-            Payload = JsonSerializer.Serialize(createdEvent),
-            CreatedAt = DateTime.UtcNow
-        };
-
         try
+        {
+            if (!ModelState.IsValid)
+            {
+                return BadRequest(ModelState);
+            }
+
+            var userId = User.FindFirstValue(ClaimTypes.NameIdentifier) ?? User.FindFirstValue("sub");
+            if (string.IsNullOrEmpty(userId))
+            {
+                userId = "11111111-1111-1111-1111-111111111111";
+            }
+
+            var serviceDto = new CreateBookingDto
+            {
+                TourId = dto.TourId,
+                HotelId = dto.HotelId,
+                GuestName = dto.GuestName,
+                PhoneNumber = dto.PhoneNumber,
+                BillingAddress = dto.BillingAddress,
+                Quantity = dto.Quantity,
+                TotalAmount = dto.TotalAmount,
+                TravelDate = dto.TravelDate
+            };
+
+            var result = await _bookingService.CreateBookingAsync(userId, serviceDto);
+            if (!result.Success || result.Booking == null)
+            {
+                return BadRequest(new { message = result.Error });
+            }
+
+            try
+            {
+                if (_context != null)
+                {
+                    var createdEvent = new BookingCreatedEvent
+                    {
+                        BookingId = result.Booking.Id,
+                        CustomerId = result.Booking.UserId,
+                        TourId = result.Booking.TourId?.ToString() ?? string.Empty,
+                        TotalAmount = result.Booking.TotalAmount,
+                        Status = result.Booking.Status?.ToString() ?? "Pending",
+                        Timestamp = DateTime.UtcNow
+                    };
+
+                    var outboxMessage = new OutboxMessage
+                    {
+                        Id = Guid.NewGuid(),
+                        EventType = "Booking_Created",
+                        Payload = JsonSerializer.Serialize(createdEvent),
+                        CreatedAt = DateTime.UtcNow
+                    };
+
+                    try
             {
                 if (_context != null)
                 {
@@ -93,14 +98,32 @@ public class BookingController : ControllerBase
             {
                 Console.WriteLine("Outbox skipped: " + ex.Message);
             }
+                }
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine("Outbox staging warning: " + ex.Message);
+            }
 
-        return Ok(new
+            return Ok(new
+            {
+                success = true,
+                message = "Booking request submitted successfully! Status: Pending.",
+                bookingId = result.Booking?.Id,
+                data = result.Booking
+            });
+        }
+        catch (Exception ex)
         {
-            success = true,
-            message = "Booking request submitted successfully! Status: Pending.",
-            bookingId = result.Booking?.Id,
-            data = result.Booking
-        });
+            return StatusCode(500, new
+            {
+                success = false,
+                source = "BookingController.CreateBooking",
+                message = ex.Message,
+                inner = ex.InnerException?.Message,
+                stack = ex.StackTrace
+            });
+        }
     }
 
     [HttpGet("{id:guid}")]

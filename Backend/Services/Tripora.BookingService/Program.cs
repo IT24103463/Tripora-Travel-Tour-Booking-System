@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Net.Http;
 using System.Text;
 using MassTransit;
@@ -122,6 +122,7 @@ builder.Services.AddMassTransit(x =>
 });
 
 var app = builder.Build();
+app.UseDeveloperExceptionPage();
 
 // Database migrations
 using (var scope = app.Services.CreateScope())
