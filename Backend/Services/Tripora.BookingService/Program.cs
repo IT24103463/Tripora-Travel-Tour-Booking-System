@@ -62,10 +62,21 @@ builder.Services.AddAuthentication(options =>
 builder.Services.AddAuthorization();
 
 // DestinationService HTTP Client with Resilience Policies
-var destinationServiceUrl = builder.Configuration["Services:DestinationServiceUrl"]
-    ?? "http://localhost:5003/";
-var destinationServiceApiKey = builder.Configuration["Services:DestinationServiceApiKey"]
-    ?? throw new InvalidOperationException("Services:DestinationServiceApiKey must be configured.");
+var rawDestUrl = builder.Configuration["Services:DestinationServiceUrl"] 
+                 ?? builder.Configuration["DestinationServiceUrl"];
+
+if (string.IsNullOrWhiteSpace(rawDestUrl))
+{
+    rawDestUrl = "https://tripora-destination-abb0g5a5hzatakhy.eastasia-01.azurewebsites.net/";
+}
+
+if (!rawDestUrl.StartsWith("http://", StringComparison.OrdinalIgnoreCase) && !rawDestUrl.StartsWith("https://", StringComparison.OrdinalIgnoreCase))
+{
+    rawDestUrl = "https://" + rawDestUrl;
+}
+
+var destinationServiceUrl = rawDestUrl.TrimEnd('/') + "/";
+var destinationServiceApiKey = builder.Configuration["Services:DestinationServiceApiKey"] ?? "tripora-booking-inventory-2026";
 
 static IAsyncPolicy<HttpResponseMessage> GetRetryPolicy() =>
     HttpPolicyExtensions
