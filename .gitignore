@@ -491,3 +491,7 @@ Backend/Services/Tripora.BookingService/*.db
 
 
 appsettings.Development.json
+
+.vite/
+
+*.docx
