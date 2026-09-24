@@ -98,8 +98,28 @@ public class BookingController : ControllerBase
             {
                 if (_context != null)
                 {
+                    try
+            {
+                if (_context != null)
+                {
+                    try
+            {
+                if (_context != null)
+                {
                     _context.OutboxMessages.Add(outboxMessage);
                     await _context.SaveChangesAsync();
+                }
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine("Outbox skipped: " + ex.Message);
+            }
+                }
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine("Outbox skipped: " + ex.Message);
+            }
                 }
             }
             catch (Exception ex)

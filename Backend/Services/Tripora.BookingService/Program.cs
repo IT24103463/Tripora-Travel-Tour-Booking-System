@@ -62,20 +62,24 @@ builder.Services.AddAuthentication(options =>
 builder.Services.AddAuthorization();
 
 // DestinationService HTTP Client with Resilience Policies
-var rawDestUrl = builder.Configuration["Services:DestinationServiceUrl"] 
-                 ?? builder.Configuration["DestinationServiceUrl"];
+var defaultDestinationUrl = "https://tripora-destination-abb0g5a5hzatakhy.eastasia-01.azurewebsites.net/";
+var rawDestUrl = (builder.Configuration["Services:DestinationServiceUrl"] 
+                  ?? builder.Configuration["DestinationServiceUrl"] 
+                  ?? "").Trim().Trim('"', '\'');
 
-if (string.IsNullOrWhiteSpace(rawDestUrl))
+Uri destUri;
+if (!string.IsNullOrWhiteSpace(rawDestUrl) &&
+    Uri.TryCreate(rawDestUrl.EndsWith("/") ? rawDestUrl : rawDestUrl + "/", UriKind.Absolute, out var parsed) &&
+    !string.IsNullOrWhiteSpace(parsed.Host) &&
+    parsed.Host.Contains('.'))
 {
-    rawDestUrl = "https://tripora-destination-abb0g5a5hzatakhy.eastasia-01.azurewebsites.net/";
+    destUri = parsed;
+}
+else
+{
+    destUri = new Uri(defaultDestinationUrl);
 }
 
-if (!rawDestUrl.StartsWith("http://", StringComparison.OrdinalIgnoreCase) && !rawDestUrl.StartsWith("https://", StringComparison.OrdinalIgnoreCase))
-{
-    rawDestUrl = "https://" + rawDestUrl;
-}
-
-var destinationServiceUrl = rawDestUrl.TrimEnd('/') + "/";
 var destinationServiceApiKey = builder.Configuration["Services:DestinationServiceApiKey"] ?? "tripora-booking-inventory-2026";
 
 static IAsyncPolicy<HttpResponseMessage> GetRetryPolicy() =>
@@ -90,7 +94,7 @@ static IAsyncPolicy<HttpResponseMessage> GetCircuitBreakerPolicy() =>
 
 builder.Services.AddHttpClient<IDestinationClient, DestinationClient>(client =>
 {
-    client.BaseAddress = new Uri(destinationServiceUrl);
+    client.BaseAddress = destUri;
     client.DefaultRequestHeaders.Add("X-Internal-Service-Key", destinationServiceApiKey);
     client.Timeout = TimeSpan.FromSeconds(15);
 })
