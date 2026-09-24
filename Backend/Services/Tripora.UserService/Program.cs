@@ -1,4 +1,4 @@
-using System.Text;
+﻿using System.Text;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
@@ -31,9 +31,9 @@ var hasDatabaseEnvironmentOverrides = new[]
 }.Any(variable => Environment.GetEnvironmentVariable(variable) is not null);
 
 var effectiveDbHost = dbHost ?? "localhost";
-var mysqlConnStr = hasDatabaseEnvironmentOverrides || string.IsNullOrWhiteSpace(configuredConnectionString)
-    ? $"Server={effectiveDbHost};Port={dbPort};Database={dbName};User={dbUser};Password={dbPassword};"
-    : configuredConnectionString;
+var mysqlConnStr = !string.IsNullOrWhiteSpace(configuredConnectionString)
+    ? configuredConnectionString
+    : $"Server={effectiveDbHost};Port={dbPort};Database={dbName};User={dbUser};Password={dbPassword};SslMode=Required;";
 
 builder.Services.AddDbContext<UserDbContext>(options => 
     options.UseMySQL(mysqlConnStr, x => x.MigrationsHistoryTable("__EFMigrationsHistory_Users")));
