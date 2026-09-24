@@ -1,3 +1,4 @@
+﻿import { API_BASE_URL } from '../apiConfig';
 import { useState, useMemo } from 'react';
 import { useParams, useLocation, useNavigate } from 'react-router-dom';
 import {
@@ -205,7 +206,7 @@ export default function PaymentPage() {
       const controller = new AbortController();
       const timeoutId = setTimeout(() => controller.abort(), 15000);
 
-      const response = await fetch('http://localhost:5005/api/payments/process', {
+      const response = await fetch(`${API_BASE_URL}/api/payments/process`, {
         method: 'POST',
         headers,
         body: JSON.stringify(payload),
