@@ -31,30 +31,91 @@ public class BookingService : IBookingService
     {
         try
         {
-            if (_destinationClient != null)
+            if (dto.Quantity <= 0) return (false, null, "Guest or room count must be greater than zero.");
+
+            // The explicit item ID is authoritative. This keeps packages out of the
+            // legacy tour/hotel inventory path even if a client sends a stale type.
+            var requestedType = dto.PackageId.HasValue
+                ? BookingType.Package
+                : dto.HotelId.HasValue
+                    ? BookingType.Hotel
+                    : Enum.TryParse<BookingType>(dto.BookingType, true, out var parsedType)
+                        ? parsedType
+                        : BookingType.Tour;
+            var itemType = requestedType.ToString();
+            var today = DateTime.UtcNow.Date;
+            if (requestedType == BookingType.Hotel)
             {
-                var itemId = dto.TourId ?? dto.HotelId ?? Guid.Empty;
-                var itemType = dto.TourId.HasValue ? "Tour" : "Hotel";
-                var reserved = await _destinationClient.ReserveInventoryAsync(itemId, itemType, dto.Quantity);
-                if (!reserved)
+                if (!dto.CheckInDate.HasValue || !dto.CheckOutDate.HasValue ||
+                    dto.CheckInDate.Value.Date <= today || dto.CheckOutDate.Value.Date <= dto.CheckInDate.Value.Date)
+                    return (false, null, "Hotel check-in must be in the future and check-out must be after check-in.");
+            }
+            else if (dto.TravelDate.Date <= today)
+            {
+                return (false, null, "Travel date must be in the future.");
+            }
+            var itemId = requestedType switch
+            {
+                BookingType.Tour => dto.TourId,
+                BookingType.Hotel => dto.HotelId,
+                BookingType.Package => dto.PackageId,
+                _ => null
+            };
+            if (!itemId.HasValue && dto.OfferId.HasValue)
+            {
+                if (_destinationClient == null) return (false, null, "Offer validation is unavailable.");
+                var offer = await _destinationClient.GetOfferForBookingAsync(dto.OfferId.Value);
+                if (offer == null || !offer.IsActive || offer.StartDate > DateTime.UtcNow || offer.EndDate < DateTime.UtcNow)
+                    return (false, null, "This offer is no longer active.");
+                if (!Enum.TryParse<BookingType>(offer.Category, true, out requestedType) || offer.TargetId == Guid.Empty)
+                    return (false, null, "This offer has an unsupported category or target.");
+                itemType = requestedType.ToString();
+                itemId = offer.TargetId;
+            }
+            if (!itemId.HasValue || itemId.Value == Guid.Empty)
+                return (false, null, "A valid tour, hotel, or package selection is required.");
+
+            decimal amount = dto.TotalAmount;
+            if (requestedType == BookingType.Package)
+            {
+                if (_destinationClient == null) return (false, null, "Package validation is unavailable.");
+                var package = await _destinationClient.GetPackageForBookingAsync(itemId.Value);
+                if (package == null || !package.IsActive)
+                    return (false, null, "This package is unavailable.");
+                if (dto.Quantity < package.MinGuests || dto.Quantity > package.MaxGuests)
+                    return (false, null, $"This package accepts {package.MinGuests} to {package.MaxGuests} guests.");
+                amount = package.PriceLKR;
+            }
+
+            if (dto.OfferId.HasValue)
+            {
+                var offer = await _destinationClient!.GetOfferForBookingAsync(dto.OfferId.Value);
+                if (offer == null || !offer.IsActive || offer.StartDate > DateTime.UtcNow || offer.EndDate < DateTime.UtcNow ||
+                    offer.TargetId != itemId.Value || !string.Equals(offer.Category, itemType, StringComparison.OrdinalIgnoreCase))
+                    return (false, null, "This offer is no longer valid for the selected item.");
+                amount = requestedType == BookingType.Package ? offer.OfferPriceLKR : offer.OfferPriceLKR * dto.Quantity;
+            }
+
+            var inventoryReserved = false;
+            if (_destinationClient != null && requestedType != BookingType.Package)
+            {
+                inventoryReserved = await _destinationClient.ReserveInventoryAsync(itemId.Value, itemType, dto.Quantity);
+                if (!inventoryReserved)
                 {
                     return (false, null, "Failed to reserve inventory. Tour or hotel is full or no longer active.");
                 }
             }
 
-            var bookingType = Enum.TryParse<BookingType>(dto.BookingType, true, out var parsedBookingType)
-                ? parsedBookingType
-                : BookingType.Tour;
-
             var booking = new Booking
             {
                 Id = Guid.NewGuid(),
                 UserId = userId,
-                BookingType = bookingType,
-                TourId = dto.TourId,
-                HotelId = dto.HotelId,
-                ItemId = dto.TourId ?? dto.HotelId ?? Guid.Empty,
-                ItemType = dto.TourId.HasValue ? "Tour" : "Hotel",
+                BookingType = requestedType,
+                TourId = requestedType == BookingType.Tour ? itemId : null,
+                HotelId = requestedType == BookingType.Hotel ? itemId : null,
+                OfferId = dto.OfferId,
+                ItemId = itemId.Value,
+                ItemType = itemType,
                 GuestName = dto.GuestName ?? string.Empty,
                 PhoneNumber = dto.PhoneNumber ?? string.Empty,
                 BillingAddress = dto.BillingAddress ?? string.Empty,
@@ -64,13 +125,22 @@ public class BookingService : IBookingService
                 CheckOutDate = dto.CheckOutDate,
                 Quantity = dto.Quantity,
                 Count = dto.Quantity,
-                TotalAmount = dto.TotalAmount,
+                TotalAmount = amount,
                 Status = "Pending",
                 CreatedAt = DateTime.UtcNow
             };
 
             _context.Bookings.Add(booking);
-            await _context.SaveChangesAsync();
+            try
+            {
+                await _context.SaveChangesAsync();
+            }
+            catch
+            {
+                if (inventoryReserved && _destinationClient != null)
+                    await _destinationClient.ReleaseInventoryAsync(itemId.Value, itemType, dto.Quantity);
+                throw;
+            }
 
             var responseDto = MapToDto(booking);
             return (true, responseDto, string.Empty);
@@ -93,6 +163,7 @@ public class BookingService : IBookingService
     {
         var bookings = await _context.Bookings
             .Where(b => b.UserId == userId)
+            .OrderByDescending(b => b.CreatedAt)
             .ToListAsync();
 
         return bookings.Select(MapToDto).ToList();
@@ -105,7 +176,7 @@ public class BookingService : IBookingService
 
         if (!isAdmin && booking.UserId != userId) return (false, "Access denied.");
 
-        if (_destinationClient != null)
+        if (_destinationClient != null && booking.BookingType != BookingType.Package)
         {
             var itemId = booking.TourId ?? booking.HotelId ?? booking.ItemId;
             var itemType = booking.TourId.HasValue ? "Tour" : (booking.HotelId.HasValue ? "Hotel" : (booking.ItemType ?? "Tour"));
@@ -134,11 +205,20 @@ public class BookingService : IBookingService
         {
             Id = b.Id,
             UserId = b.UserId,
+            BookingType = b.BookingType,
             TourId = b.TourId,
             HotelId = b.HotelId,
+            PackageId = b.BookingType == BookingType.Package ? b.ItemId : null,
+            OfferId = b.OfferId,
+            ItemId = b.ItemId,
+            ItemType = b.ItemType,
             GuestName = b.GuestName ?? string.Empty,
             PhoneNumber = b.PhoneNumber ?? string.Empty,
             BillingAddress = b.BillingAddress ?? string.Empty,
+            BookingDate = b.BookingDate,
+            TravelDate = b.TravelDate,
+            CheckInDate = b.CheckInDate,
+            CheckOutDate = b.CheckOutDate,
             Quantity = b.Quantity,
             TotalAmount = b.TotalAmount,
             Status = b.Status,

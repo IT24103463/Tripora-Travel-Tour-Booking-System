@@ -160,6 +160,160 @@ namespace Tripora.DestinationService.Migrations
                         });
                 });
 
+            modelBuilder.Entity("Tripora.DestinationService.Models.Inquiry", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int")
+                        .HasColumnName("id");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("datetime(6)")
+                        .HasColumnName("created_at")
+                        .HasDefaultValueSql("CURRENT_TIMESTAMP(6)");
+
+                    b.Property<string>("Message")
+                        .IsRequired()
+                        .HasColumnType("longtext")
+                        .HasColumnName("message");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(150)
+                        .HasColumnType("varchar(150)")
+                        .HasColumnName("name");
+
+                    b.Property<string>("PhoneNumber")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("varchar(50)")
+                        .HasColumnName("phone_number");
+
+                    b.Property<string>("Reason")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("varchar(100)")
+                        .HasColumnName("reason");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .ValueGeneratedOnAdd()
+                        .HasMaxLength(30)
+                        .HasColumnType("varchar(30)")
+                        .HasDefaultValue("UNREAD")
+                        .HasColumnName("status");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("Status", "CreatedAt");
+
+                    b.ToTable("inquiries", (string)null);
+                });
+
+            modelBuilder.Entity("Tripora.DestinationService.Models.Offer", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("char(36)");
+
+                    b.Property<string>("BadgeText")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("varchar(100)");
+
+                    b.Property<string>("Category")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("varchar(50)");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("datetime")
+                        .HasDefaultValueSql("CURRENT_TIMESTAMP");
+
+                    b.Property<int>("DiscountPercentage")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int")
+                        .HasDefaultValue(0);
+
+                    b.Property<DateTime>("EndDate")
+                        .HasColumnType("datetime");
+
+                    b.Property<string>("ImageUrl")
+                        .HasMaxLength(500)
+                        .HasColumnType("varchar(500)");
+
+                    b.Property<bool>("IsActive")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("tinyint(1)")
+                        .HasDefaultValue(true);
+
+                    b.Property<decimal>("OfferPriceLKR")
+                        .HasPrecision(12, 2)
+                        .HasColumnType("decimal(12,2)");
+
+                    b.Property<decimal>("OriginalPriceLKR")
+                        .HasPrecision(12, 2)
+                        .HasColumnType("decimal(12,2)");
+
+                    b.Property<string>("SpecialInclusions")
+                        .HasColumnType("text");
+
+                    b.Property<DateTime>("StartDate")
+                        .HasColumnType("datetime");
+
+                    b.Property<Guid>("TargetId")
+                        .HasColumnType("char(36)");
+
+                    b.Property<string>("Title")
+                        .IsRequired()
+                        .HasMaxLength(255)
+                        .HasColumnType("varchar(255)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("TargetId");
+
+                    b.HasIndex("Category", "IsActive", "StartDate", "EndDate");
+
+                    b.ToTable("Offers", (string)null);
+
+                    b.HasData(
+                        new
+                        {
+                            Id = new Guid("8f1b0001-c82e-11f1-ba97-0a0027000001"),
+                            BadgeText = "15% OFF SEASON SPECIAL",
+                            Category = "Tour",
+                            CreatedAt = new DateTime(2026, 9, 25, 0, 0, 0, 0, DateTimeKind.Utc),
+                            DiscountPercentage = 15,
+                            EndDate = new DateTime(2026, 11, 30, 23, 59, 59, 0, DateTimeKind.Utc),
+                            IsActive = true,
+                            OfferPriceLKR = 30600.00m,
+                            OriginalPriceLKR = 36000.00m,
+                            SpecialInclusions = "Complimentary private sunrise breakfast overlooking Nine Arches Bridge",
+                            StartDate = new DateTime(2026, 10, 1, 0, 0, 0, 0, DateTimeKind.Utc),
+                            TargetId = new Guid("8d6d0828-b81e-11f1-ba97-0a002700000b"),
+                            Title = "Ella Cloud Forest Rail Odyssey - Seasonal Promo"
+                        },
+                        new
+                        {
+                            Id = new Guid("8f1b0002-c82e-11f1-ba97-0a0027000002"),
+                            BadgeText = "20% OFF FLASH DEAL",
+                            Category = "Package",
+                            CreatedAt = new DateTime(2026, 9, 25, 0, 0, 0, 0, DateTimeKind.Utc),
+                            DiscountPercentage = 20,
+                            EndDate = new DateTime(2026, 12, 15, 23, 59, 59, 0, DateTimeKind.Utc),
+                            IsActive = true,
+                            OfferPriceLKR = 25600.00m,
+                            OriginalPriceLKR = 32000.00m,
+                            SpecialInclusions = "Free cinnamon island demonstration and spiced tea tasting",
+                            StartDate = new DateTime(2026, 10, 1, 0, 0, 0, 0, DateTimeKind.Utc),
+                            TargetId = new Guid("7a1b0001-c82e-11f1-ba97-0a0027000001"),
+                            Title = "Bentota Lagoon Day Out - Group Special"
+                        });
+                });
+
             modelBuilder.Entity("Tripora.DestinationService.Models.Tour", b =>
                 {
                     b.Property<Guid>("Id")
@@ -293,6 +447,160 @@ namespace Tripora.DestinationService.Migrations
                             Name = "Amalfi Coastline Cruise",
                             Price = 1750.00m,
                             Status = 0
+                        });
+                });
+
+            modelBuilder.Entity("Tripora.DestinationService.Models.TravelPackage", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("char(36)");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("datetime")
+                        .HasDefaultValueSql("CURRENT_TIMESTAMP");
+
+                    b.Property<string>("Description")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<string>("Destination")
+                        .IsRequired()
+                        .HasMaxLength(255)
+                        .HasColumnType("varchar(255)");
+
+                    b.Property<int>("DurationDays")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int")
+                        .HasDefaultValue(1);
+
+                    b.Property<int>("DurationNights")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int")
+                        .HasDefaultValue(0);
+
+                    b.Property<string>("ImageUrl")
+                        .IsRequired()
+                        .HasMaxLength(500)
+                        .HasColumnType("varchar(500)");
+
+                    b.Property<string>("Inclusions")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<bool>("IsActive")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("tinyint(1)")
+                        .HasDefaultValue(true);
+
+                    b.Property<int>("MaxGuests")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int")
+                        .HasDefaultValue(10);
+
+                    b.Property<int>("MinGuests")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int")
+                        .HasDefaultValue(1);
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(255)
+                        .HasColumnType("varchar(255)");
+
+                    b.Property<string>("PackageType")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("varchar(100)");
+
+                    b.Property<decimal>("PriceLKR")
+                        .HasPrecision(12, 2)
+                        .HasColumnType("decimal(12,2)");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .ValueGeneratedOnAddOrUpdate()
+                        .HasColumnType("datetime")
+                        .HasDefaultValueSql("CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("Destination");
+
+                    b.HasIndex("IsActive");
+
+                    b.HasIndex("PackageType");
+
+                    b.ToTable("TravelPackages", (string)null);
+
+                    b.HasData(
+                        new
+                        {
+                            Id = new Guid("7a1b0001-c82e-11f1-ba97-0a0027000001"),
+                            CreatedAt = new DateTime(2026, 9, 25, 0, 0, 0, 0, DateTimeKind.Utc),
+                            Description = "Private river cruise along Madu Ganga mangrove tunnels, exclusive beach cabana access, and 3-course seafood lunch for couples and families.",
+                            Destination = "Bentota, Southern Province",
+                            DurationDays = 1,
+                            DurationNights = 0,
+                            ImageUrl = "https://images.unsplash.com/photo-1552465011-b4e21bf6e79a?auto=format&fit=crop&w=1200&q=80",
+                            Inclusions = "[\"Private Boat Safari\",\"3-Course Seafood Platter\",\"Beach Cabana Access\",\"Welcome King Coconut\"]",
+                            IsActive = true,
+                            MaxGuests = 6,
+                            MinGuests = 2,
+                            Name = "Bentota Luxury Lagoon & Water Villa Private Day Out",
+                            PackageType = "DayOut",
+                            PriceLKR = 32000.00m
+                        },
+                        new
+                        {
+                            Id = new Guid("7a1b0002-c82e-11f1-ba97-0a0027000002"),
+                            CreatedAt = new DateTime(2026, 9, 25, 0, 0, 0, 0, DateTimeKind.Utc),
+                            Description = "Bespoke romantic getaway including private scenic rail pickup, candlelit cliffside tea plantation dinner, and dawn trek to Little Adams Peak.",
+                            Destination = "Ella, Central Highlands",
+                            DurationDays = 2,
+                            DurationNights = 1,
+                            ImageUrl = "https://images.unsplash.com/photo-1546708973-b339540b5162?auto=format&fit=crop&w=1200&q=80",
+                            Inclusions = "[\"First Class Observation Rail\",\"Private Romantic Dinner\",\"Tea Factory Tasting\",\"Chauffeur Guide\"]",
+                            IsActive = true,
+                            MaxGuests = 2,
+                            MinGuests = 2,
+                            Name = "Ella Cloud Valley Romantic Couple Escape",
+                            PackageType = "CoupleEscape",
+                            PriceLKR = 68000.00m
+                        },
+                        new
+                        {
+                            Id = new Guid("7a1b0003-c82e-11f1-ba97-0a0027000003"),
+                            CreatedAt = new DateTime(2026, 9, 25, 0, 0, 0, 0, DateTimeKind.Utc),
+                            Description = "Action-packed white water rafting, canyoning, jungle barbecue, and twilight river bonfire designed for close circles and friend groups.",
+                            Destination = "Kitulgala, Sabaragamuwa Province",
+                            DurationDays = 1,
+                            DurationNights = 0,
+                            ImageUrl = "https://images.unsplash.com/photo-1518709268805-4e9042af9f23?auto=format&fit=crop&w=1200&q=80",
+                            Inclusions = "[\"Level 4 Rafting Gear \\u0026 Instructor\",\"BBQ Buffet Lunch\",\"Rainforest Trek\",\"GoPro Video Footage\"]",
+                            IsActive = true,
+                            MaxGuests = 10,
+                            MinGuests = 4,
+                            Name = "Kitulgala White Water & Rainforest Friends Expedition",
+                            PackageType = "FriendsHangout",
+                            PriceLKR = 48000.00m
+                        },
+                        new
+                        {
+                            Id = new Guid("7a1b0004-c82e-11f1-ba97-0a0027000004"),
+                            CreatedAt = new DateTime(2026, 9, 25, 0, 0, 0, 0, DateTimeKind.Utc),
+                            Description = "Exclusive 3-day exploration with private 4x4 elephant tracking in Minneriya and sunrise climb to the Sigiriya Citadel with luxury glamping.",
+                            Destination = "Sigiriya & Cultural Triangle",
+                            DurationDays = 3,
+                            DurationNights = 2,
+                            ImageUrl = "https://images.unsplash.com/photo-1586861635167-e5223aadc9fe?auto=format&fit=crop&w=1200&q=80",
+                            Inclusions = "[\"Private 4x4 Safari Jeep\",\"All National Park Passes\",\"Luxury Eco Glamping\",\"Dedicated Naturalist\"]",
+                            IsActive = true,
+                            MaxGuests = 8,
+                            MinGuests = 2,
+                            Name = "Sigiriya & Minneriya Private Heritage Safari Odyssey",
+                            PackageType = "MultiDayTrip",
+                            PriceLKR = 115000.00m
                         });
                 });
 #pragma warning restore 612, 618

@@ -19,6 +19,8 @@ namespace Tripora.BookingService.Models
 
         public Guid? HotelId { get; set; }
 
+        public Guid? OfferId { get; set; }
+
         public Guid ItemId { get; set; }
 
         [MaxLength(50)]

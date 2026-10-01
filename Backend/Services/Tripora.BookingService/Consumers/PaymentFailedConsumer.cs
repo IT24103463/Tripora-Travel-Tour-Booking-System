@@ -5,6 +5,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 using Tripora.BookingService.Clients;
 using Tripora.BookingService.Data;
+using Tripora.BookingService.Models;
 using Tripora.Shared.Events;
 
 namespace Tripora.BookingService.Consumers;
@@ -40,13 +41,14 @@ public class PaymentFailedConsumer : IConsumer<PaymentFailedEvent>
         booking.Status = "Cancelled";
         booking.UpdatedAt = DateTime.UtcNow;
 
-        var itemId = booking.TourId ?? booking.HotelId ?? booking.ItemId;
-        var itemType = booking.TourId.HasValue ? "Tour" : (booking.HotelId.HasValue ? "Hotel" : (booking.ItemType ?? "Tour"));
-        var count = booking.Quantity > 0 ? booking.Quantity : booking.Count;
-        var released = await _destinationClient.ReleaseInventoryAsync(itemId, itemType, count);
-        if (!released)
+        if (booking.BookingType != BookingType.Package)
         {
-            _logger.LogWarning("Failed to release inventory for BookingId {BookingId} on item {ItemId}", booking.Id, itemId);
+            var itemId = booking.TourId ?? booking.HotelId ?? booking.ItemId;
+            var itemType = booking.TourId.HasValue ? "Tour" : (booking.HotelId.HasValue ? "Hotel" : (booking.ItemType ?? "Tour"));
+            var count = booking.Quantity > 0 ? booking.Quantity : booking.Count;
+            var released = await _destinationClient.ReleaseInventoryAsync(itemId, itemType, count);
+            if (!released)
+                _logger.LogWarning("Failed to release inventory for BookingId {BookingId} on item {ItemId}", booking.Id, itemId);
         }
 
         await _context.SaveChangesAsync();

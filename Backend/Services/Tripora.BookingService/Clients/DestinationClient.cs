@@ -1,13 +1,16 @@
 ﻿using System;
 using System.Net;
 using System.Net.Http;
+using System.Net.Http.Json;
 using System.Threading.Tasks;
+using System.Text.Json;
 using Microsoft.Extensions.Logging;
 
 namespace Tripora.BookingService.Clients;
 
 public class DestinationClient : IDestinationClient
 {
+    private static readonly JsonSerializerOptions JsonOptions = new() { PropertyNameCaseInsensitive = true };
     private readonly HttpClient _httpClient;
     private readonly ILogger<DestinationClient> _logger;
 
@@ -17,8 +20,30 @@ public class DestinationClient : IDestinationClient
         _logger = logger;
     }
 
-        public async Task<bool> BookItemAsync(Guid itemId, string itemType, int count)
+    public async Task<PackageBookingInfo?> GetPackageForBookingAsync(Guid packageId)
     {
+        var response = await _httpClient.GetAsync($"api/packages/{packageId}");
+        if (response.StatusCode == HttpStatusCode.NotFound) return null;
+        response.EnsureSuccessStatusCode();
+        return await response.Content.ReadFromJsonAsync<PackageBookingInfo>(JsonOptions);
+    }
+
+    public async Task<OfferBookingInfo?> GetOfferForBookingAsync(Guid offerId)
+    {
+        var response = await _httpClient.GetAsync($"api/offers/{offerId}");
+        if (response.StatusCode == HttpStatusCode.NotFound) return null;
+        response.EnsureSuccessStatusCode();
+        return await response.Content.ReadFromJsonAsync<OfferBookingInfo>(JsonOptions);
+    }
+
+    public async Task<bool> BookItemAsync(Guid itemId, string itemType, int count)
+    {
+        if (string.Equals(itemType, "Package", StringComparison.OrdinalIgnoreCase))
+        {
+            var package = await GetPackageForBookingAsync(itemId);
+            return package is { IsActive: true } && count >= package.MinGuests && count <= package.MaxGuests;
+        }
+
         try
         {
             var segment = itemType.ToLower() == "hotel" ? "hotels" : "tours";
@@ -45,6 +70,12 @@ public class DestinationClient : IDestinationClient
 
     public async Task<bool> CheckAvailabilityAsync(Guid itemId, string itemType, int count)
     {
+        if (string.Equals(itemType, "Package", StringComparison.OrdinalIgnoreCase))
+        {
+            var package = await GetPackageForBookingAsync(itemId);
+            return package is { IsActive: true } && count >= package.MinGuests && count <= package.MaxGuests;
+        }
+
         try
         {
             var segment = itemType.ToLower() == "hotel" ? "hotels" : "tours";
@@ -82,6 +113,9 @@ public class DestinationClient : IDestinationClient
 
     public async Task<bool> CheckItemExistsAsync(Guid itemId, string itemType)
     {
+        if (string.Equals(itemType, "Package", StringComparison.OrdinalIgnoreCase))
+            return await GetPackageForBookingAsync(itemId) is { IsActive: true };
+
         try
         {
             var segment = itemType.ToLower() == "hotel" ? "hotels" : "tours";
@@ -97,6 +131,12 @@ public class DestinationClient : IDestinationClient
 
     public async Task<bool> ReserveInventoryAsync(Guid itemId, string itemType, int count)
     {
+        if (string.Equals(itemType, "Package", StringComparison.OrdinalIgnoreCase))
+        {
+            var package = await GetPackageForBookingAsync(itemId);
+            return package is { IsActive: true } && count >= package.MinGuests && count <= package.MaxGuests;
+        }
+
         try
         {
             var segment = itemType.ToLower() == "hotel" ? "hotels" : "tours";
@@ -122,6 +162,9 @@ public class DestinationClient : IDestinationClient
 
     public async Task<bool> ReleaseInventoryAsync(Guid itemId, string itemType, int count)
     {
+        if (string.Equals(itemType, "Package", StringComparison.OrdinalIgnoreCase))
+            return true;
+
         try
         {
             var segment = itemType.ToLower() == "hotel" ? "hotels" : "tours";
