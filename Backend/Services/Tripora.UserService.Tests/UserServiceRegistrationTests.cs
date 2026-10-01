@@ -45,10 +45,13 @@ public class UserServiceRegistrationTests : IDisposable
             _validationService,
             jwtTokenGenerator,
             jwtOptions,
+            new NoOpEmailVerificationSender(),
+            new SystemClock(),
             NullLogger<UserService.Services.UserService>.Instance);
 
         _controller = new UsersController(
             _userService,
+            new TestGoogleAuthenticationService(),
             NullLogger<UsersController>.Instance);
     }
 

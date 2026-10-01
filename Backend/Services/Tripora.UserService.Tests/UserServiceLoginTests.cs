@@ -62,10 +62,13 @@ public class UserServiceLoginTests : IDisposable
             _validationService,
             _jwtTokenGenerator,
             _jwtOptions,
+            new NoOpEmailVerificationSender(),
+            new SystemClock(),
             NullLogger<UserService.Services.UserService>.Instance);
 
         _controller = new UsersController(
             _userService,
+            new TestGoogleAuthenticationService(),
             NullLogger<UsersController>.Instance);
     }
 
@@ -84,6 +87,7 @@ public class UserServiceLoginTests : IDisposable
             Email = email.Trim().ToLowerInvariant(),
             PasswordHash = _passwordHasher.HashPassword(password),
             Role = "Customer",
+            IsEmailVerified = true,
             CreatedAt = DateTime.UtcNow
         };
         return await _userRepository.CreateAsync(user);
