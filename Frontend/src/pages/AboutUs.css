@@ -1,0 +1,145 @@
+.about-viewport {
+  width: 100%;
+  padding: clamp(18px, 3vw, 42px);
+  color: #f8fafc;
+}
+
+.app-layout.public-about-mode .main-content { width: 100%; max-width: none; min-height: 0; flex: 1; align-items: stretch; padding: 0; overflow: visible; border: 0; border-radius: 0; background: transparent; box-shadow: none; }
+.app-layout.public-about-mode .footer { display: block; }
+
+.about-glass-stage {
+  width: min(100%, 1280px);
+  margin: 0 auto;
+  padding: clamp(24px, 4.2vw, 58px);
+  overflow: hidden;
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  border-radius: 28px;
+  background: rgba(8, 24, 30, 0.09);
+  box-shadow: 0 18px 46px rgba(0, 0, 0, 0.3), inset 0 1px 1px rgba(255, 255, 255, 0.18);
+  backdrop-filter: blur(2px) saturate(106%);
+  -webkit-backdrop-filter: blur(2px) saturate(106%);
+}
+
+.about-hero-section { max-width: 930px; padding: 7px 0 38px; }
+.about-eyebrow, .story-tag { color: #9be4d8; font-size: 10px; font-weight: 800; letter-spacing: 0.17em; }
+.about-main-title { margin: 20px 0 18px; color: #f8fafc; font-family: Georgia, 'Times New Roman', serif; font-size: clamp(38px, 6.2vw, 76px); font-weight: 500; letter-spacing: -0.055em; line-height: 1.04; }
+.text-teal-gradient { background: linear-gradient(100deg, #effffb 0%, #9be4d8 52%, #2dd4bf 100%); background-clip: text; -webkit-text-fill-color: transparent; }
+.about-manifesto { max-width: 770px; margin: 0; color: #d2e0e1; font-size: clamp(14px, 1.35vw, 17px); line-height: 1.85; }
+
+.about-pillars-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 16px; }
+.about-pillar-card { min-height: 255px; padding: 22px 22px 24px; border: 1px solid rgba(255, 255, 255, 0.13); border-radius: 17px; background: rgba(9, 31, 37, 0.2); box-shadow: 0 10px 28px rgba(0, 0, 0, 0.14), inset 0 1px rgba(255, 255, 255, 0.07); transition: border-color 180ms ease, background 180ms ease, transform 180ms ease; }
+.about-pillar-card:hover { transform: translateY(-3px); border-color: rgba(20, 184, 166, 0.4); background: rgba(9, 35, 41, 0.34); }
+.pillar-card-top { display: flex; align-items: center; justify-content: space-between; margin-bottom: 23px; }
+.pillar-index { color: #9be4d8; font-family: Georgia, 'Times New Roman', serif; font-size: 13px; letter-spacing: 0.08em; }
+.pillar-icon { display: grid; width: 42px; height: 42px; place-items: center; border: 1px solid rgba(20, 184, 166, 0.26); border-radius: 13px; background: rgba(20, 184, 166, 0.1); color: #2dd4bf; }
+.pillar-icon svg { width: 22px; height: 22px; }
+.about-pillar-card h2 { margin: 0 0 10px; color: #f4faf9; font-family: Georgia, 'Times New Roman', serif; font-size: 19px; font-weight: 600; letter-spacing: -0.02em; line-height: 1.25; }
+.about-pillar-card p { margin: 0; color: #b8cbce; font-size: 12px; line-height: 1.75; }
+
+.about-metrics-strip { display: flex; align-items: center; justify-content: space-around; gap: 18px; margin: 20px 0 0; padding: 23px 20px; border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 15px; background: rgba(6, 22, 27, 0.2); }
+.metric-box { display: flex; flex: 1; flex-direction: column; align-items: center; gap: 5px; text-align: center; }
+.metric-number { color: #9be4d8; font-family: Georgia, 'Times New Roman', serif; font-size: clamp(24px, 3vw, 34px); line-height: 1; }
+.metric-label { color: #b4c6ca; font-size: 10px; }
+.metric-divider { width: 1px; height: 35px; background: rgba(255, 255, 255, 0.13); }
+
+.about-story-split { display: grid; grid-template-columns: minmax(170px, 0.72fr) minmax(0, 1.8fr); gap: clamp(26px, 6vw, 90px); padding: 47px 0 43px; }
+.story-kicker-block { display: flex; flex-direction: column; align-items: flex-start; justify-content: space-between; }
+.story-tag { font-size: 9px; }
+.story-ornament { color: rgba(155, 228, 216, 0.17); font-family: Georgia, 'Times New Roman', serif; font-size: clamp(88px, 14vw, 164px); font-style: italic; line-height: 0.85; }
+.story-content h2, .about-closing-panel h2 { margin: 0 0 15px; color: #f5faf9; font-family: Georgia, 'Times New Roman', serif; font-size: clamp(28px, 4vw, 43px); font-weight: 500; letter-spacing: -0.04em; line-height: 1.13; }
+.story-content p { max-width: 750px; margin: 0 0 13px; color: #c1d0d2; font-size: 13px; line-height: 1.85; }
+
+.about-closing-panel { display: flex; align-items: center; justify-content: space-between; gap: 22px; padding: 24px 26px; border: 1px solid rgba(20, 184, 166, 0.24); border-radius: 16px; background: linear-gradient(105deg, rgba(20, 184, 166, 0.12), rgba(9, 29, 36, 0.22) 70%); }
+.about-closing-panel h2 { margin: 8px 0 0; font-size: clamp(23px, 3vw, 32px); }
+.about-explore-button { display: inline-flex; flex: 0 0 auto; align-items: center; gap: 12px; padding: 12px 16px; border: 1px solid rgba(20, 184, 166, 0.5); border-radius: 9px; background: #14b8a6; color: #062522; font-size: 11px; font-weight: 800; cursor: pointer; transition: background 180ms ease, transform 180ms ease; }
+.about-explore-button:hover { transform: translateY(-1px); background: #2dd4bf; }
+.about-explore-button span { font-size: 15px; }
+
+@media (max-width: 900px) {
+  .about-pillars-grid { grid-template-columns: 1fr 1fr; }
+  .about-pillar-card:last-child { grid-column: 1 / -1; min-height: auto; }
+}
+
+@media (max-width: 620px) {
+  .about-viewport { padding: 13px 10px; }
+  .about-glass-stage { padding: 25px 17px; border-radius: 19px; }
+  .about-hero-section { padding-bottom: 25px; }
+  .about-main-title { margin: 16px 0 13px; font-size: clamp(36px, 11vw, 54px); }
+  .about-pillars-grid { grid-template-columns: 1fr; gap: 11px; }
+  .about-pillar-card, .about-pillar-card:last-child { grid-column: auto; min-height: auto; padding: 19px; }
+  .about-metrics-strip { flex-wrap: wrap; justify-content: center; padding: 20px 11px; }
+  .metric-box { min-width: 38%; }
+  .metric-divider { display: none; }
+  .about-story-split { grid-template-columns: 1fr; gap: 14px; padding: 35px 0; }
+  .story-ornament { display: none; }
+  .about-closing-panel { align-items: flex-start; flex-direction: column; padding: 20px; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .about-pillar-card, .about-explore-button { transition: none; }
+  .about-pillar-card:hover, .about-explore-button:hover { transform: none; }
+}
+
+/* Main About Us glass surfaces */
+.about-glass-stage,
+.about-search-style-bar,
+.about-footer-capsule {
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.05) 0%, rgba(8, 14, 18, 0.70) 30%, rgba(6, 12, 16, 0.76) 100%) !important;
+  backdrop-filter: blur(12px) !important;
+  -webkit-backdrop-filter: blur(12px) !important;
+  border: 1px solid rgba(255, 255, 255, 0.14) !important;
+  border-top: 1px solid rgba(255, 255, 255, 0.22) !important;
+  border-radius: 22px;
+  box-shadow: inset 0 1px 1px rgba(255, 255, 255, 0.15), 0 20px 48px rgba(0, 0, 0, 0.55);
+}
+
+.sub-pill-item {
+  background: rgba(6, 18, 24, 0.68) !important;
+  backdrop-filter: blur(14px) !important;
+  -webkit-backdrop-filter: blur(14px) !important;
+  border: 1px solid rgba(255, 255, 255, 0.14) !important;
+}
+
+.about-tour-card,
+.about-pillar-card {
+  background: rgba(7, 24, 32, 0.75) !important;
+  backdrop-filter: blur(14px) !important;
+  -webkit-backdrop-filter: blur(14px) !important;
+  border: 1px solid rgba(255, 255, 255, 0.12) !important;
+}
+
+/* Lighter, translucent obsidian finish for the three pillar cards */
+.about-pillar-card {
+  position: relative;
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.04) 0%, rgba(10, 14, 18, 0.72) 25%, rgba(7, 10, 14, 0.78) 100%) !important;
+  backdrop-filter: blur(14px) !important;
+  -webkit-backdrop-filter: blur(14px) !important;
+  border: 1px solid rgba(255, 255, 255, 0.12) !important;
+  border-top: 1px solid rgba(255, 255, 255, 0.20) !important;
+  border-radius: 20px;
+  padding: 32px 28px;
+  display: flex;
+  flex-direction: column;
+  box-shadow: inset 0 1px 1px rgba(255, 255, 255, 0.12), 0 16px 36px rgba(0, 0, 0, 0.5);
+  transition: all 0.25s ease;
+}
+
+.about-pillar-card:hover {
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.06) 0%, rgba(12, 18, 24, 0.80) 25%, rgba(8, 12, 16, 0.86) 100%) !important;
+  border-color: rgba(255, 255, 255, 0.18) !important;
+  transform: translateY(-3px);
+  box-shadow: 0 16px 36px rgba(0, 0, 0, 0.45);
+}
+
+.about-pillar-card .pillar-icon,
+.about-pillar-card .icon-box {
+  width: 40px;
+  height: 40px;
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.04) !important;
+  border: 1px solid rgba(255, 255, 255, 0.1) !important;
+  color: #cbd5e1 !important;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}

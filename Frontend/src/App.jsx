@@ -1,14 +1,50 @@
 import { useState, useEffect } from 'react';
-import { Routes, Route } from 'react-router-dom';
+import { Routes, Route, Navigate, Link, NavLink, useLocation, useNavigate } from 'react-router-dom';
 import RegisterForm from './components/RegisterForm';
 import LoginForm from './components/LoginForm';
-import CustomerDashboard from './components/CustomerDashboard';
+import CustomerHome from './pages/CustomerHome';
+import BookingHistory from './pages/BookingHistory';
 import ErrorBoundary from './components/ErrorBoundary';
 import ProfileView from './components/ProfileView';
 import TourDisplay from './components/TourDisplay';
 import DestinationManagement from './components/DestinationManagement';
 import PaymentPage from './pages/PaymentPage';
+import AdminDashboard from './pages/admin/AdminDashboard';
+import AdminLanding from './pages/AdminLanding';
+import AboutUs from './pages/AboutUs';
+import Contact from './pages/Contact';
+import TravelPackages from './pages/TravelPackages';
+import Offers from './pages/Offers';
+import EmailVerificationModal from './components/EmailVerificationModal';
 import './App.css';
+
+const protectedViews = {
+  '/destinations': 'tours',
+  '/dashboard': 'dashboard',
+  '/bookings': 'booking-history',
+  '/profile': 'profile',
+  '/admin': 'admin',
+};
+
+const getProtectedView = (pathname) => protectedViews[pathname.replace(/\/$/, '')] || null;
+
+const sanitizeRedirectDestination = (candidate) => {
+  const rawDestination = typeof candidate === 'string'
+    ? candidate
+    : candidate && typeof candidate.pathname === 'string'
+      ? `${candidate.pathname}${candidate.search || ''}${candidate.hash || ''}`
+      : '';
+
+  if (!rawDestination.startsWith('/') || rawDestination.startsWith('//') || rawDestination.includes('\\')) return null;
+
+  try {
+    const destination = new URL(rawDestination, window.location.origin);
+    if (destination.origin !== window.location.origin || ['/login', '/register'].includes(destination.pathname.replace(/\/$/, ''))) return null;
+    return `${destination.pathname}${destination.search}${destination.hash}`;
+  } catch {
+    return null;
+  }
+};
 
 // Helper function to decode JWT and check expiration
 export const isTokenExpired = (token) => {
@@ -31,7 +67,33 @@ export const isTokenExpired = (token) => {
   }
 };
 
+export const isAdminUser = (user) => String(user?.role || '').toLowerCase() === 'admin';
+
+export const getLoginDestination = (user) => {
+  if (isAdminUser(user)) return '/admin';
+  return '/';
+};
+
+function ProtectedRoute({ isAuthenticated, allowUnauthenticated = false, children }) {
+  const location = useLocation();
+
+  if (isAuthenticated || allowUnauthenticated) return children;
+
+  return <Navigate to="/login" replace state={{ from: location }} />;
+}
+
+function PageTransition({ transitionKey, className = 'page-transition-container', children }) {
+  return (
+    <>
+      <div className={className} key={`page-${transitionKey}`}>{children}</div>
+      <div className="page-mist-veil" key={`mist-${transitionKey}`} aria-hidden="true" />
+    </>
+  );
+}
+
 function App() {
+  const location = useLocation();
+  const navigate = useNavigate();
   const [authToken, setAuthToken] = useState(() => {
     const token = localStorage.getItem('tripora_token');
     // Check if token is expired on initial load
@@ -52,11 +114,35 @@ function App() {
     }
   });
 
-  const [activeTab, setActiveTab] = useState('login'); // 'login' | 'register'
-  const [showAuth, setShowAuth] = useState(false);
+  const [activeTab, setActiveTab] = useState(() => location.pathname === '/register' ? 'register' : 'login'); // 'login' | 'register'
+  const [showAuth, setShowAuth] = useState(() => ['/login', '/register'].includes(location.pathname) || Boolean(getProtectedView(location.pathname)));
   const [currentView, setCurrentView] = useState('dashboard'); // 'dashboard' | 'profile' | 'tours' | 'destination-management'
   const [sessionExpired, setSessionExpired] = useState(false);
   const [profileMenuOpen, setProfileMenuOpen] = useState(false);
+  const [verificationEmail, setVerificationEmail] = useState(null);
+  const [verificationOptions, setVerificationOptions] = useState({ resetLogin: false, initialResendAfter: 0, autoResend: false });
+  const [loginFormVersion, setLoginFormVersion] = useState(0);
+
+  const handleProtectedNavigation = (targetView, path) => {
+    if (!authUser || !authToken) {
+      const destination = path || targetView;
+      sessionStorage.setItem('redirectAfterLogin', destination);
+      setActiveTab('login');
+      setShowAuth(true);
+      navigate('/login', { state: { from: destination } });
+      return;
+    }
+    if (path) navigate(path);
+    else setCurrentView(targetView);
+  };
+
+  const handleBrandHomeNavigation = () => {
+    setProfileMenuOpen(false);
+    setCurrentView('dashboard');
+    setShowAuth(false);
+    sessionStorage.removeItem('redirectAfterLogin');
+    navigate(authUser && authToken && isAdminUser(authUser) ? '/admin' : '/', { replace: true });
+  };
 
   const handleLoginSuccess = (token, user) => {
     window.scrollTo({ top: 0, left: 0, behavior: 'instant' });
@@ -67,6 +153,11 @@ function App() {
     localStorage.setItem('tripora_token', token);
     localStorage.setItem('tripora_user', JSON.stringify(user));
     setSessionExpired(false);
+    const requestedPath = sanitizeRedirectDestination(sessionStorage.getItem('redirectAfterLogin'))
+      || sanitizeRedirectDestination(location.state?.from);
+    sessionStorage.removeItem('redirectAfterLogin');
+    const destination = getLoginDestination(user, requestedPath);
+    navigate(destination, { replace: true });
   };
 
   const handleLogout = () => {
@@ -78,6 +169,31 @@ function App() {
     setActiveTab('login');
     setSessionExpired(false);
     setProfileMenuOpen(false);
+    navigate('/', { replace: true });
+  };
+
+  const handleVerificationRequired = (email, options = {}) => {
+    setVerificationEmail(email);
+    setVerificationOptions({
+      resetLogin: Boolean(options.resetLogin),
+      initialResendAfter: Number(options.initialResendAfter) || 0,
+      autoResend: Boolean(options.autoResend),
+    });
+    setActiveTab('login');
+    setShowAuth(true);
+  };
+
+  const handleCloseVerification = () => {
+    setVerificationEmail(null);
+    if (verificationOptions.resetLogin) setLoginFormVersion((version) => version + 1);
+    setVerificationOptions({ resetLogin: false, initialResendAfter: 0, autoResend: false });
+    setActiveTab('login');
+    setShowAuth(true);
+  };
+
+  const handleEmailVerified = (session) => {
+    handleCloseVerification();
+    handleLoginSuccess(session.token, session.user);
   };
 
   const handleSessionExpired = () => {
@@ -109,33 +225,97 @@ function App() {
     return () => clearInterval(interval);
   }, [authToken]);
 
+  useEffect(() => {
+    if (['/about', '/contact', '/packages', '/offers'].includes(location.pathname)) {
+      setShowAuth(false);
+      setProfileMenuOpen(false);
+      return;
+    }
+    if (location.pathname === '/' && authUser && authToken && !isAdminUser(authUser)) {
+      setCurrentView('dashboard');
+      setShowAuth(false);
+      return;
+    }
+    const targetView = getProtectedView(location.pathname);
+    if (!targetView) return;
+    if (!authUser || !authToken) {
+      sessionStorage.setItem('redirectAfterLogin', location.pathname);
+      setActiveTab('login');
+      setShowAuth(true);
+      navigate('/login', { replace: true, state: { from: location.pathname } });
+      return;
+    }
+    setCurrentView(targetView);
+    setShowAuth(false);
+  }, [location.pathname, authUser, authToken, navigate]);
+
+  useEffect(() => {
+    if (['/login', '/register'].includes(location.pathname) && (!authUser || !authToken)) {
+      setActiveTab(location.pathname === '/register' ? 'register' : 'login');
+      setShowAuth(true);
+    }
+  }, [location.pathname, authUser, authToken]);
+
+  const isAboutPage = location.pathname === '/about';
+  const isContactPage = location.pathname === '/contact';
+  const isDestinationsPage = location.pathname === '/destinations';
+  const isTravelPackagesPage = location.pathname === '/packages';
+  const isOffersPage = location.pathname === '/offers';
+  const isPublicInfoPage = isAboutPage || isContactPage || isTravelPackagesPage || isOffersPage;
+  const isAuthenticated = Boolean(authUser && authToken);
+  const isPublicRoute = ['/', '/login', '/register'].includes(location.pathname);
+  const isCustomerHome = Boolean(!isPublicInfoPage && authUser && authToken && !isAdminUser(authUser) && ['dashboard', 'booking-history'].includes(currentView));
+  const transitionKey = `${location.pathname}:${currentView}:${activeTab}`;
+  const transitionClassName = location.pathname === '/'
+    ? 'page-transition-container landing-page-entrance'
+    : currentView === 'tours'
+      ? 'page-transition-container destinations-transition-wrapper'
+      : 'page-transition-container';
+
+  useEffect(() => {
+    document.body.classList.toggle('tripora-customer-canvas', isCustomerHome);
+    return () => document.body.classList.remove('tripora-customer-canvas');
+  }, [isCustomerHome]);
+
   return (
     <Routes>
-      <Route path="/payment/:bookingId" element={<PaymentPage />} />
+      <Route path="/payment/:bookingId" element={<ProtectedRoute isAuthenticated={isAuthenticated}><PageTransition transitionKey={location.pathname}><PaymentPage /></PageTransition></ProtectedRoute>} />
+      <Route path="/admin" element={isAdminUser(authUser) && authToken ? <PageTransition transitionKey={transitionKey} className={transitionClassName}><AdminLanding /></PageTransition> : authUser && authToken ? <Navigate to="/" replace /> : <Navigate to="/login" replace state={{ from: '/admin' }} />} />
+      <Route path="/admin/dashboard" element={isAdminUser(authUser) && authToken ? <PageTransition transitionKey={transitionKey} className={transitionClassName}><AdminDashboard onLogout={handleLogout} user={authUser} /></PageTransition> : authUser && authToken ? <Navigate to="/" replace /> : <Navigate to="/login" replace state={{ from: '/admin/dashboard' }} />} />
       <Route
         path="*"
         element={
-          <div className={`app-layout ${!authUser && !showAuth ? 'landing-mode' : ''} ${!authUser && showAuth ? 'auth-mode' : ''} ${authUser ? 'authenticated-mode' : ''}`}>
+          isAdminUser(authUser) && authToken && !isTravelPackagesPage && !isOffersPage ? <Navigate to="/admin" replace /> :
+          <ProtectedRoute isAuthenticated={isAuthenticated} allowUnauthenticated={isPublicRoute}>
+          <PageTransition transitionKey={transitionKey} className={transitionClassName}>
+          <div className={`app-layout ${!authUser && !showAuth ? 'landing-mode' : ''} ${!authUser && showAuth ? 'auth-mode' : ''} ${authUser ? 'authenticated-mode' : ''} ${isCustomerHome ? 'customer-member-mode' : ''} ${isAboutPage ? 'public-about-mode' : ''} ${isContactPage ? 'public-contact-mode' : ''} ${isDestinationsPage ? 'public-destinations-mode' : ''} ${isTravelPackagesPage ? 'public-packages-mode' : ''} ${isOffersPage ? 'public-offers-mode' : ''}`}>
       {/* Navigation Header */}
       <header className="navbar">
         <div className="nav-container">
-          <div className="logo-group">
-            <button
-              type="button"
-              className="brand-logo brand-home-button"
-              onClick={() => setShowAuth(false)}
-              aria-label="Return to Tripora home"
-            >
-              <span className="brand-mark">✈</span> Tripora
-            </button>
-            <span className="brand-tag">Travel & Tours</span>
-          </div>
+            <div className="logo-group">
+              <Link
+                className="tripora-brand-lockup"
+                onClick={handleBrandHomeNavigation}
+                to="/"
+                aria-label="Return to Tripora home"
+              >
+                <span className="brand-icon-circle" aria-hidden="true">
+                  <svg className="brand-plane-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M17.8 19.2 16 11l3.5-3.5C21 6 21.5 4 21 3c-1-.5-3 0-4.5 1.5L13 8 4.8 6.2c-.5-.1-.9.1-1.1.5l-.3.5c-.2.5-.1 1 .3 1.3L9 12l-2 3H4l-1 1 3 2 2 3 1-1v-3l3-2 3.5 5.3c.3.4.8.5 1.3.3l.5-.3c.4-.2.6-.6.5-1.1z" />
+                  </svg>
+                </span>
+                <span className="brand-text-group">
+                  <span className="brand-main-name">Tripora</span>
+                  <span className="brand-sub-name">Travel &amp; Tours</span>
+                </span>
+              </Link>
+            </div>
           <nav className="nav-links">
-            <a href="#destinations" onClick={(e) => { if (authUser) { e.preventDefault(); setCurrentView('tours'); } }}>Destinations</a>
-            <a href="#tours" onClick={(e) => { if (authUser) { e.preventDefault(); setCurrentView('tours'); } }}>Travel Packages</a>
-            <a href="#offers">Offers</a>
-            <a href="#support">Contact</a>
-            <a href="#about">About Us</a>
+            <NavLink to="/destinations" end className={({ isActive }) => `nav-link${isActive ? ' active' : ''}`} onClick={(event) => { event.preventDefault(); handleProtectedNavigation('tours', '/destinations'); }}>Destinations</NavLink>
+            <NavLink to="/packages" end className={({ isActive }) => `nav-link${isActive ? ' active' : ''}`} onClick={(event) => { event.preventDefault(); handleProtectedNavigation('packages', '/packages'); setProfileMenuOpen(false); }}>Travel Packages</NavLink>
+            <NavLink to="/offers" end className={({ isActive }) => `nav-link${isActive ? ' active' : ''}`} onClick={(event) => { event.preventDefault(); handleProtectedNavigation('offers', '/offers'); setProfileMenuOpen(false); }}>Offers</NavLink>
+            <NavLink to="/contact" end className={({ isActive }) => `nav-link${isActive ? ' active' : ''}`} onClick={(event) => { event.preventDefault(); handleProtectedNavigation('contact', '/contact'); setProfileMenuOpen(false); }}>Contact</NavLink>
+            <NavLink to="/about" end className={({ isActive }) => `nav-link${isActive ? ' active' : ''}`} onClick={(event) => { event.preventDefault(); handleProtectedNavigation('about', '/about'); setProfileMenuOpen(false); }}>About Us</NavLink>
           </nav>
           <div className="nav-actions">
             {authUser ? (
@@ -156,26 +336,30 @@ function App() {
                       <strong>{authUser.fullName}</strong>
                       <span>{authUser.role}</span>
                     </div>
-                    <button type="button" className={`profile-menu-item ${currentView === 'dashboard' ? 'active' : ''}`} onClick={() => { setCurrentView('dashboard'); setProfileMenuOpen(false); }} role="menuitem">
-                      Dashboard
-                    </button>
-                    <button type="button" className={`profile-menu-item ${currentView === 'profile' ? 'active' : ''}`} onClick={() => { setCurrentView('profile'); setProfileMenuOpen(false); }} role="menuitem">
+                    <div className="dropdown-menu-items">
+                    {!isAdminUser(authUser) && <>
+                    <button type="button" className={`profile-menu-item ${location.pathname === '/profile' ? 'active' : ''}`} onClick={() => { handleProtectedNavigation('profile', '/profile'); setProfileMenuOpen(false); }} role="menuitem">
                       Profile
                     </button>
+                    <button type="button" className={`profile-menu-item ${location.pathname === '/bookings' ? 'active' : ''}`} onClick={() => { handleProtectedNavigation('dashboard', '/bookings'); setProfileMenuOpen(false); }} role="menuitem" aria-label="Booking History">
+                      History
+                    </button>
 
-                    {authUser?.role === 'Admin' && (
+                    {isAdminUser(authUser) && (
                       <button type="button" className={`profile-menu-item ${currentView === 'destination-management' ? 'active' : ''}`} onClick={() => { setCurrentView('destination-management'); setProfileMenuOpen(false); }} role="menuitem">
                         Manage Destinations
                       </button>
                     )}
+                    </>}
                     <button type="button" className="profile-menu-item sign-out" onClick={handleLogout} role="menuitem">
                       Sign Out
                     </button>
+                    </div>
                   </div>
                 )}
               </div>
             ) : (
-              <button type="button" className="btn-book" onClick={() => { setActiveTab('login'); setShowAuth(true); }}>
+              <button type="button" className="btn-book" onClick={() => handleProtectedNavigation('dashboard', '/dashboard')}>
                 Book Now
               </button>
             )}
@@ -197,7 +381,7 @@ function App() {
           </div>
         )}
 
-        {!authUser && !showAuth ? (          <section className="landing-hero" id="about">
+        {!isPublicInfoPage && !isCustomerHome && !isDestinationsPage && (!authUser && !showAuth ? (          <section className="landing-hero" id="about">
             <div className="landing-copy">
               <span className="hero-pill">TRIPORA / CURATED TRAVEL</span>
               <h1 className="hero-headline">Unforgettable<br />Travel Moments<br /><em>with Tripora</em></h1>
@@ -211,17 +395,20 @@ function App() {
             <h1 className="hero-headline">{authUser ? 'Your Tripora Travel Portal' : 'Plan your next journey'}</h1>
             <p className="hero-subhead">{authUser ? 'Access your authenticated customer perks, manage bookings, and explore protected member-only itineraries.' : 'Sign in to your account or register to unlock exclusive travel packages and manage your journeys.'}</p>
           </div>
-        )}
+        ))}
 
         {/* Dynamic Authenticated / Tab View */}
-        {authUser && authToken ? (
+        {isAboutPage ? <AboutUs /> : isContactPage ? <Contact /> : isTravelPackagesPage ? <TravelPackages /> : isOffersPage ? <Offers /> : authUser && authToken ? (
           <>
             {currentView === 'dashboard' && (
-              <CustomerDashboard 
+              <CustomerHome
                 user={authUser} 
-                onNavigate={setCurrentView}
+                onNavigate={(view) => view === 'tours'
+                  ? handleProtectedNavigation('tours', '/destinations')
+                  : setCurrentView(view)}
               />
             )}
+            {currentView === 'booking-history' && <BookingHistory token={authToken} />}
             {currentView === 'profile' && (
               <ProfileView 
                 token={authToken}
@@ -261,19 +448,22 @@ function App() {
 
             {activeTab === 'login' ? (
               <LoginForm 
+                key={loginFormVersion}
                 onLoginSuccess={handleLoginSuccess}
                 onSwitchToRegister={() => setActiveTab('register')}
+                onVerificationRequired={handleVerificationRequired}
               />
             ) : (
               <RegisterForm 
                 onSwitchToLogin={() => setActiveTab('login')}
+                onVerificationRequired={handleVerificationRequired}
               />
             )}
           </div>
         ) : null}
 
         {/* Trust Badges */}
-        {(!authUser && showAuth || authUser) && <section className="trust-features">
+        {(!isPublicInfoPage && !isCustomerHome && !isDestinationsPage && (!authUser && showAuth || authUser)) && <section className="trust-features">
           <div className="feature-item">
             <span className="feature-icon">01</span>
             <div className="feature-text">
@@ -297,6 +487,15 @@ function App() {
           </div>
         </section>}
       </main>
+      {verificationEmail && (
+        <EmailVerificationModal
+          email={verificationEmail}
+          initialResendAfter={verificationOptions.initialResendAfter}
+          autoResend={verificationOptions.autoResend}
+          onClose={handleCloseVerification}
+          onVerified={handleEmailVerified}
+        />
+      )}
       </ErrorBoundary>
 
       {/* Footer */}
@@ -304,6 +503,8 @@ function App() {
         <p>© 2026 Tripora Travel & Tour Booking System. All rights reserved.</p>
       </footer>
     </div>
+          </PageTransition>
+          </ProtectedRoute>
         }
       />
     </Routes>

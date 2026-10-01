@@ -1,10 +1,15 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import './TourDisplay.css';
+import './UnifiedSearchBar.css';
+import '../pages/Destinations.css';
 import EditDestinationModal from './EditDestinationModal';
+import BookingAction from './BookingAction';
 import { API_BASE_URL } from '../apiConfig';
+import { formatLKR } from '../utils/currency';
+import { getBookingHistoryOwner, saveBookingHistory } from '../services/bookingHistory';
 import {
-  Search, MapPin, DollarSign, X, Clock, Users, Ticket, Tag,
+  Search, X, Clock, Users, Ticket, Tag,
   Sparkles, BedSingle, Star, AlertTriangle, Briefcase,
   Hotel as HotelIcon, RefreshCw, CalendarDays, CheckCircle, Loader
 } from 'lucide-react';
@@ -14,13 +19,67 @@ const API_ACTIVE_TOURS     = `${API_BASE}/api/tours/active`;
 const API_HOTELS           = `${API_BASE}/api/hotels`;
 const API_BOOKING          = `${API_BASE}/api/bookings`;
 
+// Safely normalize amenities supplied by different API/storage formats.
+export const parseAmenities = (raw) => {
+  if (!raw) return [];
+
+  if (Array.isArray(raw)) {
+    return raw
+      .map((item) => String(item).replace(/[\[\]"]/g, '').trim())
+      .filter(Boolean);
+  }
+
+  if (typeof raw === 'string') {
+    try {
+      const parsed = JSON.parse(raw);
+      if (Array.isArray(parsed)) {
+        return parsed.map((item) => String(item).trim()).filter(Boolean);
+      }
+    } catch {
+      return raw
+        .replace(/[\[\]"]/g, '')
+        .split(',')
+        .map((item) => item.trim())
+        .filter(Boolean);
+    }
+  }
+
+  return [];
+};
+
+export const formatLocation = (raw) => String(raw || 'Sri Lanka')
+  .toLocaleLowerCase()
+  .replace(/(^|[\s,/-])(\p{L})/gu, (_, prefix, character) => `${prefix}${character.toLocaleUpperCase()}`);
+
+const toBookingContext = (destination, bookingType) => {
+  const pricePerPerson = bookingType === 'Hotel'
+    ? destination.pricePerNight ?? destination.price ?? destination.pricePerPerson
+    : destination.price ?? destination.pricePerPerson;
+  const duration = destination.duration ?? destination.durationDays;
+
+  return {
+    ...destination,
+    destinationId: destination.id,
+    title: destination.title || destination.name,
+    name: destination.name || destination.title,
+    pricePerPerson,
+    price: destination.price ?? pricePerPerson,
+    priceLKR: destination.priceLKR ?? pricePerPerson,
+    imageUrl: destination.imageUrl,
+    duration,
+    durationDays: destination.durationDays ?? duration,
+    availableDates: destination.availableDates,
+    bookingType,
+  };
+};
+
 function Toast({ toasts, onDismiss }) {
   return (
     <div className="toast-stack" aria-live="polite">
       {toasts.map(t => (
         <div key={t.id} className={`toast toast-${t.type}`}>
           <span className="toast-msg">{t.message}</span>
-          <button type="button" className="toast-close" onClick={() => onDismiss(t.id)} aria-label="Dismiss">✕</button>
+          <button type="button" className="toast-close" onClick={() => onDismiss(t.id)} aria-label="Dismiss">âœ•</button>
         </div>
       ))}
     </div>
@@ -42,7 +101,9 @@ export default function TourDisplay({ token, user, onRequireAuth }) {
   const [loading, setLoading]         = useState(true);
   const [error,   setError]           = useState(null);
   const [selectedItem, setSelectedItem] = useState(null);
+  const [bookingItem, setBookingItem] = useState(null);
   const isSoldOut = selectedItem ? ((selectedItem.availableSlots ?? selectedItem.availableRooms) <= 0 || selectedItem.status === 1 || selectedItem.status === 2) : false;
+  const selectedAmenities = activeTab === 'hotels' ? parseAmenities(selectedItem?.amenities) : [];
 
   // Filters
   const [searchTerm,     setSearchTerm]     = useState('');
@@ -118,12 +179,6 @@ export default function TourDisplay({ token, user, onRequireAuth }) {
       setError('Unable to connect to the hotel service. Please check your connection.');
       pushToast('Network error: Unable to connect to the hotel service.', 'error');
     } finally { setLoading(false); }
-  };
-
-  const handleItemClick = (item) => {
-    setSelectedItem(item);
-    setShowBookingForm(false);
-    setBookingNotification(null);
   };
 
   const handleCloseModal = () => {
@@ -367,6 +422,38 @@ export default function TourDisplay({ token, user, onRequireAuth }) {
       totalAmount:    Number(finalTotalAmount),
     };
 
+    const toDateOnly = (value) => value ? new Date(value).toISOString().slice(0, 10) : '';
+    const startDate = toDateOnly(isTour ? finalTravelDate : finalCheckIn);
+    let endDate = toDateOnly(isTour ? finalTravelDate : finalCheckOut);
+    if (isTour && startDate) {
+      const [year, month, day] = startDate.split('-').map(Number);
+      const durationDays = Math.max(1, Number.parseInt(selectedItem?.durationDays || selectedItem?.duration, 10) || 1);
+      const end = new Date(Date.UTC(year, month - 1, day + durationDays - 1));
+      endDate = end.toISOString().slice(0, 10);
+    }
+    const displayDate = (value) => value
+      ? new Date(`${value}T12:00:00`).toLocaleDateString('en-LK', { day: '2-digit', month: 'short', year: 'numeric' })
+      : '';
+    const tourNights = Math.max(1, Number.parseInt(selectedItem?.durationDays || selectedItem?.duration, 10) - 1 || 1);
+    const persistHistoryRecord = (bookingId, item = selectedItem) => {
+      if (!bookingId || bookingId === 'pending') return;
+      const nights = isTour ? tourNights : Math.max(1, Math.ceil((parseDateInput(checkOut) - parseDateInput(checkIn)) / 86400000));
+      saveBookingHistory(getBookingHistoryOwner(user), {
+        id: String(bookingId),
+        packageName: item?.name || item?.tourName || item?.hotelName || 'Tripora Reservation',
+        destination: item?.destination || item?.location || 'Sri Lanka',
+        hotel: isTour ? (item?.hotelName || item?.hotel || 'Tour package') : (item?.name || item?.hotelName || 'Hotel stay'),
+        startDate,
+        endDate,
+        dates: `${displayDate(startDate)}${endDate ? ` - ${displayDate(endDate)}` : ''}`,
+        duration: isTour ? `${nights + 1} Days / ${nights} Nights` : `${nights} Nights`,
+        guests: `${bookingQty} ${bookingQty === 1 ? 'Guest' : 'Guests'}`,
+        totalAmountLKR: Number(payload.totalAmount) || 0,
+        bookingDate: new Date().toLocaleDateString('en-LK', { day: '2-digit', month: 'short', year: 'numeric' }),
+        imageUrl: item?.imageUrl || item?.image || '',
+      });
+    };
+
     setBookingLoading(true);
     try {
       const res = await fetch(API_BOOKING, {
@@ -390,6 +477,7 @@ export default function TourDisplay({ token, user, onRequireAuth }) {
 
         const selectedTour = selectedItem;
         const newBookingId = data?.bookingId || data?.data?.id || data?.data?.Id || data?.id;
+        persistHistoryRecord(newBookingId, selectedTour);
 
         // Clean up temporary messages and reset form state
         setBookingNotification(null);
@@ -448,6 +536,7 @@ export default function TourDisplay({ token, user, onRequireAuth }) {
             setSelectedItem(prev => prev ? { ...prev, [remainingField]: Math.max(0, (prev[remainingField] ?? 0) - bookingQty) } : prev);
 
             const fallbackBookingId = data?.bookingId || data?.data?.id || selectedTour?.id || 'pending';
+            persistHistoryRecord(fallbackBookingId, selectedTour);
             setBookingNotification(null);
             setShowBookingForm(false);
             setSelectedItem(null);
@@ -492,6 +581,7 @@ export default function TourDisplay({ token, user, onRequireAuth }) {
         setSelectedItem(prev => prev ? { ...prev, [remainingField]: Math.max(0, (prev[remainingField] ?? 0) - bookingQty) } : prev);
 
         const fallbackBookingId = selectedTour?.id || 'pending';
+        persistHistoryRecord(fallbackBookingId, selectedTour);
         setBookingNotification(null);
         setShowBookingForm(false);
         setSelectedItem(null);
@@ -647,20 +737,59 @@ export default function TourDisplay({ token, user, onRequireAuth }) {
       (!maxPrice || h.pricePerNight <= parseFloat(maxPrice)));
   });
 
-  if (loading && tours.length === 0 && hotels.length === 0) {
-    return (
-      <div className="tour-display-container">
-        <div className="loading-state">
-          <div className="spinner" />
-          <p>Loading available {activeTab}...</p>
+  const currentDataEmpty = activeTab === 'tours' ? tours.length === 0 : hotels.length === 0;
+
+  return (
+    <div className="tour-display-container destinations-viewport">
+      <Toast toasts={toasts} onDismiss={dismissToast} />
+
+      <header className="destinations-portal-hero">
+        <span className="portal-eyebrow">TRIPORA / TRAVEL MANAGEMENT</span>
+        <h1 className="portal-main-heading">Your Tripora Travel Portal</h1>
+        <p className="portal-sub-heading">
+          Access your authenticated customer perks, manage bookings, and explore protected member-only itineraries.
+        </p>
+      </header>
+
+      <div className="tour-header destinations-header">
+        <div className="tour-eyebrow-pill tripora-slogan-capsule"><span className="tour-eyebrow-mark slogan-sparkle" aria-hidden="true">✦</span><span className="slogan-text">Private Sanctuaries &amp; Expeditions</span></div>
+        <h2 className="tour-title destinations-header-title">Explore Our Destinations</h2>
+        <p className="tour-subtitle">Discover extraordinary journeys and luxurious stays</p>
+        <div className="tour-controls category-tabs">
+          <div className="toggle-switch unified-tabs-group">
+            <button type="button" className={"toggle-btn unified-tab-btn " + (activeTab === 'tours'  ? 'active' : '')} aria-pressed={activeTab === 'tours'} onClick={() => { setActiveTab('tours');  setSelectedItem(null);
+            setTravelDate('');
+            setCheckIn('');
+            setCheckOut('');
+              setBookingQty(1); }}>Tours{activeTab === 'tours' && <span className="tab-active-glow-bar" aria-hidden="true" />}</button>
+            <button type="button" className={"toggle-btn unified-tab-btn " + (activeTab === 'hotels' ? 'active' : '')} aria-pressed={activeTab === 'hotels'} onClick={() => { setActiveTab('hotels'); setSelectedItem(null);
+            setTravelDate('');
+            setCheckIn('');
+            setCheckOut('');
+              setBookingQty(1); }}>Hotels{activeTab === 'hotels' && <span className="tab-active-glow-bar" aria-hidden="true" />}</button>
+          </div>
         </div>
       </div>
-    );
-  }
 
-  if (error && tours.length === 0 && hotels.length === 0) {
-    return (
-      <div className="tour-display-container">
+      {(!currentDataEmpty || loading || error) && (
+        <section className="unified-search-bar-console" role="search" aria-label="Filter destinations">
+          <div className="unified-search-pill pill-search">
+            <svg className="unified-pill-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true"><circle cx="11" cy="11" r="8" /><line x1="21" y1="21" x2="16.65" y2="16.65" /></svg>
+            <input type="text" aria-label="Search name or description" placeholder="Search name or description..." value={searchTerm} onChange={(event) => setSearchTerm(event.target.value)} />
+          </div>
+          <div className="unified-search-pill pill-location">
+            <svg className="unified-pill-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z" /><circle cx="12" cy="10" r="3" /></svg>
+            <input type="text" aria-label="Filter by location" placeholder="Filter by location..." value={locationFilter} onChange={(event) => setLocationFilter(event.target.value)} />
+          </div>
+          <div className="unified-search-pill pill-price">
+            <svg className="unified-pill-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true"><rect x="2" y="6" width="20" height="12" rx="2" /><circle cx="12" cy="12" r="2" /><path d="M6 12h.01M18 12h.01" /></svg>
+            <input type="number" min="0" inputMode="numeric" aria-label="Maximum price in LKR" placeholder="Max price (LKR)" value={maxPrice} onChange={(event) => setMaxPrice(event.target.value)} />
+          </div>
+          <button type="button" className="unified-clear-filters-btn" onClick={resetFilters}>× CLEAR FILTERS</button>
+        </section>
+      )}
+
+      {error && currentDataEmpty ? (
         <div className="error-state">
           <div className="error-icon"><AlertTriangle size={32} /></div>
           <h3>Service Error</h3>
@@ -669,62 +798,19 @@ export default function TourDisplay({ token, user, onRequireAuth }) {
             <RefreshCw size={16} style={{ marginRight: '4px' }} /> Try Again
           </button>
         </div>
-      </div>
-    );
-  }
-
-  const currentDataEmpty = activeTab === 'tours' ? tours.length === 0 : hotels.length === 0;
-
-  return (
-    <div className="tour-display-container">
-      <Toast toasts={toasts} onDismiss={dismissToast} />
-
-      <div className="tour-header">
-        <h2 className="tour-title">Explore Our Destinations</h2>
-        <p className="tour-subtitle">Discover extraordinary journeys and luxurious stays</p>
-        <div className="tour-controls">
-          <div className="toggle-switch">
-            <button type="button" className={"toggle-btn " + (activeTab === 'tours'  ? 'active' : '')} onClick={() => { setActiveTab('tours');  setSelectedItem(null);
-            setTravelDate('');
-            setCheckIn('');
-            setCheckOut('');
-            setBookingQty(1); }}>Tours</button>
-            <button type="button" className={"toggle-btn " + (activeTab === 'hotels' ? 'active' : '')} onClick={() => { setActiveTab('hotels'); setSelectedItem(null);
-            setTravelDate('');
-            setCheckIn('');
-            setCheckOut('');
-            setBookingQty(1); }}>Hotels</button>
-          </div>
-          <button type="button" className="btn-refresh" onClick={activeTab === 'tours' ? fetchTours : fetchHotels}>
-            <RefreshCw size={16} style={{ marginRight: '4px' }} /> Refresh
-          </button>
+      ) : loading && currentDataEmpty ? (
+        <div className="tours-grid loading-skeleton-grid" role="status" aria-label={`Loading available ${activeTab}`}>
+          {Array.from({ length: activeTab === 'tours' ? 6 : 5 }, (_, index) => (
+            <div className="tour-card tour-skeleton" key={`loading-${activeTab}-${index}`} aria-hidden="true">
+              <div className="tour-skeleton-image" />
+              <div className="tour-skeleton-content"><i /><i /><i /><i /></div>
+            </div>
+          ))}
         </div>
-      </div>
-
-      {!currentDataEmpty && (
-        <div className="tour-filters">
-          <div className="filter-group">
-            <Search className="filter-icon" size={18} />
-            <input type="text" placeholder="Search name or description..." value={searchTerm} onChange={e => setSearchTerm(e.target.value)} className="filter-input" />
-          </div>
-          <div className="filter-group">
-            <MapPin className="filter-icon" size={18} />
-            <input type="text" placeholder="Filter by location..." value={locationFilter} onChange={e => setLocationFilter(e.target.value)} className="filter-input" />
-          </div>
-          <div className="filter-group">
-            <DollarSign className="filter-icon" size={18} />
-            <input type="number" placeholder={`Max price${activeTab === 'hotels' ? ' / night' : ''}`} value={maxPrice} onChange={e => setMaxPrice(e.target.value)} className="filter-input" min="0" />
-          </div>
-          <div className="filter-actions">
-            <button type="button" className="btn-filter-clear" onClick={resetFilters}><X size={16} /> Clear Filters</button>
-          </div>
-        </div>
-      )}
-
-      {activeTab === 'tours' ? (
+      ) : activeTab === 'tours' ? (
         tours.length === 0 ? (
           <div className="empty-state">
-            <div className="empty-icon">🏜️</div>
+            <div className="empty-icon">ðŸœï¸</div>
             <h3>No Tours Available</h3>
             <p>There are currently no active tours available.</p>
           </div>
@@ -736,24 +822,34 @@ export default function TourDisplay({ token, user, onRequireAuth }) {
             <button type="button" className="btn-retry" onClick={resetFilters}>Reset Filters</button>
           </div>
         ) : (
-          <div className="tours-grid">
+          <div className="tours-grid destinations-grid">
             {filteredTours.map(tour => (
-              <div key={tour.id} className={"tour-card " + (!tour.isActive ? 'tour-inactive' : '')} onClick={() => handleItemClick(tour)}>
-                <div className="tour-image">
+              <div key={tour.id} className={"tour-card destination-card " + (!tour.isActive ? 'tour-inactive' : '')} onClick={() => setBookingItem(toBookingContext(tour, 'Tour'))}>
+                <div className="tour-image destination-card-image-wrap">
                   {tour.imageUrl && <img src={tour.imageUrl} alt={tour.name} onError={handleImageError} />}
                   <div className="tour-placeholder" style={{ display: tour.imageUrl ? 'none' : 'flex' }}><Briefcase size={48} className="placeholder-icon" color="currentColor" /></div>
-                </div>
-                <div className="tour-content">
-                  <div className="tour-destination">{tour.destination}</div>
-                  <h3 className="tour-name">{tour.name}</h3>
-                  <p className="tour-description">{tour.description}</p>
-                  <div className="tour-details">
-                    <div className="tour-detail"><Clock className="detail-icon" size={18} /><span>{tour.durationDays} days</span></div>
-                    <div className="tour-detail"><Users className="detail-icon" size={18} /><span>{tour.availableSlots} / {tour.capacity} spots</span></div>
+                  <div className="card-floating-tags">
+                    <span className="type-badge">Guided Tour</span>
+                    <span className="capacity-badge">{tour.capacity ? `${tour.capacity} Guests` : 'Private Tour'}</span>
                   </div>
-                  <div className="tour-footer">
-                    <div className="tour-price">${tour.price.toLocaleString()}</div>
-                    <button type="button" className="btn-view-details">View Details</button>
+                </div>
+                <div className="tour-content destination-card-body">
+                  <div className="destination-location-eyebrow">
+                    <span className="location-sparkle" aria-hidden="true">✦</span>
+                    <span className="location-text">{formatLocation(tour.destination || tour.location || 'Sri Lanka')}</span>
+                  </div>
+                  <h3 className="destination-card-title">{tour.name}</h3>
+                  <p className="tour-description">{tour.description}</p>
+                  <div className="tour-details destination-specs-line">
+                    <span className="tour-detail spec-item"><Clock size={16} aria-hidden="true" /> {tour.durationDays} {tour.durationDays === 1 ? 'day' : 'days'}</span>
+                    <span className="tour-detail spec-item"><Users size={16} aria-hidden="true" /> {tour.availableSlots ?? tour.capacity} / {tour.capacity} spots</span>
+                  </div>
+                  <div className="tour-footer destination-card-footer">
+                    <div className="price-block">
+                      <span className="price-label">FROM</span>
+                      <span className="price-amount tour-price">{formatLKR(tour.price)}</span>
+                    </div>
+                    <button type="button" className="booking-action-trigger" onClick={(event) => { event.stopPropagation(); setBookingItem(toBookingContext(tour, 'Tour')); }}>Book now</button>
                   </div>
                 </div>
               </div>
@@ -775,38 +871,60 @@ export default function TourDisplay({ token, user, onRequireAuth }) {
             <button type="button" className="btn-retry" onClick={resetFilters}>Reset Filters</button>
           </div>
         ) : (
-          <div className="tours-grid">
-            {filteredHotels.map(hotel => (
-              <div key={hotel.id} className={"tour-card " + (!hotel.isActive ? 'tour-inactive' : '')} onClick={() => handleItemClick(hotel)}>
-                <div className="tour-image">
+          <div className="tours-grid destinations-grid hotels-grid">
+            {filteredHotels.map(hotel => {
+              const amenities = parseAmenities(hotel.amenities);
+
+              return (
+              <div key={hotel.id} className={"tour-card destination-card " + (!hotel.isActive ? 'tour-inactive' : '')} onClick={() => setBookingItem(toBookingContext(hotel, 'Hotel'))}>
+                <div className="tour-image destination-card-image-wrap">
                   {hotel.imageUrl && <img src={hotel.imageUrl} alt={hotel.name} onError={handleImageError} />}
                   <div className="tour-placeholder" style={{ display: hotel.imageUrl ? 'none' : 'flex' }}><HotelIcon size={48} className="placeholder-icon" color="currentColor" /></div>
-                </div>
-                <div className="tour-content">
-                  <div className="tour-destination">{hotel.location}</div>
-                  <h3 className="tour-name">{hotel.name}</h3>
-                  <p className="tour-description">{hotel.description}</p>
-                  <div className="tour-details" style={{ flexWrap: 'wrap' }}>
-                    <div className="tour-detail"><Star className="detail-icon" size={18} /><span>{hotel.rating} / 5.0</span></div>
-                    {hotel.amenities && hotel.amenities.split(',').slice(0, 2).map((a, i) => (
-                      <div className="tour-detail" key={i}><Sparkles className="detail-icon" size={18} /><span>{a.trim()}</span></div>
-                    ))}
+                  <div className="card-floating-tags">
+                    <span className="type-badge">Luxury Stay</span>
+                    <span className="capacity-badge">{hotel.availableRooms ?? hotel.capacity ?? 'Available'} Rooms</span>
                   </div>
-                  <div className="tour-footer">
-                    <div className="tour-price">${hotel.pricePerNight.toLocaleString()} <span style={{ fontSize: '0.8rem', color: '#64748b' }}>/ night</span></div>
-                    <button type="button" className="btn-view-details">View Details</button>
+                </div>
+                <div className="tour-content destination-card-body">
+                  <div className="destination-location-eyebrow">
+                    <span className="location-sparkle" aria-hidden="true">✦</span>
+                    <span className="location-text">{formatLocation(hotel.destination || hotel.location || 'Sri Lanka')}</span>
+                  </div>
+                  <h3 className="destination-card-title">{hotel.name}</h3>
+                  <p className="tour-description">{hotel.description}</p>
+                  <div className="tour-details destination-specs-line">
+                    <span className="tour-detail spec-item"><Star size={16} aria-hidden="true" /> {hotel.rating ? `${hotel.rating} / 5.0` : '5.0'}</span>
+                    <span className="tour-detail spec-item"><BedSingle size={16} aria-hidden="true" /> {hotel.availableRooms ?? hotel.capacity ?? 'Available'} rooms</span>
+                    {amenities.length > 0 && (
+                      <span className="tour-detail spec-item"><Sparkles size={16} aria-hidden="true" /> {amenities[0]}</span>
+                    )}
+                  </div>
+                  <div className="tour-footer destination-card-footer">
+                    <div className="price-block">
+                      <span className="price-label">FROM / NIGHT</span>
+                      <span className="price-amount tour-price">{formatLKR(hotel.pricePerNight)}</span>
+                    </div>
+                    <button type="button" className="booking-action-trigger" onClick={(event) => { event.stopPropagation(); setBookingItem(toBookingContext(hotel, 'Hotel')); }}>Book now</button>
                   </div>
                 </div>
               </div>
-            ))}
+              );
+            })}
           </div>
         )
       )}
 
+      {bookingItem && <BookingAction item={bookingItem} open={true} hideTrigger onOpenChange={(isOpen) => { if (!isOpen) setBookingItem(null); }} />}
+
       {selectedItem && (
         <div className="tour-modal-overlay" onClick={handleCloseModal}>
           <div className="tour-modal" onClick={e => e.stopPropagation()}>
-            <button type="button" className="modal-close" onClick={handleCloseModal}>✕</button>
+            <button type="button" className="destination-modal-close-btn" onClick={handleCloseModal} aria-label="Close modal">
+              <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                <line x1="18" y1="6" x2="6" y2="18" />
+                <line x1="6" y1="6" x2="18" y2="18" />
+              </svg>
+            </button>
 
             <div className="modal-content">
               <div className="modal-header">
@@ -817,7 +935,7 @@ export default function TourDisplay({ token, user, onRequireAuth }) {
               <div className="modal-image">
                 {selectedItem.imageUrl && <img src={selectedItem.imageUrl} alt={selectedItem.name} onError={handleImageError} />}
                 <div className="tour-placeholder" style={{ display: selectedItem.imageUrl ? 'none' : 'flex', minHeight: '300px' }}>
-                  <span className="placeholder-icon" style={{ fontSize: '4rem' }}>{activeTab === 'tours' ? '🧳' : '🏨'}</span>
+                  <span className="placeholder-icon" style={{ fontSize: '4rem' }}>{activeTab === 'tours' ? 'ðŸ§³' : 'ðŸ¨'}</span>
                 </div>
               </div>
 
@@ -830,40 +948,52 @@ export default function TourDisplay({ token, user, onRequireAuth }) {
                 <div className="modal-specs">
                   {activeTab === 'tours' ? (
                     <>
-                      <div className="spec-item">
+                      <div className="tour-detail spec-item">
                         <Clock className="spec-icon" size={20} />
                         <div className="spec-info"><span className="spec-label">Duration</span><span className="spec-value">{selectedItem.durationDays} days</span></div>
                       </div>
-                      <div className="spec-item">
+                      <div className="tour-detail spec-item">
                         <Users className="spec-icon" size={20} />
                         <div className="spec-info"><span className="spec-label">Capacity</span><span className="spec-value">{selectedItem.capacity} people</span></div>
                       </div>
-                      <div className="spec-item">
+                      <div className="tour-detail spec-item">
                         <Ticket className="spec-icon" size={20} />
                         <div className="spec-info"><span className="spec-label">Available Spots</span><span className="spec-value">{(selectedItem?.availableSlots || 0)} remaining</span></div>
                       </div>
-                      <div className="spec-item">
+                      <div className="tour-detail spec-item">
                         <Tag className="spec-icon" size={20} />
-                        <div className="spec-info"><span className="spec-label">Price</span><span className="spec-value">${selectedItem?.price?.toLocaleString() || '0'}</span></div>
+                        <div className="spec-info"><span className="spec-label">Price</span><span className="spec-value">{formatLKR(selectedItem?.price)}</span></div>
                       </div>
                     </>
                   ) : (
                     <>
-                      <div className="spec-item">
+                      <div className="tour-detail spec-item">
                         <BedSingle className="spec-icon" size={20} />
                         <div className="spec-info"><span className="spec-label">Available Rooms</span><span className="spec-value">{(selectedItem?.availableRooms || 0)} rooms</span></div>
                       </div>
-                      <div className="spec-item">
+                      <div className="tour-detail spec-item">
                         <Star className="spec-icon" size={20} />
                         <div className="spec-info"><span className="spec-label">Rating</span><span className="spec-value">{selectedItem.rating} / 5.0</span></div>
                       </div>
-                      <div className="spec-item">
+                      <div className="tour-detail spec-item">
                         <Sparkles className="spec-icon" size={20} />
-                        <div className="spec-info"><span className="spec-label">Amenities</span><span className="spec-value">{selectedItem.amenities || 'None'}</span></div>
+                        <div className="spec-info">
+                          <span className="spec-label">Amenities</span>
+                          {selectedAmenities.length > 0 ? (
+                            <div className="modal-amenities-wrap" aria-label="Hotel amenities">
+                              {selectedAmenities.slice(0, 3).map((amenity, index) => (
+                                <span className="modal-amenity-pill" key={`${selectedItem.id}-modal-amenity-${index}`}>{amenity}</span>
+                              ))}
+                              {selectedAmenities.length > 3 && (
+                                <span className="modal-amenity-pill modal-amenity-more">+{selectedAmenities.length - 3} more</span>
+                              )}
+                            </div>
+                          ) : <span className="spec-value">None</span>}
+                        </div>
                       </div>
-                      <div className="spec-item">
+                      <div className="tour-detail spec-item">
                         <Tag className="spec-icon" size={20} />
-                        <div className="spec-info"><span className="spec-label">Price</span><span className="spec-value">${selectedItem?.pricePerNight?.toLocaleString() || '0'} / night</span></div>
+                        <div className="spec-info"><span className="spec-label">Price</span><span className="spec-value">{formatLKR(selectedItem?.pricePerNight)} / night</span></div>
                       </div>
                     </>
                   )}
@@ -1036,8 +1166,8 @@ export default function TourDisplay({ token, user, onRequireAuth }) {
                           <>
                             {travelDate && <div className="booking-summary-row"><span>Travel Date</span><span>{parseDateInput(travelDate).toLocaleDateString("en-GB")}</span></div>}
                             <div className="booking-summary-row booking-summary-total">
-                              <span>{bookingQty} x ${((selectedItem?.price || 0) || 0).toLocaleString()}</span>
-                              <strong>${((bookingQty || 0) * (selectedItem?.price || 0)).toLocaleString()}</strong>
+                              <span>{bookingQty} x {formatLKR(selectedItem?.price)}</span>
+                              <strong>{formatLKR((bookingQty || 0) * (selectedItem?.price || 0))}</strong>
                             </div>
                           </>
                         ) : (
@@ -1047,8 +1177,8 @@ export default function TourDisplay({ token, user, onRequireAuth }) {
                               <>
                                 {checkIn && checkOut && <div className="booking-summary-row"><span>Stay</span><span>{parseDateInput(checkIn).toLocaleDateString("en-GB")} - {parseDateInput(checkOut).toLocaleDateString("en-GB")}</span></div>}
                                 <div className="booking-summary-row booking-summary-total">
-                                  <span>{bookingQty} room{bookingQty > 1 ? 's' : ''} x {nights} night{nights > 1 ? 's' : ''} x ${((selectedItem?.pricePerNight || 0) || 0).toLocaleString()}</span>
-                                  <strong>${((bookingQty || 0) * (nights || 1) * (selectedItem?.pricePerNight || 0)).toLocaleString()}</strong>
+                                  <span>{bookingQty} room{bookingQty > 1 ? 's' : ''} x {nights} night{nights > 1 ? 's' : ''} x {formatLKR(selectedItem?.pricePerNight)}</span>
+                                  <strong>{formatLKR((bookingQty || 0) * (nights || 1) * (selectedItem?.pricePerNight || 0))}</strong>
                                 </div>
                               </>
                             );

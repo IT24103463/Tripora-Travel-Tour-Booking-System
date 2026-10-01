@@ -1,8 +1,9 @@
 import { useState, useEffect } from 'react';
 import { isTokenExpired } from '../App.jsx';
 import { API_BASE_URL } from '../apiConfig';
+import { Link } from 'react-router-dom';
 import './ProfileView.css';
-import { AlertTriangle, User, RefreshCw, LogOut } from 'lucide-react';
+import { AlertTriangle, User, LogOut } from 'lucide-react';
 
 const API_PROFILE_ENDPOINT = `${API_BASE_URL}/api/users/me`;
 
@@ -121,13 +122,31 @@ export default function ProfileView({ token, onSessionExpired, onLogout }) {
 
   return (
     <div className="tripora-card profile-card">
+      <div className="profile-brand-row profile-header">
+        <Link className="tripora-brand-lockup profile-nav-brand" to="/" aria-label="Tripora home">
+          <span className="brand-icon-circle" aria-hidden="true">
+            <svg className="brand-plane-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M17.8 19.2 16 11l3.5-3.5C21 6 21.5 4 21 3c-1-.5-3 0-4.5 1.5L13 8 4.8 6.2c-.5-.1-.9.1-1.1.5l-.3.5c-.2.5-.1 1 .3 1.3L9 12l-2 3H4l-1 1 3 2 2 3 1-1v-3l3-2 3.5 5.3c.3.4.8.5 1.3.3l.5-.3c.4-.2.6-.6.5-1.1z" />
+            </svg>
+          </span>
+          <span className="brand-text-group">
+            <span className="brand-main-name">Tripora</span>
+            <span className="brand-sub-name">Travel &amp; Tours</span>
+          </span>
+        </Link>
+        <span className="profile-tier-badge tripora-slogan-capsule">
+          <span className="slogan-sparkle" aria-hidden="true">✦</span>
+          <span className="slogan-text">{profile.role || 'Customer'} Account</span>
+        </span>
+      </div>
       <div className="profile-header">
-        <div className="profile-avatar">
+        <div className="profile-avatar-large" aria-label={profile.fullName || 'Tripora member'}>
+          {profile.fullName?.charAt(0)?.toUpperCase() || 'T'}
           <span className="brand-mark profile-plane">✈</span>
         </div>
         <div className="profile-title-section">
-          <h2 className="profile-title">My Profile</h2>
-          <p className="profile-subtitle">View and manage your Tripora account information</p>
+          <h2 className="profile-title page-title">My Profile</h2>
+          <p className="profile-subtitle page-subtitle">View and manage your Tripora account information</p>
         </div>
       </div>
 
@@ -172,13 +191,6 @@ export default function ProfileView({ token, onSessionExpired, onLogout }) {
             id="btn-profile-signout"
           >
             Sign Out
-          </button>
-          <button 
-            type="button" 
-            className="btn-refresh" 
-            onClick={handleRetry}
-          >
-            ↻ Refresh Profile
           </button>
         </div>
       </div>
