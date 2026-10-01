@@ -46,4 +46,10 @@ describe('LoginForm Google sign-in', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Continue with Google' }));
     expect(screen.getByText('Google Sign-In is still loading. Please try again.')).toBeInTheDocument();
   });
+
+  it('keeps Google sign-in available when no build-time client ID is supplied', () => {
+    render(<MemoryRouter><LoginForm googleClientId="" onLoginSuccess={vi.fn()} onSwitchToRegister={vi.fn()} /></MemoryRouter>);
+
+    expect(screen.getByRole('button', { name: 'Continue with Google' })).toBeInTheDocument();
+  });
 });

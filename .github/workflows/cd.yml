@@ -86,6 +86,8 @@ jobs:
           cd Frontend
           npm install --force
           npm run build
+        env:
+          VITE_GOOGLE_CLIENT_ID: 698710277379-ajqs1oq72jnubio6u1r0upoqc2rn4eri.apps.googleusercontent.com
 
       - name: Deploy Frontend
         uses: azure/webapps-deploy@v3

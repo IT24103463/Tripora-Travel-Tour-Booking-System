@@ -1,0 +1,39 @@
+<Solution>
+  <Folder Name="/Backend/" />
+  <Folder Name="/Backend/ApiGateway/">
+    <Project Path="Backend/ApiGateway/Tripora.ApiGateway.csproj" />
+  </Folder>
+  <Folder Name="/Backend/Services/">
+    <Project Path="Backend/Services/Tripora.BookingService.Tests/Tripora.BookingService.Tests.csproj" />
+    <Project Path="Backend/Services/Tripora.BookingService/Tripora.BookingService.csproj" />
+    <Project Path="Backend/Services/Tripora.DestinationService.Tests/Tripora.DestinationService.Tests.csproj" />
+    <Project Path="Backend/Services/Tripora.DestinationService/Tripora.DestinationService.csproj" />
+    <Project Path="Backend/Services/Tripora.E2E.Tests/Tripora.E2E.Tests.csproj" />
+    <Project Path="Backend/Services/Tripora.NotificationService/Tripora.NotificationService.csproj" />
+    <Project Path="Backend/Services/Tripora.PaymentService.Tests/Tripora.PaymentService.Tests.csproj" />
+    <Project Path="Backend/Services/Tripora.PaymentService/Tripora.PaymentService.csproj" />
+    <Project Path="Backend/Services/Tripora.UserService.Tests/Tripora.UserService.Tests.csproj" />
+    <Project Path="Backend/Services/Tripora.UserService/Tripora.UserService.csproj" />
+  </Folder>
+  <Folder Name="/Backend/Services/Booking/">
+    <Project Path="Backend/Services/Booking/Tripora.BookingService/Tripora.BookingService.csproj" />
+  </Folder>
+  <Folder Name="/Backend/Services/Hotel/">
+    <Project Path="Backend/Services/Hotel/Tripora.HotelService/Tripora.HotelService.csproj" />
+  </Folder>
+  <Folder Name="/Backend/Services/Notification/">
+    <Project Path="Backend/Services/Notification/Tripora.NotificationService/Tripora.NotificationService.csproj" />
+  </Folder>
+  <Folder Name="/Backend/Services/Payment/">
+    <Project Path="Backend/Services/Payment/Tripora.PaymentService/Tripora.PaymentService.csproj" />
+  </Folder>
+  <Folder Name="/Backend/Services/Tour/">
+    <Project Path="Backend/Services/Tour/Tripora.TourService/Tripora.TourService.csproj" />
+  </Folder>
+  <Folder Name="/Backend/Services/User/">
+    <Project Path="Backend/Services/User/Tripora.UserService/Tripora.UserService.csproj" />
+  </Folder>
+  <Folder Name="/Backend/Shared/">
+    <Project Path="Backend/Shared/Tripora.Shared.csproj" />
+  </Folder>
+</Solution>
