@@ -19,7 +19,8 @@ using Tripora.BookingService.Services;
 var builder = WebApplication.CreateBuilder(args);
 
 // Database configuration (MySQL)
-var connectionString = builder.Configuration.GetConnectionString("BookingDb")
+var connectionString = builder.Configuration.GetConnectionString("DefaultConnection")
+    ?? builder.Configuration.GetConnectionString("BookingDb")
     ?? builder.Configuration.GetConnectionString("MySqlConnection")
     ?? "Server=localhost;Port=3306;Database=tripora_db;User=root;Password=12345;";
 
@@ -71,7 +72,7 @@ Uri destUri;
 if (!string.IsNullOrWhiteSpace(rawDestUrl) &&
     Uri.TryCreate(rawDestUrl.EndsWith("/") ? rawDestUrl : rawDestUrl + "/", UriKind.Absolute, out var parsed) &&
     !string.IsNullOrWhiteSpace(parsed.Host) &&
-    parsed.Host.Contains('.'))
+    (parsed.IsLoopback || Uri.CheckHostName(parsed.Host) != UriHostNameType.Unknown))
 {
     destUri = parsed;
 }

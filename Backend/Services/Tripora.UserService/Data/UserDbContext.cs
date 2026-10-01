@@ -37,6 +37,13 @@ public class UserDbContext : DbContext
                 .IsRequired()
                 .HasMaxLength(50);
 
+            entity.Property(u => u.IsEmailVerified)
+                .IsRequired()
+                .HasDefaultValue(false);
+
+            entity.Property(u => u.VerificationTokenHash)
+                .HasMaxLength(64);
+
             entity.Property(u => u.CreatedAt)
                 .IsRequired();
         });

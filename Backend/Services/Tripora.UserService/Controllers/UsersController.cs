@@ -12,11 +12,13 @@ namespace Tripora.UserService.Controllers;
 public class UsersController : ControllerBase
 {
     private readonly IUserService _userService;
+    private readonly IGoogleAuthenticationService _googleAuthenticationService;
     private readonly ILogger<UsersController> _logger;
 
-    public UsersController(IUserService userService, ILogger<UsersController> logger)
+    public UsersController(IUserService userService, IGoogleAuthenticationService googleAuthenticationService, ILogger<UsersController> logger)
     {
         _userService = userService;
+        _googleAuthenticationService = googleAuthenticationService;
         _logger = logger;
     }
 
@@ -45,6 +47,16 @@ public class UsersController : ControllerBase
 
             RegistrationStatus.DuplicateEmail => Conflict(
                 ApiResponse<UserResponseDto>.FailureResponse(result.Message, result.Errors)),
+
+            RegistrationStatus.DeliveryFailure => StatusCode(
+                StatusCodes.Status503ServiceUnavailable,
+                new ApiResponse<UserResponseDto>
+                {
+                    Success = false,
+                    Message = result.Message,
+                    Data = result.User,
+                    Errors = result.Errors
+                }),
 
             _ => StatusCode(
                 StatusCodes.Status500InternalServerError,
@@ -80,9 +92,97 @@ public class UsersController : ControllerBase
             LoginStatus.InvalidPassword => Unauthorized(
                 ApiResponse<LoginResponseDto>.FailureResponse(result.Message, result.Errors)),
 
+            LoginStatus.EmailNotVerified => StatusCode(
+                StatusCodes.Status403Forbidden,
+                new
+                {
+                    message = result.Message,
+                    isUnverified = true,
+                    email = result.Email ?? string.Empty
+                }),
+
             _ => StatusCode(
                 StatusCodes.Status500InternalServerError,
                 ApiResponse<LoginResponseDto>.FailureResponse(result.Message, result.Errors))
+        };
+    }
+
+    /// <summary>
+    /// Validates a Google ID token and signs in a verified Customer account.
+    /// </summary>
+    [HttpPost("google-login")]
+    [ProducesResponseType(typeof(ApiResponse<LoginResponseDto>), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ApiResponse<LoginResponseDto>), StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(typeof(ApiResponse<LoginResponseDto>), StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(typeof(ApiResponse<LoginResponseDto>), StatusCodes.Status403Forbidden)]
+    [ProducesResponseType(typeof(ApiResponse<LoginResponseDto>), StatusCodes.Status503ServiceUnavailable)]
+    public async Task<IActionResult> GoogleLogin([FromBody] GoogleLoginRequestDto request, CancellationToken cancellationToken)
+    {
+        var result = await _googleAuthenticationService.LoginAsync(request, cancellationToken);
+
+        return result.Status switch
+        {
+            GoogleLoginStatus.Success => Ok(ApiResponse<LoginResponseDto>.SuccessResponse(result.Data!, result.Message)),
+            GoogleLoginStatus.InvalidRequest => BadRequest(ApiResponse<LoginResponseDto>.FailureResponse(result.Message)),
+            GoogleLoginStatus.InvalidToken => Unauthorized(ApiResponse<LoginResponseDto>.FailureResponse(result.Message)),
+            GoogleLoginStatus.UnverifiedEmail or GoogleLoginStatus.CustomerOnly => StatusCode(StatusCodes.Status403Forbidden, ApiResponse<LoginResponseDto>.FailureResponse(result.Message)),
+            GoogleLoginStatus.Unavailable => StatusCode(StatusCodes.Status503ServiceUnavailable, ApiResponse<LoginResponseDto>.FailureResponse(result.Message)),
+            _ => StatusCode(StatusCodes.Status500InternalServerError, ApiResponse<LoginResponseDto>.FailureResponse("Google sign-in is temporarily unavailable."))
+        };
+    }
+
+    [HttpPost("verify-email")]
+    [ProducesResponseType(typeof(ApiResponse<EmailVerificationResponseDto>), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ApiResponse<EmailVerificationResponseDto>), StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(typeof(ApiResponse<EmailVerificationResponseDto>), StatusCodes.Status410Gone)]
+    public async Task<IActionResult> VerifyEmail([FromBody] VerifyEmailRequestDto request, CancellationToken cancellationToken)
+    {
+        var result = await _userService.VerifyEmailAsync(request, cancellationToken);
+
+        return result.Status switch
+        {
+            EmailVerificationStatus.Success => Ok(
+                ApiResponse<EmailVerificationResponseDto>.SuccessResponse(result.Data!, result.Message)),
+
+            EmailVerificationStatus.ExpiredCode => StatusCode(
+                StatusCodes.Status410Gone,
+                ApiResponse<EmailVerificationResponseDto>.FailureResponse(result.Message, result.Errors)),
+
+            _ => BadRequest(
+                ApiResponse<EmailVerificationResponseDto>.FailureResponse(result.Message, result.Errors))
+        };
+    }
+
+    [HttpPost("resend-verification")]
+    [ProducesResponseType(typeof(ApiResponse<EmailVerificationResponseDto>), StatusCodes.Status202Accepted)]
+    [ProducesResponseType(typeof(ApiResponse<EmailVerificationResponseDto>), StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(typeof(ApiResponse<EmailVerificationResponseDto>), StatusCodes.Status429TooManyRequests)]
+    [ProducesResponseType(typeof(ApiResponse<EmailVerificationResponseDto>), StatusCodes.Status503ServiceUnavailable)]
+    public async Task<IActionResult> ResendVerification([FromBody] ResendVerificationRequestDto request, CancellationToken cancellationToken)
+    {
+        var result = await _userService.ResendVerificationAsync(request, cancellationToken);
+
+        return result.Status switch
+        {
+            EmailVerificationStatus.Accepted => Accepted(
+                ApiResponse<EmailVerificationResponseDto>.SuccessResponse(result.Data ?? new EmailVerificationResponseDto(), result.Message)),
+
+            EmailVerificationStatus.Cooldown => StatusCode(
+                StatusCodes.Status429TooManyRequests,
+                new ApiResponse<EmailVerificationResponseDto>
+                {
+                    Success = false,
+                    Message = result.Message,
+                    Data = result.Data,
+                    Errors = result.Errors
+                }),
+
+            EmailVerificationStatus.DeliveryFailure => StatusCode(
+                StatusCodes.Status503ServiceUnavailable,
+                ApiResponse<EmailVerificationResponseDto>.FailureResponse(result.Message, result.Errors)),
+
+            _ => BadRequest(
+                ApiResponse<EmailVerificationResponseDto>.FailureResponse(result.Message, result.Errors))
         };
     }
 

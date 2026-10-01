@@ -45,6 +45,12 @@ builder.Services.AddDbContext<UserDbContext>(options =>
 builder.Services.Configure<JwtOptions>(
     builder.Configuration.GetSection(JwtOptions.SectionName));
 
+builder.Services.Configure<EmailSettings>(
+    builder.Configuration.GetSection(EmailSettings.SectionName));
+
+builder.Services.Configure<GoogleAuthenticationOptions>(
+    builder.Configuration.GetSection(GoogleAuthenticationOptions.SectionName));
+
 builder.Services.AddSingleton<IJwtTokenGenerator, JwtTokenGenerator>();
 
 var secretKey = Environment.GetEnvironmentVariable("TRIPORA_JWT_SECRET")
@@ -64,7 +70,11 @@ var audience = Environment.GetEnvironmentVariable("TRIPORA_JWT_AUDIENCE")
 builder.Services.AddScoped<IUserRepository, UserRepository>();
 builder.Services.AddSingleton<IPasswordHasher, BcryptPasswordHasher>();
 builder.Services.AddSingleton<IValidationService, ValidationService>();
+builder.Services.AddSingleton<IClock, SystemClock>();
+builder.Services.AddScoped<IEmailVerificationSender, GmailEmailVerificationSender>();
 builder.Services.AddScoped<IUserService, UserService>();
+builder.Services.AddSingleton<IGoogleIdTokenValidator, GoogleIdTokenValidator>();
+builder.Services.AddScoped<IGoogleAuthenticationService, GoogleAuthenticationService>();
 
 // ============================================================
 // 4. AUTHENTICATION - JWT
@@ -148,6 +158,7 @@ using (var scope = app.Services.CreateScope())
             Email = "user1@gmail.com",
             PasswordHash = passwordHasher.HashPassword("user1@gmail.com"),
             Role = "Customer",
+            IsEmailVerified = true,
             CreatedAt = DateTime.UtcNow
         });
     }
@@ -161,6 +172,7 @@ using (var scope = app.Services.CreateScope())
             Email = "admin@tripora.com",
             PasswordHash = passwordHasher.HashPassword("AdminPassword123!"),
             Role = "Admin",
+            IsEmailVerified = true,
             CreatedAt = DateTime.UtcNow
         });
         

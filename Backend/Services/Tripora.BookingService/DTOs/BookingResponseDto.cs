@@ -10,6 +10,10 @@ public class BookingResponseDto
     public BookingType BookingType { get; set; } = BookingType.Tour;
     public Guid? TourId { get; set; }
     public Guid? HotelId { get; set; }
+    public Guid? PackageId { get; set; }
+    public Guid? OfferId { get; set; }
+    public Guid ItemId { get; set; }
+    public string? ItemType { get; set; }
     public string GuestName { get; set; } = string.Empty;
     public string PhoneNumber { get; set; } = string.Empty;
     public string BillingAddress { get; set; } = string.Empty;

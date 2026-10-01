@@ -42,4 +42,19 @@ public class UserRepository : IUserRepository
         await _dbContext.SaveChangesAsync(cancellationToken);
         return user;
     }
+
+    public async Task UpdateAsync(User user, CancellationToken cancellationToken = default)
+    {
+        var trackedUser = _dbContext.Users.Local.FirstOrDefault(existing => existing.Id == user.Id);
+        if (trackedUser is null)
+        {
+            _dbContext.Users.Update(user);
+        }
+        else
+        {
+            _dbContext.Entry(trackedUser).CurrentValues.SetValues(user);
+        }
+
+        await _dbContext.SaveChangesAsync(cancellationToken);
+    }
 }

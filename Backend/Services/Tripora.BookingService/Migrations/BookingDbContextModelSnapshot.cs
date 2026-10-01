@@ -56,6 +56,9 @@ namespace Tripora.BookingService.Migrations
                     b.Property<Guid?>("HotelId")
                         .HasColumnType("char(36)");
 
+                    b.Property<Guid?>("OfferId")
+                        .HasColumnType("char(36)");
+
                     b.Property<Guid>("ItemId")
                         .HasColumnType("char(36)");
 
@@ -101,6 +104,8 @@ namespace Tripora.BookingService.Migrations
                     b.HasKey("Id");
 
                     b.HasIndex("HotelId");
+
+                    b.HasIndex("OfferId");
 
                     b.HasIndex("TourId");
 

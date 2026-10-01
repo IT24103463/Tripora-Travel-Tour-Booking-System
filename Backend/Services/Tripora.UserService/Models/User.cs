@@ -11,6 +11,14 @@ public class User
     public string PasswordHash { get; set; } = string.Empty;
     
     public string Role { get; set; } = "Customer";
+
+    public bool IsEmailVerified { get; set; }
+
+    public string? VerificationTokenHash { get; set; }
+
+    public DateTime? VerificationTokenExpiry { get; set; }
+
+    public DateTime? VerificationTokenLastSentAt { get; set; }
     
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
     

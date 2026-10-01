@@ -21,6 +21,7 @@ public class BookingDbContext : DbContext
             entity.HasIndex(b => b.UserId);
             entity.HasIndex(b => b.TourId);
             entity.HasIndex(b => b.HotelId);
+            entity.HasIndex(b => b.OfferId);
             entity.Property(b => b.TotalAmount).HasColumnType("decimal(18,2)");
             entity.Property(b => b.BookingType).HasConversion<string>().HasMaxLength(50);
             entity.Property(b => b.Status).HasConversion<string>().HasMaxLength(50).HasDefaultValue("Pending");

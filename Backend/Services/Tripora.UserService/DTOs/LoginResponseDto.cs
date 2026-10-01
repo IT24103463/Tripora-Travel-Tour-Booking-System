@@ -6,4 +6,6 @@ public class LoginResponseDto
     public string TokenType { get; set; } = "Bearer";
     public int ExpiresIn { get; set; }
     public UserResponseDto User { get; set; } = new();
+    public string Email { get; set; } = string.Empty;
+    public bool EmailVerificationRequired { get; set; }
 }
