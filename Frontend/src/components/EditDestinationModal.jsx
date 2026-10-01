@@ -61,7 +61,7 @@ export default function EditDestinationModal({ item, activeTab, onClose, onUpdat
           </div>
           <div className="booking-row" style={{ display: 'flex', gap: '1rem', marginBottom: '1rem' }}>
             <div className="form-group" style={{ flex: 1 }}>
-              <label style={{ display: 'block', marginBottom: '0.5rem', color: '#cbd5e1' }}>Price</label>
+              <label style={{ display: 'block', marginBottom: '0.5rem', color: '#cbd5e1' }}>Price (LKR)</label>
               <input type="number" value={editFormData.price || ''} onChange={e => setEditFormData({...editFormData, price: e.target.value})} className="booking-input" required style={{ width: '100%', padding: '0.5rem', borderRadius: '0.25rem', border: '1px solid #334155', background: '#1e293b', color: '#f8fafc' }} />
             </div>
             <div className="form-group" style={{ flex: 1 }}>

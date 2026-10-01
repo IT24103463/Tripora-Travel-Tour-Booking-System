@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { isTokenExpired } from '../App.jsx';
 import { API_BASE_URL } from '../apiConfig';
+import { formatLKR } from '../utils/currency';
 import './DestinationManagement.css';
 import { RefreshCw, AlertTriangle, X, Compass, Hotel, Edit, Trash2, Plus, Settings } from 'lucide-react';
 
@@ -523,8 +524,8 @@ export default function DestinationManagement({ token, user, onSessionExpired })
               {activeTab === 'tours' ? (
                 <>
                   <div className="form-group">
-                    <label>Price ($) *</label>
-                    <input type="number" name="price" value={formData.price || ''} onChange={handleInputChange} step="0.01" disabled={isSubmitting} />
+                    <label>Price (LKR) *</label>
+                    <input type="number" name="price" value={formData.price || ''} onChange={handleInputChange} step="1" disabled={isSubmitting} />
                   </div>
                   <div className="form-group">
                     <label>Duration (Days) *</label>
@@ -538,8 +539,8 @@ export default function DestinationManagement({ token, user, onSessionExpired })
               ) : (
                 <>
                   <div className="form-group">
-                    <label>Price Per Night ($) *</label>
-                    <input type="number" name="pricePerNight" value={formData.pricePerNight || ''} onChange={handleInputChange} step="0.01" disabled={isSubmitting} />
+                    <label>Price Per Night (LKR) *</label>
+                    <input type="number" name="pricePerNight" value={formData.pricePerNight || ''} onChange={handleInputChange} step="1" disabled={isSubmitting} />
                   </div>
                   <div className="form-group">
                     <label>Available Rooms *</label>
@@ -606,7 +607,7 @@ export default function DestinationManagement({ token, user, onSessionExpired })
                   <tr key={tour.id} className={!tour.isActive ? 'row-inactive' : ''}>
                     <td className="tour-name-cell">{tour.name}</td>
                     <td>{tour.destination}</td>
-                    <td>${tour.price?.toLocaleString() ?? 0}</td>
+                    <td>{formatLKR(tour.price)}</td>
                     <td>{tour.durationDays} days</td>
                     <td>{tour.availableSlots} / {tour.capacity}</td>
                     <td>
@@ -659,7 +660,7 @@ export default function DestinationManagement({ token, user, onSessionExpired })
                   <tr key={hotel.id} className={!hotel.isActive ? 'row-inactive' : ''}>
                     <td className="tour-name-cell">{hotel.name}</td>
                     <td>{hotel.location}</td>
-                    <td>${hotel.pricePerNight?.toLocaleString() ?? 0}</td>
+                    <td>{formatLKR(hotel.pricePerNight)}</td>
                     <td>{hotel.availableRooms}</td>
                     <td><span>{hotel.rating} <span aria-label="star">&#9733;</span></span></td>
                     <td>
