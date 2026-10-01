@@ -1,11 +1,14 @@
-import { useState, useMemo } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { API_BASE_URL } from '../apiConfig';
 import './RegisterForm.css';
 import { AlertTriangle, Check, Circle, RefreshCw } from 'lucide-react';
 
 const API_ENDPOINT = `${API_BASE_URL}/api/users/register`;
 
-export default function RegisterForm({ onSwitchToLogin }) {
+export default function RegisterForm({ onSwitchToLogin, onVerificationRequired }) {
+  const registerFormRef = useRef(null);
+  const registerFirstInputRef = useRef(null);
+  const errorBannerRef = useRef(null);
   const [formData, setFormData] = useState({
     fullName: '',
     email: '',
@@ -27,6 +30,23 @@ export default function RegisterForm({ onSwitchToLogin }) {
   const [isDuplicateEmail, setIsDuplicateEmail] = useState(false);
   const [validationErrors, setValidationErrors] = useState([]);
   const [registeredUser, setRegisteredUser] = useState(null);
+
+  useEffect(() => {
+    const timer = window.setTimeout(() => {
+      registerFormRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      registerFirstInputRef.current?.focus({ preventScroll: true });
+    }, 150);
+    return () => window.clearTimeout(timer);
+  }, []);
+
+  useEffect(() => {
+    if (!serverError && !isDuplicateEmail && validationErrors.length === 0) return undefined;
+    const timer = window.setTimeout(() => {
+      errorBannerRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      errorBannerRef.current?.focus({ preventScroll: true });
+    }, 100);
+    return () => window.clearTimeout(timer);
+  }, [serverError, isDuplicateEmail, validationErrors]);
 
   // Email format check
   const isEmailValid = useMemo(() => {
@@ -106,7 +126,14 @@ export default function RegisterForm({ onSwitchToLogin }) {
       const data = await response.json();
 
       if (response.status === 201 && data.success) {
-        setRegisteredUser(data.data);
+        const email = data.data?.email || formData.email.trim().toLowerCase();
+        if (data.data?.verificationRequired !== false && onVerificationRequired) {
+          onVerificationRequired(email);
+        } else {
+          setRegisteredUser(data.data);
+        }
+      } else if (response.status === 503 && data.data?.email && onVerificationRequired) {
+        onVerificationRequired(data.data.email);
       } else if (response.status === 409) {
         setIsDuplicateEmail(true);
         setServerError('An account with this email address already exists. Please sign in or use a different email.');
@@ -182,7 +209,7 @@ export default function RegisterForm({ onSwitchToLogin }) {
   }
 
   return (
-    <div className="tripora-card" id="registration-container">
+    <div ref={registerFormRef} className="tripora-card" id="registration-container">
       <div className="card-header">
         <div className="brand-badge">Tripora Travel</div>
         <h1 className="card-title">Create an Account</h1>
@@ -193,7 +220,7 @@ export default function RegisterForm({ onSwitchToLogin }) {
 
       {/* Duplicate Email Alert */}
       {isDuplicateEmail && (
-        <div className="alert-banner alert-warning" id="duplicate-email-alert" role="alert">
+        <div ref={errorBannerRef} tabIndex={-1} className="alert-banner alert-warning" id="duplicate-email-alert" role="alert">
           <div className="alert-icon"></div>
           <div className="alert-content">
             <strong>Email Already Registered</strong>
@@ -204,7 +231,7 @@ export default function RegisterForm({ onSwitchToLogin }) {
 
       {/* General / Server Error Alert with Retry */}
       {serverError && !isDuplicateEmail && (
-        <div className="alert-banner alert-danger" id="server-error-alert" role="alert">
+        <div ref={errorBannerRef} tabIndex={-1} className="alert-banner alert-danger" id="server-error-alert" role="alert">
           <div className="alert-icon"></div>
           <div className="alert-content">
             <strong>Something Went Wrong</strong>
@@ -224,7 +251,7 @@ export default function RegisterForm({ onSwitchToLogin }) {
 
       {/* Validation Errors List */}
       {validationErrors.length > 0 && (
-        <div className="alert-banner alert-danger" id="validation-errors-alert" role="alert">
+        <div ref={errorBannerRef} tabIndex={-1} className="alert-banner alert-danger" id="validation-errors-alert" role="alert">
           <div className="alert-icon">⚠️</div>
           <div className="alert-content">
             <strong>Please correct the following:</strong>
@@ -244,6 +271,7 @@ export default function RegisterForm({ onSwitchToLogin }) {
           <div className="input-wrapper">
             <span className="input-icon"></span>
             <input
+              ref={registerFirstInputRef}
               type="text"
               id="fullName"
               name="fullName"
@@ -368,7 +396,7 @@ export default function RegisterForm({ onSwitchToLogin }) {
             </div>
             <div className={`req-item ${passwordCriteria.hasSpecial ? 'met' : ''}`}>
               <span className="req-icon">{passwordCriteria.hasSpecial ? '✓' : '○'}</span>
-              <span>At least 1 special character (!@#$%^&*)</span>
+              <span>At least 1 special character</span>
             </div>
           </div>
         </div>

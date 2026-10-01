@@ -1,3 +1,72 @@
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html {
+  overflow-y: scroll;
+  color-scheme: dark !important;
+  min-height: 100vh;
+  background-color: #04080c !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  width: 100% !important;
+  overflow-x: hidden !important;
+  scrollbar-width: none !important;
+  -ms-overflow-style: none !important;
+}
+
+/* Fixed wallpaper sits behind page content, so its blur never softens text. */
+body {
+  margin: 0 !important;
+  padding: 0 !important;
+  width: 100% !important;
+  min-height: 100vh !important;
+  color: #ffffff;
+  background-color: #04080c !important;
+  position: relative;
+  isolation: isolate;
+  overflow-x: hidden !important;
+  min-width: 320px;
+  scrollbar-width: none !important;
+  -ms-overflow-style: none !important;
+}
+
+body::before,
+.global-bg-wallpaper {
+  content: "";
+  position: fixed;
+  inset: -8px;
+  z-index: -2;
+  background: url('/sri-lanka-path.jpg?v=2') center center / cover no-repeat;
+  filter: blur(1.5px) brightness(0.74) contrast(1.06) saturate(1.08);
+  transform: scale(1.015) translateZ(0);
+  pointer-events: none;
+  will-change: transform, filter;
+}
+
+body::after,
+.global-bg-scrim {
+  content: "";
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  background: radial-gradient(
+    circle at 50% 30%,
+    rgba(4, 18, 24, 0.25) 0%,
+    rgba(2, 10, 14, 0.6) 100%
+  );
+  pointer-events: none;
+}
+
+.landing-mode::before,
+.landing-mode::after,
+.authenticated-mode::before,
+.authenticated-mode::after {
+  display: none !important;
+}
+
 :root {
   font-family: Georgia, 'Times New Roman', serif;
   line-height: 1.5;
@@ -10,24 +79,6 @@
   -moz-osx-font-smoothing: grayscale;
 }
 
-* {
-  box-sizing: border-box;
-}
-
-body {
-html, body, #root {
-  min-height: 100%;
-  margin: 0;
-  padding: 0;
-  overflow-x: hidden;
-}
-
-body {
-  min-width: 320px;
-  min-height: 100vh;
-  background: #f4f1eb;
-}
-
 button,
 input,
 textarea,
@@ -35,11 +86,316 @@ select {
   font: inherit;
 }
 
-#root {
-  min-height: 100vh;
-  width: 100%;
-  display: flex;
-  flex-direction: column;
+/* ========================================================
+   MASTER HERO SLOGAN FROSTED CAPSULE (DESTINATIONS STYLE)
+   ======================================================== */
+.tripora-slogan-capsule,
+.hero-badge,
+.section-eyebrow-pill,
+.page-eyebrow-badge,
+.packages-header-badge,
+.offers-header-badge,
+.destinations-badge {
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  gap: 8px !important;
+  padding: 6px 18px !important;
+  background: rgba(255, 255, 255, 0.04) !important;
+  border: 1px solid rgba(255, 255, 255, 0.16) !important;
+  border-radius: 9999px !important;
+  backdrop-filter: blur(10px) !important;
+  -webkit-backdrop-filter: blur(10px) !important;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.35), inset 0 1px 0 rgba(255, 255, 255, 0.12) !important;
+  margin-bottom: 14px !important;
+  text-decoration: none !important;
+  width: fit-content !important;
+  margin-left: auto !important;
+  margin-right: auto !important;
 }
 
+/* Slogan Typography */
+.tripora-slogan-capsule span.slogan-text,
+.tripora-slogan-capsule .badge-text,
+.hero-badge span:not(.sparkle),
+.packages-header-badge span:not(.sparkle),
+.offers-header-badge span:not(.sparkle) {
+  font-family: inherit !important;
+  font-size: 0.72rem !important;
+  font-weight: 800 !important;
+  letter-spacing: 0.14em !important;
+  text-transform: uppercase !important;
+  color: #5eead4 !important;
+  line-height: 1 !important;
+}
+
+/* Glowing Diamond Sparkle Icon */
+.tripora-slogan-capsule .slogan-sparkle,
+.hero-badge .sparkle,
+.packages-header-badge .sparkle,
+.offers-header-badge .sparkle {
+  color: #2dd4bf !important;
+  font-size: 0.78rem !important;
+  line-height: 1 !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  filter: drop-shadow(0 0 6px rgba(45, 212, 191, 0.65)) !important;
+}
+
+/* ========================================================
+   UNIFIED CORNER/LEFT-ALIGNED PAGE HEADERS
+   (Standardized to match Destinations)
+   ======================================================== */
+
+/* Header Container on all pages */
+.destinations-header,
+.packages-header,
+.offers-header,
+.profile-header,
+.page-hero-header,
+.section-header-left {
+  display: flex !important;
+  flex-direction: column !important;
+  align-items: flex-start !important;
+  text-align: left !important;
+  width: 100% !important;
+  max-width: 1280px !important;
+  margin-left: auto !important;
+  margin-right: auto !important;
+  padding-left: 24px !important;
+  padding-right: 24px !important;
+  margin-bottom: 28px !important;
+}
+
+/* 1. Slogan Capsule - strictly left-aligned */
+.destinations-header .tripora-slogan-capsule,
+.packages-header .tripora-slogan-capsule,
+.offers-header .tripora-slogan-capsule,
+.profile-header .tripora-slogan-capsule,
+.page-hero-header .tripora-slogan-capsule {
+  margin-left: 0 !important;
+  margin-right: auto !important;
+  align-self: flex-start !important;
+  margin-bottom: 16px !important;
+}
+
+/* 2. Main Page Title (Editorial Serif) */
+.destinations-header h1,
+.packages-header h1,
+.offers-header h1,
+.profile-header h1,
+.page-hero-header h1,
+.page-title {
+  font-family: 'Playfair Display', Georgia, 'Times New Roman', serif !important;
+  font-size: clamp(2.2rem, 3.8vw, 3.4rem) !important;
+  font-weight: 700 !important;
+  line-height: 1.15 !important;
+  letter-spacing: -0.02em !important;
+  color: #ffffff !important;
+  text-align: left !important;
+  margin: 0 0 10px 0 !important;
+  text-shadow: 0 2px 10px rgba(0, 0, 0, 0.5) !important;
+}
+
+/* 3. Subtitle / Description */
+.destinations-header p,
+.packages-header p,
+.offers-header p,
+.profile-header p,
+.page-hero-header p,
+.page-subtitle {
+  font-family: inherit !important;
+  font-size: 1.05rem !important;
+  color: #94a3b8 !important;
+  text-align: left !important;
+  margin: 0 0 20px 0 !important;
+  line-height: 1.5 !important;
+  max-width: 680px !important;
+}
+
+/* 4. Filter / Category Tabs (e.g. Tours | Hotels or Package Filters) */
+.destinations-header .category-tabs,
+.packages-header .filter-tabs,
+.offers-header .offer-tabs {
+  display: flex !important;
+  justify-content: flex-start !important;
+  align-items: center !important;
+  gap: 10px !important;
+  margin-top: 6px !important;
+}
+
+#root {
+  margin: 0 !important;
+  padding: 0 !important;
+  min-height: 100vh !important;
+  width: 100% !important;
+  display: flex;
+  flex-direction: column;
+  background: transparent;
+  overflow-x: hidden !important;
+}
+
+@keyframes calmContentDissolve {
+  0% { opacity: 0; }
+  100% { opacity: 1; }
+}
+
+.landing-page-entrance,
+.page-transition-container,
+.unified-page-transition,
+.destinations-transition-wrapper {
+  width: 100%;
+  min-height: 100vh;
+  position: relative;
+  animation: calmContentDissolve 0.95s cubic-bezier(0.25, 1, 0.5, 1) forwards !important;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  text-rendering: optimizeLegibility;
+  will-change: opacity;
+}
+
+.destinations-transition-wrapper .tour-display-container {
+  animation: none !important;
+}
+
+@keyframes mistVeilFadeOut {
+  0% { opacity: 1; visibility: visible; }
+  85% { opacity: 0.15; }
+  100% { opacity: 0; visibility: hidden; }
+}
+
+.page-mist-veil {
+  position: fixed;
+  inset: 0;
+  z-index: 40;
+  width: 100vw;
+  height: 100vh;
+  pointer-events: none;
+  opacity: 0;
+  background: rgba(6, 18, 24, 0.3);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  animation: mistVeilFadeOut 0.95s cubic-bezier(0.25, 1, 0.5, 1) forwards !important;
+  will-change: opacity;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .landing-page-entrance,
+  .page-transition-container,
+  .unified-page-transition,
+  .destinations-transition-wrapper {
+    animation: none !important;
+    will-change: auto;
+  }
+
+  .page-mist-veil { animation: none !important; }
+}
+
+/* ========================================================
+   GLOBAL ULTRA-SLIM FROSTED GLASS SCROLLBAR
+   ======================================================== */
+
+/* Firefox standard support */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(255, 255, 255, 0.18) transparent;
+}
+
+/* Chrome, Edge, Safari (WebKit) */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent !important;
+}
+
+/* Default state: subtle silica pill */
+::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.18) !important;
+  border: 1px solid rgba(255, 255, 255, 0.08) !important;
+  border-radius: 9999px !important;
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  transition: background 0.25s ease, border-color 0.25s ease;
+}
+
+/* Hover state: illuminated signature teal */
+::-webkit-scrollbar-thumb:hover {
+  background: #2dd4bf !important;
+  border-color: rgba(45, 212, 191, 0.6) !important;
+  box-shadow: 0 0 10px rgba(45, 212, 191, 0.6);
+}
+
+::-webkit-scrollbar-thumb:active {
+  background: #14b8a6 !important;
+}
+
+/* Ensure corner intersection is transparent */
+::-webkit-scrollbar-corner {
+  background: transparent !important;
+}
+
+/* Keep the document canvas scrollable by wheel or touchpad without exposing
+   Chromium's native viewport track. Inner scroll containers keep the glass UI. */
+html::-webkit-scrollbar,
+body::-webkit-scrollbar {
+  display: none !important;
+  width: 0 !important;
+  height: 0 !important;
+  background: transparent !important;
+}
+
+/* ========================================================
+   MODAL AUTO-HIDE SCROLLBAR
+   (Invisible until the modal container is hovered)
+   ======================================================== */
+.modal-overlay,
+.destination-modal,
+.offer-modal,
+.reservation-modal,
+.modal-body,
+.tour-modal,
+.booking-action-dialog {
+  scrollbar-color: transparent transparent;
+}
+
+.modal-overlay:hover,
+.destination-modal:hover,
+.offer-modal:hover,
+.reservation-modal:hover,
+.modal-body:hover,
+.tour-modal:hover,
+.booking-action-dialog:hover {
+  scrollbar-color: rgba(255, 255, 255, 0.22) transparent;
+}
+
+/* WebKit hide/show on modal hover */
+.destination-modal::-webkit-scrollbar-thumb,
+.offer-modal::-webkit-scrollbar-thumb,
+.reservation-modal::-webkit-scrollbar-thumb,
+.modal-body::-webkit-scrollbar-thumb,
+.tour-modal::-webkit-scrollbar-thumb,
+.booking-action-dialog::-webkit-scrollbar-thumb {
+  background: transparent !important;
+}
+
+.destination-modal:hover::-webkit-scrollbar-thumb,
+.offer-modal:hover::-webkit-scrollbar-thumb,
+.reservation-modal:hover::-webkit-scrollbar-thumb,
+.modal-body:hover::-webkit-scrollbar-thumb,
+.tour-modal:hover::-webkit-scrollbar-thumb,
+.booking-action-dialog:hover::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.22) !important;
+}
+
+.destination-modal:hover::-webkit-scrollbar-thumb:hover,
+.offer-modal:hover::-webkit-scrollbar-thumb:hover,
+.reservation-modal:hover::-webkit-scrollbar-thumb:hover,
+.modal-body:hover::-webkit-scrollbar-thumb:hover,
+.tour-modal:hover::-webkit-scrollbar-thumb:hover,
+.booking-action-dialog:hover::-webkit-scrollbar-thumb:hover {
+  background: #2dd4bf !important;
 }

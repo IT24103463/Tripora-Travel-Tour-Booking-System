@@ -26,6 +26,7 @@ import {
   validateCardholderName
 } from '../utils/paymentValidation';
 import { formatBookingRef } from '../utils/formatters';
+import { formatLKR } from '../utils/currency';
 import './PaymentPage.css';
 
 function toGuid(id) {
@@ -268,10 +269,10 @@ export default function PaymentPage() {
             <ArrowLeft size={16} /> Back to Home
           </button>
 
-          <div className="payment-brand">
+          <button type="button" className="payment-brand" onClick={() => navigate('/')} aria-label="Go to Tripora home">
             <span className="payment-brand-mark">✈</span>
             <span>Tripora</span>
-          </div>
+          </button>
 
           <div className="payment-security-badge">
             <ShieldCheck size={16} />
@@ -333,7 +334,7 @@ export default function PaymentPage() {
               <div className="receipt-row" style={{ paddingTop: '0.5rem', borderTop: '1px dashed rgba(255,255,255,0.15)' }}>
                 <span className="receipt-label" style={{ fontWeight: 700, color: '#fff' }}>Total Paid</span>
                 <span className="receipt-value" style={{ fontSize: '1.25rem', color: '#9be4d8' }}>
-                  ${confirmationData.amountPaid.toLocaleString()} USD
+                  {formatLKR(confirmationData.amountPaid)}
                 </span>
               </div>
             </div>
@@ -404,7 +405,7 @@ export default function PaymentPage() {
                 <div className="price-breakdown">
                   <div className="price-row">
                     <span>Base Fare</span>
-                    <span>${totalAmount.toLocaleString()}</span>
+                    <span>{formatLKR(totalAmount)}</span>
                   </div>
                   <div className="price-row">
                     <span>Taxes & Service Charges</span>
@@ -412,7 +413,7 @@ export default function PaymentPage() {
                   </div>
                   <div className="price-row total-row">
                     <span>Total Amount</span>
-                    <span className="total-amount">${totalAmount.toLocaleString()} USD</span>
+                    <span className="total-amount">{formatLKR(totalAmount)}</span>
                   </div>
                 </div>
 
@@ -554,13 +555,13 @@ export default function PaymentPage() {
                     type="submit"
                     className="btn-pay-now"
                     disabled={!isFormValid || loading}
-                    aria-label={`Pay $${totalAmount.toLocaleString()} USD`}
+                    aria-label={`Pay ${formatLKR(totalAmount)}`}
                   >
                     {loading ? (
                       <span>Processing Payment...</span>
                     ) : (
                       <>
-                        <Lock size={16} /> Pay ${totalAmount.toLocaleString()} USD
+                        <Lock size={16} /> Pay {formatLKR(totalAmount)}
                       </>
                     )}
                   </button>

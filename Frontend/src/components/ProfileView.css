@@ -172,22 +172,6 @@
   }
 }
 
-.btn-refresh {
-  padding: 0.65rem 1.25rem;
-  background: #0ea5e9;
-  color: white;
-  border: none;
-  border-radius: 8px;
-  font-size: 0.875rem;
-  font-weight: 600;
-  cursor: pointer;
-  transition: background 0.2s;
-}
-
-.btn-refresh:hover {
-  background: #0284c7;
-}
-
 /* Loading State */
 .loading-state {
   display: flex;
@@ -289,8 +273,6 @@
 .authenticated-mode .section-heading { color: #9be4d8; }
 .authenticated-mode .field-value { border-color: rgba(220, 243, 241, 0.16); background: rgba(255, 255, 255, 0.08); color: #fff; }
 .authenticated-mode .role-badge { background: rgba(120, 210, 197, 0.16); color: #9be4d8; }
-.authenticated-mode .btn-refresh { border: 0; border-radius: 7px; background: #f7fbfa; color: #0b3e4c; box-shadow: 0 10px 22px rgba(0, 12, 25, 0.22); }
-.authenticated-mode .btn-refresh:hover { background: #ccefe9; }
 .authenticated-mode .profile-actions .btn-signout { padding: 0.65rem 1.25rem; border: 1.5px solid #d9aa9c; border-radius: 7px; background: transparent; color: #ffb0a0; font-size: 0.875rem; font-weight: 600; cursor: pointer; }
 .authenticated-mode .profile-actions .btn-signout:hover { background: #d46b4d; color: #fff; }
 .authenticated-mode .loading-state p,
@@ -333,3 +315,81 @@
   }
 }
 .spin-icon { animation: spin 1s linear infinite; }
+
+/* Acid-etched Tripora profile surface */
+.authenticated-mode .profile-card {
+  position: relative;
+  max-width: 880px;
+  padding: clamp(22px, 4vw, 40px);
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  border-top: 1px solid rgba(255, 255, 255, 0.24);
+  border-radius: 22px;
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.05) 0%, rgba(8, 14, 18, 0.70) 30%, rgba(6, 12, 16, 0.76) 100%);
+  box-shadow: inset 0 1px 1px rgba(255, 255, 255, 0.16), 0 20px 48px rgba(0, 0, 0, 0.55);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  color: #f1f5f9;
+}
+
+.profile-brand-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding-bottom: 22px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.profile-nav-brand { flex: 0 0 auto; }
+.profile-nav-brand .brand-icon-circle { width: 2.5rem; height: 2.5rem; }
+.profile-nav-brand .brand-main-name { color: #fff; text-transform: uppercase; letter-spacing: 0.08em; }
+.profile-nav-brand .brand-sub-name { color: #a8bbc0; }
+
+.profile-tier-badge {
+  padding: 8px 12px;
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.05);
+  color: #cbd5e1;
+  font-size: 0.76rem;
+  font-weight: 700;
+}
+
+.authenticated-mode .profile-header {
+  align-items: center;
+  padding: 26px 0 22px;
+  border-bottom-color: rgba(255, 255, 255, 0.1);
+}
+
+.profile-avatar-large {
+  display: grid;
+  width: 64px;
+  height: 64px;
+  flex: 0 0 auto;
+  place-items: center;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 50%;
+  background: linear-gradient(145deg, rgba(255, 255, 255, 0.14), rgba(255, 255, 255, 0.04));
+  color: #fff;
+  font-size: 1.6rem;
+  font-weight: 700;
+  box-shadow: inset 0 1px rgba(255, 255, 255, 0.2), 0 8px 24px rgba(0, 0, 0, 0.28);
+}
+
+.profile-avatar-large .brand-mark { display: none; }
+.authenticated-mode .profile-title { color: #fff; font-size: clamp(1.5rem, 3vw, 2rem); }
+.authenticated-mode .profile-subtitle { color: #cbd5e1; }
+.authenticated-mode .profile-content { gap: 1.25rem; }
+.authenticated-mode .section-heading { color: #fff; }
+.authenticated-mode .field-value { border-color: rgba(255, 255, 255, 0.13); border-radius: 11px; background: rgba(255, 255, 255, 0.05); color: #f1f5f9; }
+.authenticated-mode .role-badge { border: 1px solid rgba(255, 255, 255, 0.14); background: rgba(255, 255, 255, 0.06); color: #cbd5e1; }
+.authenticated-mode .profile-actions { border-top-color: rgba(255, 255, 255, 0.1); }
+
+@media (max-width: 560px) {
+  .authenticated-mode .profile-card { padding: 20px 16px; }
+  .profile-brand-row { align-items: flex-start; flex-direction: column; }
+  .authenticated-mode .profile-header { align-items: flex-start; gap: 14px; }
+  .profile-avatar-large { width: 52px; height: 52px; }
+  .authenticated-mode .profile-actions { align-items: stretch; flex-direction: column; }
+  .authenticated-mode .profile-actions button { width: 100%; }
+}
