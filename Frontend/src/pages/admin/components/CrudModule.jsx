@@ -18,6 +18,28 @@ function unwrapRecords(response) {
   return [];
 }
 
+function unwrapRecord(response) {
+  const payload = response?.data;
+  return payload?.data && !Array.isArray(payload.data) ? payload.data : payload;
+}
+
+const isActiveRecord = (record) => record.isActive ?? record.status === 'Active';
+
+export function sortRecordsByStatus(records) {
+  return [...records].sort((a, b) => {
+    const aActive = isActiveRecord(a);
+    const bActive = isActiveRecord(b);
+    if (aActive !== bActive) return aActive ? -1 : 1;
+
+    const aDate = Date.parse(a.createdAt || a.updatedAt || '');
+    const bDate = Date.parse(b.createdAt || b.updatedAt || '');
+    const aTime = Number.isNaN(aDate) ? 0 : aDate;
+    const bTime = Number.isNaN(bDate) ? 0 : bDate;
+    if (aTime !== bTime) return bTime - aTime;
+    return String(b.id ?? '').localeCompare(String(a.id ?? ''));
+  });
+}
+
 function Field({ field, value, onChange }) {
   const id = `crud-${field.name}`;
   if (field.type === 'checkbox') {
@@ -42,7 +64,7 @@ export default function CrudModule({ config }) {
     setLoading(true);
     setError('');
     try {
-      setRecords(unwrapRecords(await api.get(config.endpoint)));
+      setRecords(sortRecordsByStatus(unwrapRecords(await api.get(config.listEndpoint || config.endpoint))));
     } catch (requestError) {
       setRecords([]);
       setError(getErrorMessage(requestError));
@@ -71,10 +93,15 @@ export default function CrudModule({ config }) {
     setError('');
     const payload = config.toPayload(form);
     try {
-      if (editing) await api.put(`${config.endpoint}/${editing.id}`, payload);
-      else await api.post(config.endpoint, payload);
+      const response = editing
+        ? await api.put(`${config.endpoint}/${editing.id}`, payload)
+        : await api.post(config.endpoint, payload);
+      const savedRecord = unwrapRecord(response) || (editing ? { ...editing, ...payload } : payload);
+      setRecords((current) => sortRecordsByStatus(editing
+        ? current.map((item) => item.id === editing.id ? savedRecord : item)
+        : [...current, savedRecord]));
+      window.dispatchEvent(new CustomEvent('tripora:sync-telemetry'));
       setEditing(undefined);
-      await load();
     } catch (requestError) {
       setError(getErrorMessage(requestError));
     } finally {
@@ -88,8 +115,11 @@ export default function CrudModule({ config }) {
     setError('');
     try {
       await api.delete(`${config.endpoint}/${deleting.id}`);
+      setRecords((current) => sortRecordsByStatus(config.softDelete
+        ? current.map((item) => item.id === deleting.id ? { ...item, isActive: false } : item)
+        : current.filter((item) => item.id !== deleting.id)));
+      window.dispatchEvent(new CustomEvent('tripora:sync-telemetry'));
       setDeleting(null);
-      await load();
     } catch (requestError) {
       setError(getErrorMessage(requestError));
     } finally {
@@ -98,7 +128,7 @@ export default function CrudModule({ config }) {
   };
 
   const modalOpen = editing !== undefined;
-  return <section className="stage-module-wrap" aria-labelledby={`${config.id}-title`}>
+  return <section className="stage-module-wrap crud-module" aria-labelledby={`${config.id}-title`}>
     <div className="stage-banner-row"><div><h2 className="stage-title" id={`${config.id}-title`}>{config.title}</h2><p className="stage-subtitle">Manage live {config.plural.toLowerCase()} records.</p></div><div className="crud-actions"><button className="row-action-btn" type="button" onClick={load}>Refresh</button><button className="stage-primary-btn" type="button" onClick={openCreate}>Add {config.singular}</button></div></div>
     {error && <p className="crud-error" role="alert">{error}</p>}
     <div className="ledger-container"><div className="ledger-table-wrap"><table className="crystalline-table" aria-label={`${config.plural} management`}><thead><tr>{config.columns.map((column) => <th key={column.label}>{column.label}</th>)}<th>Actions</th></tr></thead><tbody>

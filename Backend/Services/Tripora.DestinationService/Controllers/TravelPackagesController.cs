@@ -31,6 +31,13 @@ public class TravelPackagesController(DestinationDbContext db) : ControllerBase
         return Ok(await query.OrderBy(p => p.PriceLKR).ToListAsync(cancellationToken));
     }
 
+    [HttpGet("admin")]
+    [Authorize(Roles = "Admin")]
+    public async Task<ActionResult<IReadOnlyList<TravelPackage>>> GetAdminPackages(CancellationToken cancellationToken)
+    {
+        return Ok(await db.TravelPackages.AsNoTracking().OrderByDescending(p => p.CreatedAt).ToListAsync(cancellationToken));
+    }
+
     [HttpGet("{id:guid}")]
     [AllowAnonymous]
     public async Task<ActionResult<TravelPackage>> GetPackage(Guid id, CancellationToken cancellationToken)

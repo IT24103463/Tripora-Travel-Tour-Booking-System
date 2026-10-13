@@ -44,8 +44,12 @@ public sealed class InquiriesController(DestinationDbContext db) : ControllerBas
 
     [HttpGet]
     [Authorize(Roles = "Admin")]
+    [ResponseCache(NoStore = true, Location = ResponseCacheLocation.None)]
     public async Task<ActionResult<IReadOnlyList<InquiryResponseDto>>> GetAll(CancellationToken cancellationToken = default)
     {
+        Response.Headers["Cache-Control"] = "no-cache, no-store, must-revalidate";
+        Response.Headers["Pragma"] = "no-cache";
+        Response.Headers["Expires"] = "0";
         var inquiries = await db.Inquiries.AsNoTracking()
             .OrderByDescending(inquiry => inquiry.CreatedAt)
             .Select(inquiry => new InquiryResponseDto(
@@ -59,6 +63,18 @@ public sealed class InquiriesController(DestinationDbContext db) : ControllerBas
             .ToListAsync(cancellationToken);
 
         return Ok(inquiries);
+    }
+
+    [HttpGet("metrics/open-count")]
+    [Authorize(Roles = "Admin")]
+    [ResponseCache(NoStore = true, Location = ResponseCacheLocation.None)]
+    public async Task<ActionResult<object>> GetOpenCount(CancellationToken cancellationToken = default)
+    {
+        Response.Headers["Cache-Control"] = "no-cache, no-store, must-revalidate";
+        Response.Headers["Pragma"] = "no-cache";
+        Response.Headers["Expires"] = "0";
+        var count = await db.Inquiries.AsNoTracking().CountAsync(inquiry => inquiry.Status == "UNREAD", cancellationToken);
+        return Ok(new { count });
     }
 
     [HttpPatch("{id:int}/status")]

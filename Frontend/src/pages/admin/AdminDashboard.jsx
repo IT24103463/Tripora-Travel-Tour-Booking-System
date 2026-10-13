@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { Check, Clock3, MessageCircle, Phone, RefreshCw, Search, Trash2 } from 'lucide-react';
 import api from '../../api/apiClient';
@@ -25,8 +25,14 @@ const navigation = [
   { id: 'inquiries', label: 'Concierge Desk', icon: NavIcons.inquiries },
 ];
 
-const emptyMetrics = { confirmedExpeditions: 0, activeOffers: 0, openInquiries: 0, loading: true, lastUpdated: null };
 const emptyCellStyle = { textAlign: 'center', padding: '36px', color: '#94a3b8' };
+const emptyMetrics = { confirmedExpeditions: 0, activeOffers: 0, openInquiries: 0, loading: true, lastUpdated: null };
+const POLL_INTERVAL_MS = 6000;
+const getTelemetryRequestConfig = () => ({ headers: { 'Cache-Control': 'no-cache, no-store, must-revalidate', Pragma: 'no-cache', Expires: '0' } });
+const telemetryCount = (payload, countItems) => {
+  const value = payload?.count ?? payload?.total ?? payload;
+  return Array.isArray(value) ? countItems(value) : Number.isFinite(Number(value)) ? Number(value) : 0;
+};
 const money = (amount) => `LKR ${Number(amount || 0).toLocaleString()}`;
 const formatLedgerDate = (value) => {
   if (!value) return 'Pending';
@@ -123,6 +129,7 @@ function InquiriesModule({ onChanged }) {
     try {
       const response = await api.patch(`/inquiries/${inquiry.id}/status`, { status });
       setInquiries((current) => current.map((item) => item.id === inquiry.id ? response.data : item));
+      window.dispatchEvent(new CustomEvent('tripora:sync-telemetry'));
       onChanged();
     } catch {
       setError(`Could not update ${inquiry.name}'s inquiry. Please try again.`);
@@ -138,6 +145,7 @@ function InquiriesModule({ onChanged }) {
     try {
       await api.delete(`/inquiries/${inquiry.id}`);
       setInquiries((current) => current.filter((item) => item.id !== inquiry.id));
+      window.dispatchEvent(new CustomEvent('tripora:sync-telemetry'));
       onChanged();
     } catch {
       setError(`Could not delete ${inquiry.name}'s inquiry. Please try again.`);
@@ -184,7 +192,7 @@ const moduleConfigs = {
     toPayload: (form) => basePayload(form, ['price', 'durationDays', 'capacity']),
   },
   packages: {
-    id: 'packages', title: 'Travel Packages', plural: 'Packages', singular: 'Package', endpoint: '/packages', deleteDescription: 'deactivate it so it is no longer publicly available.',
+    id: 'packages', title: 'Travel Packages', plural: 'Packages', singular: 'Package', endpoint: '/packages', listEndpoint: '/packages/admin', softDelete: true, deleteDescription: 'deactivate it so it is no longer publicly available.',
     fields: [
       { name: 'name', label: 'Package name', required: true }, { name: 'packageType', label: 'Package type', options: ['DayOut', 'CoupleEscape', 'FriendsHangout', 'MultiDayTrip'], required: true },
       { name: 'destination', label: 'Destination', required: true }, { name: 'priceLKR', label: 'Price (LKR)', type: 'number', min: '0.01', step: '0.01', required: true },
@@ -197,7 +205,7 @@ const moduleConfigs = {
     toPayload: (form) => ({ ...basePayload(form, ['priceLKR', 'minGuests', 'maxGuests', 'durationDays', 'durationNights']), inclusions: listValue(form.inclusions) }),
   },
   hotels: {
-    id: 'hotels', title: 'Sanctuaries & Stays', plural: 'Hotels', singular: 'Hotel', endpoint: '/hotels', deleteDescription: 'permanently remove this hotel and its inventory.',
+    id: 'hotels', title: 'Sanctuaries & Stays', plural: 'Hotels', singular: 'Hotel', endpoint: '/hotels', listEndpoint: '/hotels?includeInactive=true', deleteDescription: 'permanently remove this hotel and its inventory.',
     fields: [
       { name: 'name', label: 'Hotel name', required: true }, { name: 'location', label: 'Location', required: true },
       { name: 'pricePerNight', label: 'Rate per night (LKR)', type: 'number', min: '0.01', step: '0.01', required: true }, { name: 'totalRooms', label: 'Total rooms', type: 'number', min: '0', required: true },
@@ -209,7 +217,7 @@ const moduleConfigs = {
     toPayload: (form) => basePayload(form, ['pricePerNight', 'totalRooms', 'availableRooms', 'rating']),
   },
   offers: {
-    id: 'offers', title: 'Curated Promotional Offers', plural: 'Offers', singular: 'Offer', endpoint: '/offers', deleteDescription: 'deactivate it so it is no longer publicly available.',
+    id: 'offers', title: 'Curated Promotional Offers', plural: 'Offers', singular: 'Offer', endpoint: '/offers', listEndpoint: '/offers/admin', softDelete: true, deleteDescription: 'deactivate it so it is no longer publicly available.',
     fields: [
       { name: 'title', label: 'Offer title', required: true }, { name: 'category', label: 'Category', options: ['Tour', 'Hotel', 'Package'], required: true },
       { name: 'targetId', label: 'Target record ID', required: true }, { name: 'discountPercentage', label: 'Discount (%)', type: 'number', min: '0', max: '100', required: true },
@@ -227,33 +235,131 @@ export default function AdminDashboard() {
   const [activeModule, setActiveModule] = useState(location.state?.activeModule || 'overview');
   const [clock, setClock] = useState('');
   const [filterQuery, setFilterQuery] = useState('');
-  const [metrics, setMetrics] = useState(emptyMetrics);
   const [recentBookings, setRecentBookings] = useState([]);
+  const [ledgerLoading, setLedgerLoading] = useState(false);
+  const [metrics, setMetrics] = useState(emptyMetrics);
+  const [isSyncing, setIsSyncing] = useState(false);
+  const [lastSync, setLastSync] = useState(null);
+  const [pollCount, setPollCount] = useState(0);
+  const isFetchingRef = useRef(false);
+  const isMountedRef = useRef(false);
+  const pollingTimerRef = useRef(null);
+  const requestTelemetrySyncRef = useRef(null);
   const navigate = useNavigate();
 
   useEffect(() => {
-    const updateTime = () => setClock(new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' }));
+    let clockTimer;
+    const updateTime = () => {
+      setClock(new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' }));
+      clockTimer = setTimeout(updateTime, 1000);
+    };
     updateTime();
-    const interval = setInterval(updateTime, 1000);
-    return () => clearInterval(interval);
+    return () => clearTimeout(clockTimer);
   }, []);
 
-  const fetchDashboardData = useCallback(async () => {
+  const syncDashboardMetrics = useCallback(async () => {
+    if (!isMountedRef.current || isFetchingRef.current) return false;
+
+    isFetchingRef.current = true;
+    setIsSyncing(true);
     setMetrics((current) => ({ ...current, loading: true }));
-    const [bookingsResult, offersResult, inquiriesResult] = await Promise.allSettled([api.get('/bookings'), api.get('/offers'), api.get('/inquiries')]);
-    const bookings = bookingsResult.status === 'fulfilled' && Array.isArray(bookingsResult.value.data) ? bookingsResult.value.data : [];
-    const offers = offersResult.status === 'fulfilled' && Array.isArray(offersResult.value.data) ? offersResult.value.data : [];
-    const inquiries = inquiriesResult.status === 'fulfilled' && Array.isArray(inquiriesResult.value.data) ? inquiriesResult.value.data : [];
-    const confirmed = bookings.filter((booking) => booking.status?.toLowerCase() === 'confirmed');
-    setRecentBookings(bookings);
-    setMetrics({ confirmedExpeditions: confirmed.length, activeOffers: offers.filter((offer) => offer.isActive).length, openInquiries: inquiries.filter((inquiry) => inquiry.status === 'UNREAD').length, loading: false, lastUpdated: new Date().toISOString() });
+    try {
+      console.log('[Telemetry Sync] Fetching metrics at', new Date().toLocaleTimeString());
+      const cacheBuster = `_ts=${Date.now()}`;
+      const requestConfig = getTelemetryRequestConfig();
+      const [expRes, offRes, inqRes] = await Promise.allSettled([
+        api.get(`/bookings/metrics/confirmed-count?${cacheBuster}`, requestConfig),
+        api.get(`/offers/metrics/active-count?${cacheBuster}`, requestConfig),
+        api.get(`/inquiries/metrics/open-count?${cacheBuster}`, requestConfig),
+      ]);
+      console.log('[Telemetry Sync] Raw API responses:', { expRes, offRes, inqRes });
+      const updates = {};
+      const telemetryResults = [
+        { endpoint: '/bookings/metrics/confirmed-count', result: expRes, apply: (data) => {
+          updates.confirmedExpeditions = telemetryCount(data, (bookings) => bookings.filter((booking) => booking.status?.toLowerCase() === 'confirmed').length);
+        } },
+        { endpoint: '/offers/metrics/active-count', result: offRes, apply: (data) => {
+          updates.activeOffers = telemetryCount(data, (offers) => offers.filter((offer) => offer.isActive).length);
+        } },
+        { endpoint: '/inquiries/metrics/open-count', result: inqRes, apply: (data) => {
+          updates.openInquiries = telemetryCount(data, (inquiries) => inquiries.filter((inquiry) => inquiry.status === 'UNREAD').length);
+        } },
+      ];
+
+      telemetryResults.forEach(({ endpoint, result, apply }) => {
+        if (result.status === 'rejected') {
+          console.warn('[Telemetry Sync Error]:', endpoint, result.reason);
+          return;
+        }
+        if (result.value.status >= 400) {
+          console.warn('[Telemetry Sync Error]:', endpoint, result.value);
+          return;
+        }
+        apply(result.value.data);
+      });
+
+      if (isMountedRef.current && Object.keys(updates).length > 0) {
+        const syncedAt = new Date();
+        const nextMetrics = { ...updates, lastUpdated: syncedAt.toISOString() };
+        console.log('[Telemetry Sync] Next metrics state:', nextMetrics);
+        setMetrics((current) => ({ ...current, ...updates, loading: false, lastUpdated: syncedAt.toISOString() }));
+      }
+    } finally {
+      isFetchingRef.current = false;
+      if (isMountedRef.current) {
+        const checkedAt = new Date();
+        setMetrics((current) => ({ ...current, loading: false }));
+        setLastSync(checkedAt);
+        setPollCount((current) => current + 1);
+        setIsSyncing(false);
+      }
+    }
+    return true;
   }, []);
 
   useEffect(() => {
-    fetchDashboardData();
-    const interval = setInterval(fetchDashboardData, 30000);
-    return () => clearInterval(interval);
-  }, [fetchDashboardData]);
+    isMountedRef.current = true;
+    const clearScheduledPoll = () => {
+      if (pollingTimerRef.current !== null) {
+        clearTimeout(pollingTimerRef.current);
+        pollingTimerRef.current = null;
+      }
+    };
+    const scheduleNextPoll = () => {
+      if (!isMountedRef.current || pollingTimerRef.current !== null) return;
+      pollingTimerRef.current = setTimeout(async () => {
+        pollingTimerRef.current = null;
+        await runTelemetrySync();
+      }, POLL_INTERVAL_MS);
+    };
+    const runTelemetrySync = async () => {
+      if (isFetchingRef.current) return;
+      await syncDashboardMetrics();
+      scheduleNextPoll();
+    };
+    requestTelemetrySyncRef.current = () => {
+      clearScheduledPoll();
+      return runTelemetrySync();
+    };
+    void runTelemetrySync();
+    const refreshOnTabFocus = () => {
+      if (document.visibilityState === 'visible') void requestTelemetrySyncRef.current?.();
+    };
+    const refreshOnTelemetryMutation = () => void requestTelemetrySyncRef.current?.();
+    document.addEventListener('visibilitychange', refreshOnTabFocus);
+    window.addEventListener('tripora:sync-telemetry', refreshOnTelemetryMutation);
+    return () => {
+      isMountedRef.current = false;
+      clearScheduledPoll();
+      requestTelemetrySyncRef.current = null;
+      document.removeEventListener('visibilitychange', refreshOnTabFocus);
+      window.removeEventListener('tripora:sync-telemetry', refreshOnTelemetryMutation);
+    };
+  }, [syncDashboardMetrics]);
+  const requestTelemetrySync = useCallback(() => requestTelemetrySyncRef.current?.(), []);
+  useEffect(() => {
+    if (activeModule === 'overview') void requestTelemetrySync();
+  }, [activeModule, requestTelemetrySync]);
   const filteredBookings = recentBookings.filter((booking) => {
     const query = filterQuery.toLowerCase();
     return (booking.guestName || booking.customerName || booking.userEmail || '').toLowerCase().includes(query) || (booking.itemTitle || booking.packageName || booking.tourTitle || '').toLowerCase().includes(query);
@@ -278,10 +384,10 @@ export default function AdminDashboard() {
       </header>
     <div className="crystalline-deck-layout"><aside className="floating-nav-rail"><div><div className="rail-header-label">System Modules</div><nav className="rail-menu" aria-label="Admin dashboard modules">{navigation.map((item) => <button key={item.id} type="button" className={`rail-btn ${activeModule === item.id ? 'active' : ''} ${item.special ? 'special-gold' : ''}`} onClick={() => setActiveModule(item.id)}><span className="rail-btn-icon">{item.icon}</span><span className="rail-btn-text">{item.label}</span>{item.tag && <span className="rail-tag-teal">{item.tag}</span>}</button>)}</nav></div><div className="rail-footer-meta"><div className="meta-row"><span>DB Sync</span><span className="teal-text">{metrics.loading ? 'Syncing...' : 'Connected'}</span></div></div></aside>
       <main className="floating-stage-panel">
-        {activeModule === 'overview' && <div className="stage-module-wrap"><div className="stage-banner-row"><div><h2 className="stage-title">Executive Command Pulse</h2><p className="stage-subtitle">Real-time telemetry and confirmed sanctuary reservations.</p></div><button className="stage-primary-btn" type="button" onClick={fetchDashboardData}>↻ Refresh Feed</button></div><div className="bento-metric-grid"><div className="bento-glass-card"><span className="bento-eyebrow">Confirmed Expeditions</span><div className="bento-hero-number">{metrics.confirmedExpeditions}</div><span className="delta-pill-teal">Active records</span></div><div className="bento-glass-card card-accent-gold"><span className="bento-eyebrow">Active Offers</span><div className="bento-hero-number gold-glow">{metrics.activeOffers} Active</div><span className="delta-pill-gold">Live in DB</span></div><div className="bento-glass-card"><span className="bento-eyebrow">Concierge Inquiries</span><div className="bento-hero-number">{metrics.openInquiries} Open</div><span className="delta-note">{metrics.lastUpdated ? `Updated ${new Date(metrics.lastUpdated).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}` : 'Awaiting sync'}</span></div></div><section className="ledger-container" aria-labelledby="ledger-title"><div className="ledger-header-row"><h3 className="ledger-title" id="ledger-title">Recent Expedition Ledger</h3><input type="text" placeholder="Search guest or destination..." className="ledger-glass-search" value={filterQuery} onChange={(event) => setFilterQuery(event.target.value)} /></div><div className="ledger-table-wrap"><table className="crystalline-table" aria-label="Recent expedition ledger"><thead><tr><th>Code / ID</th><th>Guest Details</th><th>Expedition / Stay</th><th>Dates</th><th>Valuation</th><th>Status</th></tr></thead><tbody>{metrics.loading ? <tr><td colSpan="6" style={emptyCellStyle}>Retrieving live ledger records...</td></tr> : filteredBookings.length === 0 ? <tr><td colSpan="6" style={emptyCellStyle}>No reservations recorded in the database yet.</td></tr> : filteredBookings.map((booking) => <tr key={booking.id || booking._id}><td><span className="code-pill">{booking.bookingCode || booking.id?.substring(0, 8) || 'RES'}</span></td><td><strong>{booking.guestName || booking.customerName || 'Private Traveler'}</strong><span className="cell-subtext">{booking.email || booking.userEmail || '—'}</span></td><td>{booking.itemTitle || booking.tourName || booking.packageName || 'Expedition'}</td><td>{formatLedgerDate(booking.dates || booking.travelDate || booking.createdAt)}</td><td>{money(booking.totalPrice || booking.amount || booking.totalLKR)}</td><td>{activeStatus(booking.status?.toLowerCase() === 'confirmed')}</td></tr>)}</tbody></table></div></section></div>}
+        {activeModule === 'overview' && <div className="stage-module-wrap"><div className="stage-banner-row"><div><h2 className="stage-title">Executive Command Pulse</h2><p className="stage-subtitle">Real-time telemetry and confirmed sanctuary reservations.</p><span className="dashboard-live-indicator" aria-live="polite">{isSyncing ? '● Polling...' : lastSync ? `● Live Sync (Checked: ${lastSync.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' })} | Polls: ${pollCount})` : 'Awaiting sync'}</span></div><button className="stage-primary-btn" type="button" onClick={requestTelemetrySync} disabled={isSyncing}>{isSyncing ? 'Polling...' : '↻ Refresh Feed'}</button></div><div className="bento-metric-grid"><div key={`confirmed-${metrics.confirmedExpeditions}`} className="bento-glass-card metric-card-flash"><span className="bento-eyebrow">Confirmed Expeditions</span><div className="bento-hero-number metric-value-transition">{metrics.confirmedExpeditions}</div><span className="delta-pill-teal">Active records</span></div><div key={`offers-${metrics.activeOffers}`} className="bento-glass-card card-accent-gold metric-card-flash"><span className="bento-eyebrow">Active Offers</span><div className="bento-hero-number gold-glow metric-value-transition">{metrics.activeOffers} Active</div><span className="delta-pill-gold">Live in DB</span></div><div key={`inquiries-${metrics.openInquiries}`} className="bento-glass-card metric-card-flash"><span className="bento-eyebrow">Concierge Inquiries</span><div className="bento-hero-number metric-value-transition">{metrics.openInquiries} Open</div><span className="delta-note">Live concierge queue</span></div></div><section className="ledger-container" aria-labelledby="ledger-title"><div className="ledger-header-row"><h3 className="ledger-title" id="ledger-title">Recent Expedition Ledger</h3><input type="text" placeholder="Search guest or destination..." className="ledger-glass-search" value={filterQuery} onChange={(event) => setFilterQuery(event.target.value)} /></div><div className="ledger-table-wrap"><table className="crystalline-table" aria-label="Recent expedition ledger"><thead><tr><th>Code / ID</th><th>Guest Details</th><th>Expedition / Stay</th><th>Dates</th><th>Valuation</th><th>Status</th></tr></thead><tbody>{metrics.loading ? <tr><td colSpan="6" style={emptyCellStyle}>Retrieving live ledger records...</td></tr> : filteredBookings.length === 0 ? <tr><td colSpan="6" style={emptyCellStyle}>No reservations recorded in the database yet.</td></tr> : filteredBookings.map((booking) => <tr key={booking.id || booking._id}><td><span className="code-pill">{booking.bookingCode || booking.id?.substring(0, 8) || 'RES'}</span></td><td><strong>{booking.guestName || booking.customerName || 'Private Traveler'}</strong><span className="cell-subtext">{booking.email || booking.userEmail || '—'}</span></td><td>{booking.itemTitle || booking.tourName || booking.packageName || 'Expedition'}</td><td>{formatLedgerDate(booking.dates || booking.travelDate || booking.createdAt)}</td><td>{money(booking.totalPrice || booking.amount || booking.totalLKR)}</td><td>{activeStatus(booking.status?.toLowerCase() === 'confirmed')}</td></tr>)}</tbody></table></div></section></div>}
         {moduleConfigs[activeModule] && <CrudModule config={moduleConfigs[activeModule]} />}
         {activeModule === 'bookings' && <BookingsModule />}
-        {activeModule === 'inquiries' && <InquiriesModule onChanged={fetchDashboardData} />}
+        {activeModule === 'inquiries' && <InquiriesModule onChanged={requestTelemetrySync} />}
       </main>
       </div>
     </div>

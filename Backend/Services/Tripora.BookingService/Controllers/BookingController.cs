@@ -31,8 +31,12 @@ public class BookingController : ControllerBase
 
     [HttpGet]
     [Authorize(Roles = "Admin")]
+    [ResponseCache(NoStore = true, Location = ResponseCacheLocation.None)]
     public async Task<IActionResult> GetBookings()
     {
+        Response.Headers["Cache-Control"] = "no-cache, no-store, must-revalidate";
+        Response.Headers["Pragma"] = "no-cache";
+        Response.Headers["Expires"] = "0";
         var bookings = await _context.Bookings
             .AsNoTracking()
             .OrderByDescending(booking => booking.CreatedAt)
@@ -62,6 +66,18 @@ public class BookingController : ControllerBase
             .ToListAsync();
 
         return Ok(bookings);
+    }
+
+    [HttpGet("metrics/confirmed-count")]
+    [Authorize(Roles = "Admin")]
+    [ResponseCache(NoStore = true, Location = ResponseCacheLocation.None)]
+    public async Task<IActionResult> GetConfirmedCount()
+    {
+        Response.Headers["Cache-Control"] = "no-cache, no-store, must-revalidate";
+        Response.Headers["Pragma"] = "no-cache";
+        Response.Headers["Expires"] = "0";
+        var count = await _context.Bookings.AsNoTracking().CountAsync(booking => booking.Status == "Confirmed");
+        return Ok(new { count });
     }
 
     [HttpPost]

@@ -14,11 +14,15 @@ public class OffersController(DestinationDbContext db) : ControllerBase
 {
     [HttpGet]
     [AllowAnonymous]
+    [ResponseCache(NoStore = true, Location = ResponseCacheLocation.None)]
     public async Task<ActionResult<IReadOnlyList<Offer>>> GetOffers(
         [FromQuery] string? category,
         [FromQuery] bool includeUpcoming = false,
         CancellationToken cancellationToken = default)
     {
+        Response.Headers["Cache-Control"] = "no-cache, no-store, must-revalidate";
+        Response.Headers["Pragma"] = "no-cache";
+        Response.Headers["Expires"] = "0";
         var now = DateTime.UtcNow;
         var query = db.Offers.AsNoTracking().Where(o => o.IsActive && o.EndDate >= now);
         if (!includeUpcoming)
@@ -27,6 +31,25 @@ public class OffersController(DestinationDbContext db) : ControllerBase
             query = query.Where(o => o.Category == category);
 
         return Ok(await query.OrderBy(o => o.EndDate).ToListAsync(cancellationToken));
+    }
+
+    [HttpGet("metrics/active-count")]
+    [Authorize(Roles = "Admin")]
+    [ResponseCache(NoStore = true, Location = ResponseCacheLocation.None)]
+    public async Task<ActionResult<object>> GetActiveCount(CancellationToken cancellationToken)
+    {
+        Response.Headers["Cache-Control"] = "no-cache, no-store, must-revalidate";
+        Response.Headers["Pragma"] = "no-cache";
+        Response.Headers["Expires"] = "0";
+        var count = await db.Offers.AsNoTracking().CountAsync(offer => offer.IsActive, cancellationToken);
+        return Ok(new { count });
+    }
+
+    [HttpGet("admin")]
+    [Authorize(Roles = "Admin")]
+    public async Task<ActionResult<IReadOnlyList<Offer>>> GetAdminOffers(CancellationToken cancellationToken)
+    {
+        return Ok(await db.Offers.AsNoTracking().OrderByDescending(o => o.CreatedAt).ToListAsync(cancellationToken));
     }
 
     [HttpGet("{id:guid}")]
