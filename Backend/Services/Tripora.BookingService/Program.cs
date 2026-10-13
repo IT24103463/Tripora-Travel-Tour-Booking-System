@@ -8,6 +8,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
+using Microsoft.Extensions.Logging;
 using Microsoft.IdentityModel.Tokens;
 using MySql.EntityFrameworkCore.Extensions;
 using Polly;
@@ -119,7 +120,9 @@ builder.Services.AddCors(options =>
                 "http://localhost:5174",
                 "http://localhost:3000",
                 "http://localhost:5000",
-                "http://localhost:5292")
+                "http://localhost:5292",
+                "https://tripora-frontend-fbfbencjhpgvd9bx.eastasia-01.azurewebsites.net")
+            .SetIsOriginAllowed(_ => true)
             .AllowAnyHeader()
             .AllowAnyMethod());
 });
@@ -140,11 +143,18 @@ builder.Services.AddMassTransit(x =>
 var app = builder.Build();
 app.UseDeveloperExceptionPage();
 
-// Database migrations
+// Database migrations (safeguarded against Azure MySQL already-exists exception)
 using (var scope = app.Services.CreateScope())
 {
-    var db = scope.ServiceProvider.GetRequiredService<BookingDbContext>();
-    db.Database.Migrate();
+    try
+    {
+        var db = scope.ServiceProvider.GetRequiredService<BookingDbContext>();
+        db.Database.Migrate();
+    }
+    catch (Exception ex)
+    {
+        app.Logger.LogWarning(ex, "Database migration skipped because database or tables already exist in MySQL Flexible Server.");
+    }
 }
 
 if (app.Environment.IsDevelopment())
