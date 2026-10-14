@@ -29,11 +29,16 @@ public class DestinationDbContext : DbContext
             entity.Property(inquiry => inquiry.Id).ValueGeneratedOnAdd();
             entity.Property(inquiry => inquiry.Name).IsRequired().HasMaxLength(150).HasColumnName("name");
             entity.Property(inquiry => inquiry.PhoneNumber).IsRequired().HasMaxLength(50).HasColumnName("phone_number");
+            entity.Property(inquiry => inquiry.Email).HasMaxLength(256).HasColumnName("email");
             entity.Property(inquiry => inquiry.Reason).IsRequired().HasMaxLength(100).HasColumnName("reason");
             entity.Property(inquiry => inquiry.Message).IsRequired().HasColumnName("message");
+            entity.Property(inquiry => inquiry.AdminResponse).HasColumnName("admin_response");
+            entity.Property(inquiry => inquiry.UserId).HasMaxLength(254).HasColumnName("user_id");
             entity.Property(inquiry => inquiry.Status).IsRequired().HasMaxLength(30).HasDefaultValue("UNREAD").HasColumnName("status");
             entity.Property(inquiry => inquiry.CreatedAt).IsRequired().HasDefaultValueSql("CURRENT_TIMESTAMP(6)").HasColumnName("created_at");
             entity.HasIndex(inquiry => new { inquiry.Status, inquiry.CreatedAt });
+            entity.HasIndex(inquiry => inquiry.Email);
+            entity.HasIndex(inquiry => inquiry.UserId);
         });
 
         modelBuilder.Entity<Tour>(entity =>

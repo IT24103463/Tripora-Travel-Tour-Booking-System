@@ -1,8 +1,9 @@
-import { beforeEach, describe, expect, it } from 'vitest';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { fireEvent, render, screen } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
 import { getLoginDestination, isAdminUser } from './App';
 import App from './App';
+import api from './api/apiClient';
 
 describe('getLoginDestination', () => {
   it('sends administrators to the gateway despite a saved dashboard redirect', () => {
@@ -68,5 +69,39 @@ describe('unauthenticated navigation', () => {
     );
 
     expect(await screen.findByRole('heading', { name: 'Customer Sign In' })).toBeTruthy();
+  });
+});
+
+describe('sent inquiries route', () => {
+  beforeEach(() => {
+    localStorage.clear();
+    sessionStorage.clear();
+    vi.spyOn(api, 'get').mockResolvedValue({ data: [] });
+  });
+
+  it('requires authentication when opened directly', async () => {
+    render(
+      <MemoryRouter initialEntries={['/my-inquiries']}>
+        <App />
+      </MemoryRouter>
+    );
+
+    expect(await screen.findByRole('heading', { name: 'Customer Sign In' })).toBeTruthy();
+    expect(api.get).not.toHaveBeenCalled();
+  });
+
+  it('renders for an authenticated customer', async () => {
+    const tokenPayload = btoa(JSON.stringify({ exp: Math.floor(Date.now() / 1000) + 3600 }));
+    localStorage.setItem('tripora_token', `header.${tokenPayload}.signature`);
+    localStorage.setItem('tripora_user', JSON.stringify({ role: 'Customer', fullName: 'Traveler' }));
+
+    render(
+      <MemoryRouter initialEntries={['/my-inquiries']}>
+        <App />
+      </MemoryRouter>
+    );
+
+    expect(await screen.findByRole('heading', { name: 'Sent Inquiries' })).toBeTruthy();
+    expect(api.get).toHaveBeenCalledWith('/inquiries/my');
   });
 });

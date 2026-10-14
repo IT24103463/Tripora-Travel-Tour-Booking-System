@@ -15,6 +15,7 @@ import AboutUs from './pages/AboutUs';
 import Contact from './pages/Contact';
 import TravelPackages from './pages/TravelPackages';
 import Offers from './pages/Offers';
+import MyInquiries from './pages/MyInquiries';
 import EmailVerificationModal from './components/EmailVerificationModal';
 import './App.css';
 
@@ -22,6 +23,7 @@ const protectedViews = {
   '/destinations': 'tours',
   '/dashboard': 'dashboard',
   '/bookings': 'booking-history',
+  '/my-inquiries': 'my-inquiries',
   '/profile': 'profile',
   '/admin': 'admin',
 };
@@ -264,7 +266,7 @@ function App() {
   const isPublicInfoPage = isAboutPage || isContactPage || isTravelPackagesPage || isOffersPage;
   const isAuthenticated = Boolean(authUser && authToken);
   const isPublicRoute = ['/', '/login', '/register'].includes(location.pathname);
-  const isCustomerHome = Boolean(!isPublicInfoPage && authUser && authToken && !isAdminUser(authUser) && ['dashboard', 'booking-history'].includes(currentView));
+  const isCustomerHome = Boolean(!isPublicInfoPage && authUser && authToken && !isAdminUser(authUser) && ['dashboard', 'booking-history', 'my-inquiries'].includes(currentView));
   const transitionKey = `${location.pathname}:${currentView}:${activeTab}`;
   const transitionClassName = location.pathname === '/'
     ? 'page-transition-container landing-page-entrance'
@@ -344,6 +346,9 @@ function App() {
                     <button type="button" className={`profile-menu-item ${location.pathname === '/bookings' ? 'active' : ''}`} onClick={() => { handleProtectedNavigation('dashboard', '/bookings'); setProfileMenuOpen(false); }} role="menuitem" aria-label="Booking History">
                       History
                     </button>
+                    <button type="button" className={`profile-menu-item ${location.pathname === '/my-inquiries' ? 'active' : ''}`} onClick={() => { handleProtectedNavigation('my-inquiries', '/my-inquiries'); setProfileMenuOpen(false); }} role="menuitem">
+                      Inquiries
+                    </button>
 
                     {isAdminUser(authUser) && (
                       <button type="button" className={`profile-menu-item ${currentView === 'destination-management' ? 'active' : ''}`} onClick={() => { setCurrentView('destination-management'); setProfileMenuOpen(false); }} role="menuitem">
@@ -409,6 +414,7 @@ function App() {
               />
             )}
             {currentView === 'booking-history' && <BookingHistory token={authToken} />}
+            {currentView === 'my-inquiries' && <MyInquiries />}
             {currentView === 'profile' && (
               <ProfileView 
                 token={authToken}
@@ -512,8 +518,6 @@ function App() {
 }
 
 export default App;
-
-
 
 
 

@@ -20,6 +20,10 @@ public class Inquiry
     [Column("phone_number")]
     public string PhoneNumber { get; set; } = string.Empty;
 
+    [MaxLength(256)]
+    [Column("email")]
+    public string? Email { get; set; }
+
     [Required]
     [MaxLength(100)]
     [Column("reason")]
@@ -28,6 +32,13 @@ public class Inquiry
     [Required]
     [Column("message")]
     public string Message { get; set; } = string.Empty;
+
+    [Column("admin_response")]
+    public string? AdminResponse { get; set; }
+
+    [MaxLength(100)]
+    [Column("user_id")]
+    public string? UserId { get; set; }
 
     [MaxLength(30)]
     [Column("status")]

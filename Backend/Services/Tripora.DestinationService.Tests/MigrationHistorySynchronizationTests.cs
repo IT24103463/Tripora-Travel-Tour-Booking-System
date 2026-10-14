@@ -11,6 +11,8 @@ public sealed class MigrationHistorySynchronizationTests
     [Theory]
     [InlineData(typeof(InitialCreate), "Tours")]
     [InlineData(typeof(AddInquiriesTable), "inquiries")]
+    [InlineData(typeof(AddUserIdToInquiries), "inquiries")]
+    [InlineData(typeof(AddInquiryEmailAndAdminResponse), "inquiries")]
     public void Existing_table_migrations_do_not_emit_create_table_operations(Type migrationType, string tableName)
     {
         var migration = Assert.IsAssignableFrom<Migration>(Activator.CreateInstance(migrationType));

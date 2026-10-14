@@ -1,3 +1,4 @@
+using System.Security.Claims;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
@@ -30,8 +31,10 @@ public sealed class InquiriesController(DestinationDbContext db) : ControllerBas
         {
             Name = request.Name.Trim(),
             PhoneNumber = request.PhoneNumber.Trim(),
+            Email = User.Identity?.IsAuthenticated == true ? GetUserEmail() : null,
             Reason = request.Reason.Trim(),
             Message = request.Message.Trim(),
+            UserId = User.Identity?.IsAuthenticated == true ? GetUserId() : null,
             Status = "UNREAD",
             CreatedAt = DateTime.UtcNow
         };
@@ -40,6 +43,51 @@ public sealed class InquiriesController(DestinationDbContext db) : ControllerBas
         await db.SaveChangesAsync(cancellationToken);
 
         return CreatedAtAction(nameof(GetAll), new { id = inquiry.Id }, ToResponse(inquiry));
+    }
+
+    [HttpGet("my")]
+    [Authorize]
+    [ResponseCache(NoStore = true, Location = ResponseCacheLocation.None)]
+    [ProducesResponseType(typeof(IReadOnlyList<UserInquiryResponseDto>), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    public async Task<ActionResult<IReadOnlyList<UserInquiryResponseDto>>> GetMy(
+        CancellationToken cancellationToken = default)
+    {
+        var userId = GetUserId();
+        var userEmail = GetUserEmail()?.Trim().ToLowerInvariant();
+        if (string.IsNullOrWhiteSpace(userId) && string.IsNullOrWhiteSpace(userEmail))
+            return Unauthorized(new { message = "User identity not resolved." });
+
+        Response.Headers["Cache-Control"] = "no-cache, no-store, must-revalidate";
+        Response.Headers["Pragma"] = "no-cache";
+        Response.Headers["Expires"] = "0";
+        var matchingInquiries = await db.Inquiries.AsNoTracking()
+            .Where(inquiry =>
+                (!string.IsNullOrWhiteSpace(userId) && inquiry.UserId == userId)
+                || (!string.IsNullOrWhiteSpace(userEmail)
+                    && inquiry.Email != null
+                    && inquiry.Email.Trim().ToLower() == userEmail))
+            .OrderByDescending(inquiry => inquiry.CreatedAt)
+            .Select(inquiry => new
+            {
+                inquiry.Id,
+                inquiry.Reason,
+                inquiry.Message,
+                inquiry.Status,
+                inquiry.CreatedAt,
+                inquiry.AdminResponse
+            })
+            .ToListAsync(cancellationToken);
+
+        var inquiries = matchingInquiries.Select(inquiry => new UserInquiryResponseDto(
+            inquiry.Id,
+            inquiry.Reason,
+            inquiry.Message,
+            inquiry.Status,
+            new DateTimeOffset(DateTime.SpecifyKind(inquiry.CreatedAt, DateTimeKind.Utc)),
+            inquiry.AdminResponse)).ToList();
+
+        return Ok(inquiries);
     }
 
     [HttpGet]
@@ -118,4 +166,13 @@ public sealed class InquiriesController(DestinationDbContext db) : ControllerBas
         inquiry.Message,
         inquiry.Status,
         inquiry.CreatedAt);
+
+    private string? GetUserId() =>
+        User.FindFirstValue(ClaimTypes.NameIdentifier)
+        ?? User.FindFirstValue("id")
+        ?? User.FindFirstValue("sub");
+
+    private string? GetUserEmail() =>
+        User.FindFirstValue(ClaimTypes.Email)
+        ?? User.FindFirstValue("email");
 }

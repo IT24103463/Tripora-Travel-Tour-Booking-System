@@ -3,7 +3,15 @@ import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import Offers from './Offers';
 
 vi.mock('../components/BookingAction', () => ({
-  default: ({ offer }) => <output data-testid={`booking-image-${offer.id}`}>{offer.imageUrl}</output>,
+  default: ({ offer }) => (
+    <output
+      data-testid="selected-booking-offer"
+      data-offer-id={offer.id}
+      data-target-id={offer.targetId}
+    >
+      {offer.imageUrl}
+    </output>
+  ),
 }));
 
 const offers = [
@@ -41,6 +49,11 @@ describe('Offers imagery', () => {
     expect(media[1].style.backgroundImage).not.toEqual(media[2].style.backgroundImage);
 
     fireEvent.click(screen.getByText('Trincomalee Catamaran Escape').closest('.offer-privilege-card'));
-    await waitFor(() => expect(screen.getByTestId('booking-image-target-1').textContent).toContain('cdn.tripora.test/trincomalee.jpg'));
+    await waitFor(() => {
+      const selectedOffer = screen.getByTestId('selected-booking-offer');
+      expect(selectedOffer.getAttribute('data-offer-id')).toBe('stored-image');
+      expect(selectedOffer.getAttribute('data-target-id')).toBe('target-1');
+      expect(selectedOffer.textContent).toContain('cdn.tripora.test/trincomalee.jpg');
+    });
   });
 });

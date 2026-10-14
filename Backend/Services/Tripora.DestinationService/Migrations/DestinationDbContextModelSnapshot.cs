@@ -173,6 +173,15 @@ namespace Tripora.DestinationService.Migrations
                         .HasColumnName("created_at")
                         .HasDefaultValueSql("CURRENT_TIMESTAMP(6)");
 
+                    b.Property<string>("Email")
+                        .HasMaxLength(256)
+                        .HasColumnType("varchar(256)")
+                        .HasColumnName("email");
+
+                    b.Property<string>("AdminResponse")
+                        .HasColumnType("longtext")
+                        .HasColumnName("admin_response");
+
                     b.Property<string>("Message")
                         .IsRequired()
                         .HasColumnType("longtext")
@@ -196,6 +205,11 @@ namespace Tripora.DestinationService.Migrations
                         .HasColumnType("varchar(100)")
                         .HasColumnName("reason");
 
+                    b.Property<string>("UserId")
+                        .HasMaxLength(254)
+                        .HasColumnType("varchar(254)")
+                        .HasColumnName("user_id");
+
                     b.Property<string>("Status")
                         .IsRequired()
                         .ValueGeneratedOnAdd()
@@ -206,7 +220,11 @@ namespace Tripora.DestinationService.Migrations
 
                     b.HasKey("Id");
 
+                    b.HasIndex("Email");
+
                     b.HasIndex("Status", "CreatedAt");
+
+                    b.HasIndex("UserId");
 
                     b.ToTable("inquiries", (string)null);
                 });

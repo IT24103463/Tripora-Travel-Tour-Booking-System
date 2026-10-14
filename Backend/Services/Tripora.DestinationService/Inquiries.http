@@ -1,0 +1,11 @@
+@baseUrl = http://localhost:5003
+@jwt = replace-with-a-valid-access-token
+
+### Get inquiries matching the authenticated user's ID or email
+GET {{baseUrl}}/api/inquiries/my
+Authorization: Bearer {{jwt}}
+Accept: application/json
+
+### Verify that authentication is required
+GET {{baseUrl}}/api/inquiries/my
+Accept: application/json

@@ -74,7 +74,7 @@ export default function Offers() {
     const price = offer.discountedPrice ?? offer.offerPriceLKR ?? offer.price;
     setSelectedBookingItem({
       ...offer,
-      id: offer.targetId || offer.id || offer._id,
+      id: offer.id || offer._id,
       targetId: offer.targetId || offer.id || offer._id,
       title: offer.title || offer.name,
       name: offer.name || offer.title,
